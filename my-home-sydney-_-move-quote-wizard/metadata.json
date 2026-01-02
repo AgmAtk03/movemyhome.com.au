@@ -1,7 +1,0 @@
-{
-  "name": "My Home Sydney | Move Quote Wizard",
-  "description": "A high-end, mobile-first instant quote and booking application for moving services in Sydney, featuring dynamic pricing and route calculation.",
-  "requestFramePermissions": [
-    "geolocation"
-  ]
-}
