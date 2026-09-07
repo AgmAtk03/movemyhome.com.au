@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { LocationEntry, AccessType, VehicleType } from '../types';
+import { isGoogleMapsConfigured, isGoogleMapsReady, loadGoogleMaps } from '../mapsLoader';
 
 declare const google: any;
 
@@ -17,8 +18,37 @@ interface Step2Props {
 
 const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, isInterstate, onUpdatePickups, onUpdateDropoffs, onUpdateRouteInfo }) => {
   const acRefs = useRef<Record<string, any>>({});
+  const inputEls = useRef<Record<string, HTMLInputElement | null>>({});
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [mapsStatus, setMapsStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>(() => {
+    if (!isGoogleMapsConfigured()) return 'missing';
+    return isGoogleMapsReady() ? 'ready' : 'loading';
+  });
   const isTruck = vehicle === 'truck';
+  const mapsMissing = mapsStatus === 'missing' || mapsStatus === 'error';
+
+  useEffect(() => {
+    if (!isGoogleMapsConfigured()) {
+      setMapsStatus('missing');
+      return;
+    }
+    let cancelled = false;
+    loadGoogleMaps()
+      .then(() => {
+        if (!cancelled) setMapsStatus('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setMapsStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mapsStatus !== 'ready') return;
+    Object.entries(inputEls.current).forEach(([id, el]) => initAC(id, el));
+  }, [mapsStatus, pickups, dropoffs]);
 
   const calculateRoute = useCallback(() => {
     if (typeof google === 'undefined' || !google.maps || !google.maps.DirectionsService) return;
@@ -83,12 +113,18 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
   }, [pickups, dropoffs, onUpdateRouteInfo]);
 
   useEffect(() => {
+    if (mapsStatus !== 'ready') return;
     const timer = setTimeout(calculateRoute, 1000);
     return () => clearTimeout(timer);
-  }, [pickups, dropoffs, calculateRoute]);
+  }, [pickups, dropoffs, calculateRoute, mapsStatus]);
+
+  const bindInput = (id: string, el: HTMLInputElement | null) => {
+    inputEls.current[id] = el;
+    initAC(id, el);
+  };
 
   const initAC = (id: string, el: HTMLInputElement | null) => {
-    if (!el || acRefs.current[id] || typeof google === 'undefined') return;
+    if (!el || acRefs.current[id] || mapsStatus !== 'ready' || typeof google === 'undefined') return;
     try {
       const ac = new google.maps.places.Autocomplete(el, {
         componentRestrictions: { country: 'au' },
@@ -140,6 +176,18 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
       </div>
 
       <div className="space-y-3">
+        {mapsMissing && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl text-sm font-bold flex items-start gap-3">
+            <i className="ph-fill ph-warning-circle text-xl text-amber-500 mt-0.5"></i>
+            <div>
+              <p className="uppercase tracking-tight">Maps not configured</p>
+              <p className="text-[11px] font-medium text-amber-800/80 mt-1 leading-relaxed normal-case">
+                Address autocomplete and driving directions need <span className="font-black">VITE_GOOGLE_MAPS_API_KEY</span>. You can still type addresses; route distance will not calculate until Maps is set and the app is rebuilt.
+              </p>
+            </div>
+          </div>
+        )}
+
         {routeError && (
           <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in shake duration-500">
             <i className="ph-fill ph-warning-octagon text-xl"></i>
@@ -175,9 +223,9 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
                 </div>
               )}
               <input
-                ref={(el) => initAC(p.id, el)}
+                ref={(el) => bindInput(p.id, el)}
                 type="text"
-                placeholder="Search pickup address..."
+                placeholder={mapsMissing ? 'Type pickup address...' : 'Search pickup address...'}
                 className="w-full p-4 bg-white border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                 defaultValue={p.address}
                 onChange={(e) => onUpdatePickups(pickups.map(item => item.id === p.id ? { ...item, address: e.target.value } : item))}
@@ -241,9 +289,9 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
                 </div>
               )}
               <input
-                ref={(el) => initAC(d.id, el)}
+                ref={(el) => bindInput(d.id, el)}
                 type="text"
-                placeholder="Search dropoff address..."
+                placeholder={mapsMissing ? 'Type dropoff address...' : 'Search dropoff address...'}
                 className="w-full p-4 bg-white border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 defaultValue={d.address}
                 onChange={(e) => onUpdateDropoffs(dropoffs.map(item => item.id === d.id ? { ...item, address: e.target.value } : item))}

@@ -1,6 +1,6 @@
 {
-  "name": "My Home Sydney | Move Quote Wizard",
-  "description": "A high-end, mobile-first instant quote and booking application for moving services in Sydney, featuring dynamic pricing and route calculation.",
+  "name": "Aama Removals | Instant Quote",
+  "description": "Mobile-first instant quote and booking for Aama Removals — Sydney home, room, and item moving with transparent pricing.",
   "requestFramePermissions": [
     "geolocation"
   ]

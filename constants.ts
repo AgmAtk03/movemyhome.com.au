@@ -1,9 +1,11 @@
 
 export const CONFIG = {
-  COMPANY_NAME: 'My Home Sydney',
-  COMPANY_EMAIL: 'bookings@myhomesydney.com.au',
-  COMPANY_WEBSITE: 'https://myhomesydney.com.au',
+  COMPANY_NAME: 'Aama Removals',
+  COMPANY_SHORT_NAME: 'Aama',
+  COMPANY_EMAIL: 'bookings@aamaremovals.com.au',
+  COMPANY_WEBSITE: './',
   COMPANY_PHONE: '1300 000 000',
+  COMPANY_TAGLINE: 'Sydney Moving Made Simple.',
   // Replace these with your real EmailJS keys
   EMAILJS_SERVICE_ID: 'service_YOUR_ID',
   EMAILJS_TEMPLATE_ID: 'template_YOUR_ID',

@@ -1,20 +1,40 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Aama Removals — Instant Quote Wizard
 
-# Run and deploy your AI Studio app
+Mobile-first quote and booking app for **Aama Removals** (Sydney home, room, and item moves).
 
-This contains everything you need to run your app locally.
+The landing page and quote wizard load **without** a `GEMINI_API_KEY` or Google Maps key. If Maps is missing, the route step shows **Maps not configured** instead of failing silently.
 
-View your app in AI Studio: https://ai.studio/apps/drive/11_3B_PMKhS6Phne8lOqdsXRdkyP9BIms
+## Run locally
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Copy `.env.example` to `.env.local` and set keys you have.
 3. Run the app:
    `npm run dev`
+
+## Google Maps (route step)
+
+The quote route step uses **Places Autocomplete** and **DirectionsService**.
+
+1. In Google Cloud, enable:
+   - Maps JavaScript API
+   - Places API
+   - Directions API
+2. Create an API key and **restrict it to HTTP referrers** (your Netlify/Vercel domains plus `http://localhost:3000/*`).
+3. Set this env var locally in `.env.local` and in **Netlify / Vercel project settings**:
+
+   `VITE_GOOGLE_MAPS_API_KEY`
+
+4. Rebuild / redeploy so Vite can bake the public key into the client bundle.
+
+Do not commit a real API key. `.env` and `.env.local` are gitignored.
+
+## Optional AI
+
+`GEMINI_API_KEY` is optional and only needed if AI quote features are added later.
+
+## Build
+
+`npm run build` writes a static site to `dist/`.
