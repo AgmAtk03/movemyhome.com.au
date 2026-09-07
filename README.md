@@ -1,3 +1,3 @@
 # Aama Removals — static preview
 
-Public static export of the quote wizard for githack / CDN preview.
+Single-file public export of the quote wizard for githack / CDN preview. No GEMINI_API_KEY required.
