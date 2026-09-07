@@ -2,6 +2,13 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { isGoogleMapsConfigured, loadGoogleMaps } from './mapsLoader';
+
+if (isGoogleMapsConfigured()) {
+  loadGoogleMaps().catch((error) => {
+    console.warn('Google Maps did not load:', error);
+  });
+}
 
 const container = document.getElementById('root');
 
