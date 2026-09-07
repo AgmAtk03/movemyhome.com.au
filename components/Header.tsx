@@ -27,9 +27,9 @@ const Header: React.FC<HeaderProps> = ({ step, totalSteps, onBack }) => {
 
         <a href={CONFIG.COMPANY_WEBSITE} className="transition-transform active:scale-95">
           <h1 className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-lg text-sm">M</span>
-            <span className="hidden xs:inline">{CONFIG.COMPANY_NAME}</span>
-            <span className="xs:hidden">My Home</span>
+            <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-lg text-sm">A</span>
+            <span className="hidden sm:inline">{CONFIG.COMPANY_NAME}</span>
+            <span className="sm:hidden">{CONFIG.COMPANY_SHORT_NAME}</span>
           </h1>
         </a>
       </div>

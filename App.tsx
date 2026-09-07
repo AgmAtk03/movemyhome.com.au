@@ -315,6 +315,9 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="space-y-4 animate-premium-in" style={{ animationDelay: '0.1s' }}>
+            <p className="text-blue-400 text-[11px] font-black uppercase tracking-[0.28em]">
+              {CONFIG.COMPANY_NAME}
+            </p>
             <h1 className="text-5xl font-black text-white tracking-tighter leading-tight">
               Sydney Moving <br/> <span className="text-blue-500">Made Simple.</span>
             </h1>
@@ -330,6 +333,9 @@ const App: React.FC = () => {
               GET STARTED <i className="ph-bold ph-arrow-right text-sm group-hover:translate-x-1 transition-transform"></i>
             </button>
             <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest mt-6 opacity-50">Instant Quote • 2-Min Booking</p>
+            <p className="text-slate-600 text-xs font-medium mt-3">
+              {CONFIG.COMPANY_PHONE} · {CONFIG.COMPANY_EMAIL}
+            </p>
           </div>
         </div>
       </div>
