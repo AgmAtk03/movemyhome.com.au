@@ -48,3 +48,52 @@ export interface QuoteState {
   isCBD: boolean;
   isInterstate: boolean;
 }
+
+export interface PriceBreakdown {
+  total: number;
+  base: number;
+  distance: number;
+  inventory: number;
+  access: number;
+  potentialAccess: number;
+  cbd: number;
+  bedService: number;
+  hours: number;
+  fuel: number;
+  isFixedTrip: boolean;
+  hourlyRate: number;
+}
+
+export interface QuoteSnapshot {
+  serviceLabel: string;
+  vehicleLabel: string;
+  crewLabel: string;
+  routeSummary: string;
+  pickupAddresses: string[];
+  dropoffAddresses: string[];
+  inventorySummary: string;
+  scheduleLabel: string;
+  distanceLabel: string;
+  travelTimeLabel: string;
+  moveType: string;
+  totalLabel: string;
+  included: string[];
+  lines: { label: string; amount: string; note?: string }[];
+}
+
+export interface StoredJob {
+  id: string;
+  createdAt: string;
+  status: 'new' | 'upcoming' | 'future';
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  moveDate: string;
+  moveTime: string;
+  serviceLabel: string;
+  vehicleLabel: string;
+  routeSummary: string;
+  inventorySummary: string;
+  totalLabel: string;
+  instructions: string;
+}

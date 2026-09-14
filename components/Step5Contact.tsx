@@ -1,107 +1,134 @@
 
 import React from 'react';
-import { MoveDetails } from '../types';
+import { MoveDetails, QuoteSnapshot } from '../types';
+import { ContactErrors } from '../lib/validation';
+import QuoteRecap from './QuoteRecap';
+import BookingExtras from './BookingExtras';
 
 interface Step5Props {
   details: MoveDetails;
   onUpdateDetails: (d: Partial<MoveDetails>) => void;
+  snapshot: QuoteSnapshot;
+  whatsappUrl: string | null;
+  errors: ContactErrors;
+  showErrors: boolean;
 }
 
-const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails }) => {
+const fieldClass = (invalid: boolean) =>
+  `w-full min-h-12 pl-14 p-4 bg-white border rounded-2xl text-base font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/15 ${
+    invalid ? 'border-rose-400' : 'border-slate-200 focus:border-blue-500'
+  }`;
+
+const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, errors, showErrors }) => {
   return (
     <div className="space-y-8 animate-premium-in pb-10">
       <div className="space-y-2">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Step 5: Contact Info</h2>
-        <p className="text-slate-500 text-sm font-medium">Please provide your details to secure your booking.</p>
+        <h2 tabIndex={-1} className="text-2xl font-black text-slate-900 tracking-tight outline-none">
+          How can we reach you?
+        </h2>
+        <p className="text-slate-500 text-base font-medium leading-relaxed">
+          This is the booking request — it sends your quote to us. You’re not paying yet. We’ll call to confirm before moving day.
+        </p>
       </div>
 
-      <div className="space-y-5 px-1">
-        <div className="space-y-4">
-          {/* Name Field */}
-          <div className="space-y-1.5 group">
-            <div className="flex justify-between items-center px-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-focus-within:text-blue-500 transition-colors">Full Name</label>
-              <span className="text-[9px] font-black text-blue-500 uppercase tracking-tighter bg-blue-50 px-2 py-0.5 rounded-md">Required</span>
-            </div>
-            <div className="relative">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-300 group-focus-within:text-blue-500 transition-colors">
-                <i className="ph-bold ph-user text-xl"></i>
-              </div>
-              <input 
-                type="text" 
-                placeholder="e.g. John Doe"
-                className="w-full pl-14 p-4 bg-white border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
-                value={details.name}
-                onChange={(e) => onUpdateDetails({ name: e.target.value })}
-              />
-            </div>
-          </div>
+      <QuoteRecap snapshot={snapshot} />
 
-          {/* Email Field */}
-          <div className="space-y-1.5 group">
-            <div className="flex justify-between items-center px-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-focus-within:text-blue-500 transition-colors">Email Address</label>
-              <span className="text-[9px] font-black text-blue-500 uppercase tracking-tighter bg-blue-50 px-2 py-0.5 rounded-md">Required</span>
-            </div>
-            <div className="relative">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-300 group-focus-within:text-blue-500 transition-colors">
-                <i className="ph-bold ph-envelope-simple text-xl"></i>
-              </div>
-              <input 
-                type="email" 
-                placeholder="e.g. john@example.com"
-                className="w-full pl-14 p-4 bg-white border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
-                value={details.email}
-                onChange={(e) => onUpdateDetails({ email: e.target.value })}
-              />
-            </div>
+      <div className="space-y-5">
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <label htmlFor="customer-name" className="text-sm font-bold text-slate-700">Your name</label>
+            <span className="text-xs font-semibold text-blue-700">Required</span>
           </div>
-
-          {/* Phone Field */}
-          <div className="space-y-1.5 group">
-            <div className="flex justify-between items-center px-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-focus-within:text-blue-500 transition-colors">Mobile Number</label>
-              <span className="text-[9px] font-black text-blue-500 uppercase tracking-tighter bg-blue-50 px-2 py-0.5 rounded-md">Required</span>
-            </div>
-            <div className="relative">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-300 group-focus-within:text-blue-500 transition-colors">
-                <i className="ph-bold ph-phone text-xl"></i>
-              </div>
-              <input 
-                type="tel" 
-                placeholder="e.g. 0400 000 000"
-                className="w-full pl-14 p-4 bg-white border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
-                value={details.phone}
-                onChange={(e) => onUpdateDetails({ phone: e.target.value })}
-              />
-            </div>
-          </div>
-
-          {/* Instructions Field */}
-          <div className="space-y-2 group pt-2">
-             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 group-focus-within:text-blue-500 transition-colors">Special Instructions (Optional)</label>
-             <textarea 
-              placeholder="e.g. Extra heavy items, parking restrictions, building access codes..."
-              rows={4}
-              className="w-full p-5 bg-white border border-slate-100 rounded-3xl text-sm font-medium text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all resize-none shadow-sm placeholder:text-slate-300"
-              value={details.instructions}
-              onChange={(e) => onUpdateDetails({ instructions: e.target.value })}
+          <div className="relative">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
+              <i className="ph-bold ph-user text-xl"></i>
+            </span>
+            <input
+              id="customer-name"
+              type="text"
+              autoComplete="name"
+              placeholder="e.g. Sam Nguyen"
+              className={fieldClass(showErrors && Boolean(errors.name))}
+              value={details.name}
+              onChange={(e) => onUpdateDetails({ name: e.target.value })}
+              aria-invalid={showErrors && Boolean(errors.name)}
+              aria-describedby={showErrors && errors.name ? 'name-error' : undefined}
             />
           </div>
+          {showErrors && errors.name && <p id="name-error" className="text-sm text-rose-700">{errors.name}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <label htmlFor="customer-email" className="text-sm font-bold text-slate-700">Email</label>
+            <span className="text-xs font-semibold text-blue-700">Required</span>
+          </div>
+          <div className="relative">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
+              <i className="ph-bold ph-envelope-simple text-xl"></i>
+            </span>
+            <input
+              id="customer-email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="e.g. sam@email.com"
+              className={fieldClass(showErrors && Boolean(errors.email))}
+              value={details.email}
+              onChange={(e) => onUpdateDetails({ email: e.target.value })}
+              aria-invalid={showErrors && Boolean(errors.email)}
+              aria-describedby={showErrors && errors.email ? 'email-error' : undefined}
+            />
+          </div>
+          {showErrors && errors.email && <p id="email-error" className="text-sm text-rose-700">{errors.email}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <label htmlFor="customer-phone" className="text-sm font-bold text-slate-700">Mobile</label>
+            <span className="text-xs font-semibold text-blue-700">Required</span>
+          </div>
+          <div className="relative">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
+              <i className="ph-bold ph-phone text-xl"></i>
+            </span>
+            <input
+              id="customer-phone"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              placeholder="e.g. 0400 000 000"
+              className={fieldClass(showErrors && Boolean(errors.phone))}
+              value={details.phone}
+              onChange={(e) => onUpdateDetails({ phone: e.target.value })}
+              aria-invalid={showErrors && Boolean(errors.phone)}
+              aria-describedby={showErrors && errors.phone ? 'phone-error' : undefined}
+            />
+          </div>
+          {showErrors && errors.phone && <p id="phone-error" className="text-sm text-rose-700">{errors.phone}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="customer-notes" className="text-sm font-bold text-slate-700">Anything we should know? (optional)</label>
+          <textarea
+            id="customer-notes"
+            placeholder="Parking, stairs we missed, heavy pieces, gate codes…"
+            rows={4}
+            className="w-full p-4 bg-white border border-slate-200 rounded-3xl text-base font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500 resize-none"
+            value={details.instructions}
+            onChange={(e) => onUpdateDetails({ instructions: e.target.value })}
+          />
         </div>
       </div>
 
-      <div className="bg-emerald-50 p-6 rounded-[2.5rem] border border-emerald-100 flex items-start gap-5 shadow-sm">
-        <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 shadow-lg shadow-emerald-500/20">
-          <i className="ph-fill ph-shield-check"></i>
-        </div>
-        <div>
-          <h4 className="font-black text-emerald-900 text-sm uppercase tracking-tight">Safe & Secured</h4>
-          <p className="text-emerald-700 text-[11px] leading-relaxed font-bold mt-1 uppercase opacity-80">
-            Booking details are encrypted. Our team will call you to confirm the time slot and logistics once you click "Book Now".
-          </p>
-        </div>
+      <div className="bg-emerald-50 p-5 rounded-[1.75rem] border border-emerald-100">
+        <h3 className="font-bold text-emerald-950">Get my quote vs Book this move</h3>
+        <p className="text-sm text-emerald-900 mt-2 leading-relaxed">
+          The running total at the bottom is your live quote. <strong>Book this move</strong> sends that quote and your details to our team. We’ll confirm the time — no payment is taken here.
+        </p>
       </div>
+
+      <BookingExtras whatsappUrl={whatsappUrl} />
     </div>
   );
 };
