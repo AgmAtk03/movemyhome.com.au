@@ -44,9 +44,20 @@ export const isEmailJsConfigured = (): boolean =>
 export const isWhatsAppConfigured = (): boolean =>
   !isUnset(CONFIG.WHATSAPP_NUMBER, ['YOUR_WHATSAPP']);
 
-export const isPlaceholderContact = (): boolean =>
-  isUnset(CONFIG.COMPANY_EMAIL, ['YOUR_BOOKINGS_EMAIL']) ||
-  isUnset(CONFIG.COMPANY_PHONE, ['YOUR_PHONE_NUMBER']);
+export const isPhoneConfigured = (): boolean =>
+  !isUnset(CONFIG.COMPANY_PHONE, ['YOUR_PHONE_NUMBER']);
+
+export const isEmailConfigured = (): boolean =>
+  !isUnset(CONFIG.COMPANY_EMAIL, ['YOUR_BOOKINGS_EMAIL']);
+
+export const isWebsiteConfigured = (): boolean =>
+  !isUnset(CONFIG.COMPANY_WEBSITE, ['YOUR_WEBSITE']);
+
+export const isLegalNameConfigured = (): boolean =>
+  !isUnset(CONFIG.LEGAL_TRADING_NAME, ['YOUR_LEGAL_TRADING_NAME']);
+
+export const isAbnConfigured = (): boolean =>
+  !isUnset(CONFIG.COMPANY_ABN, ['YOUR_ABN']);
 
 export const WIZARD_STEPS = [
   { id: 1, label: 'Service', title: 'What are you moving?' },
@@ -81,5 +92,5 @@ export const SERVICE_AREAS = [
   'Hills District',
   'South Sydney',
   'Greater Sydney',
-  'NSW (interstate by truck)',
+  'Regional NSW',
 ] as const;

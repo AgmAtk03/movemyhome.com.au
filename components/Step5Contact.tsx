@@ -26,7 +26,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           How can we reach you?
         </h2>
         <p className="text-slate-500 text-base font-medium leading-relaxed">
-          This is an estimate. Pay 10% now to hold the slot. The remaining 90% is due on the day. You’ll enter card details on Stripe — not on this page.
+          We’ll use this to confirm after you pay the 10% deposit. We never share your details.
         </p>
       </div>
 
@@ -118,13 +118,6 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             onChange={(e) => onUpdateDetails({ instructions: e.target.value })}
           />
         </div>
-      </div>
-
-      <div className="bg-emerald-50 p-5 rounded-[1.75rem] border border-emerald-100">
-        <h3 className="font-bold text-emerald-950">Pay 10% to hold this slot</h3>
-        <p className="text-sm text-emerald-900 mt-2 leading-relaxed">
-          We recalculate the quote on the server from the same rate table. You are not charged the full amount. Card details stay on Stripe.
-        </p>
       </div>
 
       <BookingExtras whatsappUrl={whatsappUrl} />

@@ -3,10 +3,9 @@ import { CONFIG, SERVICE_AREAS } from '../constants';
 
 interface LandingProps {
   onStart: () => void;
-  onOpenStaff: () => void;
 }
 
-const Landing: React.FC<LandingProps> = ({ onStart, onOpenStaff }) => {
+const Landing: React.FC<LandingProps> = ({ onStart }) => {
   return (
     <div className="min-h-[100dvh] bg-slate-950 text-white flex flex-col max-w-lg mx-auto relative overflow-x-hidden">
       <div className="absolute top-[-10%] right-[-20%] w-80 h-80 bg-blue-600/25 rounded-full blur-[100px] pointer-events-none"></div>
@@ -14,7 +13,6 @@ const Landing: React.FC<LandingProps> = ({ onStart, onOpenStaff }) => {
 
       <main className="relative z-10 flex-1 px-6 pt-12 pb-10 flex flex-col">
         <p className="text-blue-300 font-bold tracking-wide text-center">{CONFIG.COMPANY_NAME}</p>
-        <p className="text-[11px] text-slate-500 text-center mt-1">Trading name placeholder: {CONFIG.LEGAL_TRADING_NAME}</p>
 
         <div className="flex justify-center my-6">
           <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-[2rem] rotate-[12deg] flex items-center justify-center shadow-2xl shadow-blue-500/30">
@@ -26,7 +24,7 @@ const Landing: React.FC<LandingProps> = ({ onStart, onOpenStaff }) => {
           Sydney moving, <span className="text-blue-400">made simple.</span>
         </h1>
         <p className="text-slate-300 text-base font-medium leading-relaxed text-center mt-4">
-          Local movers across Sydney and NSW. See the quote as you go, then pay a 10% deposit on Stripe to hold the slot. The other 90% is due on the day.
+          Get a clear quote in a couple of minutes. Pay 10% to hold the day. We confirm the plan — then the rest is due when we move.
         </p>
 
         <button
@@ -36,22 +34,21 @@ const Landing: React.FC<LandingProps> = ({ onStart, onOpenStaff }) => {
         >
           Get my quote
         </button>
-        <p className="text-slate-400 text-sm font-medium mt-3 text-center">About two minutes · 10% deposit via Stripe Checkout</p>
+        <p className="text-slate-400 text-sm font-medium mt-3 text-center">Takes about two minutes</p>
 
-        <ul className="mt-8 grid grid-cols-1 gap-3 text-sm">
-          <li className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 font-medium text-slate-200">Sydney + NSW — CBD, suburbs, and interstate by truck</li>
-          <li className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 font-medium text-slate-200">A clear running total: estimate, 10% now, balance later</li>
-          <li className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 font-medium text-slate-200">No card form on this site — Stripe hosts checkout</li>
-        </ul>
-
-        <section className="mt-8" aria-labelledby="included-heading">
-          <h2 id="included-heading" className="text-sm font-bold uppercase tracking-wide text-slate-400">What’s included in a quote</h2>
-          <ul className="mt-3 space-y-2 text-sm text-slate-300 leading-relaxed">
-            <li>Vehicle, travel, and the items you list</li>
-            <li>Stairs or CBD parking when they apply — shown in the total</li>
-            <li>A 10% deposit to hold the day; remainder due when we move</li>
-          </ul>
-        </section>
+        <ol className="mt-8 space-y-3 text-sm">
+          {[
+            { n: '1', t: 'See the quote as you go' },
+            { n: '2', t: 'Pay 10% to hold the slot' },
+            { n: '3', t: 'We’ll confirm before moving day' },
+            { n: '4', t: 'Pay the rest on the day' },
+          ].map((step) => (
+            <li key={step.n} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 font-medium text-slate-200">
+              <span className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center flex-shrink-0">{step.n}</span>
+              {step.t}
+            </li>
+          ))}
+        </ol>
 
         <section className="mt-8" aria-labelledby="areas-heading">
           <h2 id="areas-heading" className="text-sm font-bold uppercase tracking-wide text-slate-400">Where we work</h2>
@@ -65,19 +62,12 @@ const Landing: React.FC<LandingProps> = ({ onStart, onOpenStaff }) => {
         </section>
 
         <p className="mt-8 text-xs text-slate-500 leading-relaxed text-center">
-          We’re local Sydney movers. We’ll share cover and extras when we confirm your job. We don’t invent licences here — fill your trading details in env / CONFIG.
+          Local Sydney movers for homes, rooms, and a few bulky items. We’ll talk through anything that might change the price before we start.
         </p>
 
-        <div className="mt-8 flex flex-col items-center gap-3 text-xs text-slate-500">
-          <a href="/privacy" className="underline decoration-slate-600 underline-offset-4 min-h-11 flex items-center">Privacy</a>
-          <button
-            type="button"
-            onClick={onOpenStaff}
-            className="underline decoration-slate-600 underline-offset-4 min-h-11"
-          >
-            Local demo diary (not production ops)
-          </button>
-        </div>
+        <a href="/privacy" className="mt-8 text-xs text-slate-500 underline decoration-slate-600 underline-offset-4 min-h-11 flex items-center justify-center self-center">
+          Privacy
+        </a>
       </main>
     </div>
   );

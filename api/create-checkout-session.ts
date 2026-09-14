@@ -7,6 +7,7 @@ import { companyConfig, isStripeConfigured, publicSiteUrl } from './_lib/env';
 import { getStripe, meta } from './_lib/stripeClient';
 import { BRAND_NAME } from '../shared/rates';
 import { sanitizePlainText } from '../lib/sanitize';
+import { PAYMENT_OPEN_ERROR, PAYMENTS_OFF_SHORT, QUOTE_TOO_SMALL } from '../lib/customerCopy';
 
 function originFrom(req: VercelRequest): { host: string | null; proto: string | null } {
   const forwarded = String(req.headers['x-forwarded-host'] || req.headers.host || '');
@@ -46,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   if (breakdown.depositCents < 50) {
-    res.status(400).json({ error: 'Quote is too small to take a card deposit. Please call us to book.' });
+    res.status(400).json({ error: QUOTE_TOO_SMALL });
     return;
   }
 
@@ -65,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!isStripeConfigured()) {
     res.status(200).json({
       demoMode: true,
-      message: 'Demo mode — no charge / no email. Stripe secret key is not configured.',
+      message: PAYMENTS_OFF_SHORT,
       quoted,
     });
     return;
@@ -128,7 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!session.url) {
-      res.status(500).json({ error: 'Stripe did not return a Checkout URL.' });
+      res.status(500).json({ error: PAYMENT_OPEN_ERROR });
       return;
     }
 
@@ -140,6 +141,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error) {
     console.error('create-checkout-session failed');
-    res.status(500).json({ error: 'Could not start Stripe Checkout. Please try again or call us.' });
+    res.status(500).json({ error: PAYMENT_OPEN_ERROR });
   }
 }

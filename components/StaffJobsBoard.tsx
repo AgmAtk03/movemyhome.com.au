@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { CONFIG } from '../constants';
 import { JobBoardFilter, JobWorkflowStatus, StoredJob } from '../types';
 import { jobsMatchingFilter, loadDemoJobs, scheduleBucket, updateJobWorkflow } from '../lib/jobsStore';
 import { buildCrewJobSheet, buildWhatsAppShareUrl, formatDateAu, formatTimeAu } from '../lib/quote';
@@ -221,10 +220,10 @@ const StaffJobsBoard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   return (
     <div className="min-h-[100dvh] bg-slate-50 max-w-lg mx-auto">
       <header className="bg-amber-100 border-b border-amber-200 px-5 py-4">
-        <p className="text-[11px] font-black uppercase tracking-widest text-amber-900">DEMO ONLY — not a production staff board</p>
-        <h1 className="text-xl font-black text-slate-900 mt-1">{CONFIG.COMPANY_NAME} local diary</h1>
+        <p className="text-[11px] font-black uppercase tracking-widest text-amber-900">This page isn’t for customers</p>
+        <h1 className="text-xl font-black text-slate-900 mt-1">Internal jobs list</h1>
         <p className="text-sm text-slate-700 mt-1 leading-relaxed">
-          Jobs on this screen live only in this browser (localStorage). This is not operations, not authenticated, and not the company of record. Paid jobs are confirmed by the Stripe webhook and email — not this page.
+          You’ve found a private tools page. It isn’t a booking confirmation, and it isn’t linked from the public site. Paid jobs are confirmed after the deposit actually goes through — not by this list.
         </p>
       </header>
 
@@ -285,7 +284,7 @@ const StaffJobsBoard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
           onClick={onExit}
           className="w-full min-h-14 rounded-2xl bg-slate-900 text-white font-black"
         >
-          Back to quote
+          Leave this page
         </button>
       </div>
     </div>

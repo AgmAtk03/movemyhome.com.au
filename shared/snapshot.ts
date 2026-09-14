@@ -161,7 +161,7 @@ export function buildCrewJobSheet(job: {
   const when = job.scheduleLabel || [formatDateAu(job.moveDate), formatTimeAu(job.moveTime)].filter(Boolean).join(', ');
   return sanitizeMultiline(
     [
-      `JOB SHEET — ${BRAND_NAME} (DEMO BOARD)`,
+      `JOB SHEET — ${BRAND_NAME}`,
       `Status: ${job.workflowStatus || 'new'}`,
       job.paymentStatus ? `Payment: ${job.paymentStatus}` : '',
       `When: ${when || 'To confirm'} (about a one-hour arrival window)`,

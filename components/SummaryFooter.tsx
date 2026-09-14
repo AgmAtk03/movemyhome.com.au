@@ -57,66 +57,73 @@ const SummaryFooter: React.FC<FooterProps> = ({
       )}
 
       <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-2xl border-t border-slate-100 px-5 pt-4 pb-safe z-50 rounded-t-[2rem] shadow-[0_-12px_40px_rgba(0,0,0,0.08)]">
-        <div className="flex items-start justify-between gap-4">
-          <button
-            type="button"
-            className="flex flex-col flex-1 text-left"
-            onClick={() => setShowBreakdown(!showBreakdown)}
-            aria-expanded={showBreakdown}
-            aria-controls="quote-breakdown"
-          >
-            <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-              Estimated total
-              <i className={`ph-bold ph-caret-up text-[10px] text-blue-600 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} aria-hidden="true"></i>
-            </span>
-            <span className={`font-black tracking-tight text-slate-900 ${animatePrice ? 'animate-price-bump' : ''}`} style={{ fontSize: 'clamp(1.5rem, 6vw, 2.1rem)' }} aria-live="polite">
-              {showMoney ? formatMoney(breakdown.total) : 'As you go'}
-            </span>
-            {showMoney && (
-              <span className="text-[11px] font-bold text-slate-600 mt-1 leading-snug">
-                10% deposit due now {formatMoney(breakdown.deposit)}
-                <span className="block font-semibold text-slate-500">Balance remaining {formatMoney(breakdown.balance)}</span>
-              </span>
-            )}
-            {isTruck && !breakdown.isFixedTrip && showMoney && (
-              <span className="text-[11px] font-bold text-indigo-700 mt-1">Estimate · billed on time</span>
-            )}
-          </button>
-
-          {isBookStep ? (
-            <button
-              type="button"
-              onClick={onBook}
-              className="min-h-14 px-4 font-black rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm bg-emerald-600 text-white shadow-emerald-600/20 active:scale-[0.97]"
-            >
-              Pay 10% deposit
-            </button>
+        <button
+          type="button"
+          className="w-full text-left"
+          onClick={() => setShowBreakdown(!showBreakdown)}
+          aria-expanded={showBreakdown}
+          aria-controls="quote-breakdown"
+        >
+          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mb-2">
+            Tap for a breakdown
+            <i className={`ph-bold ph-caret-up text-[10px] text-blue-600 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} aria-hidden="true"></i>
+          </span>
+          {showMoney ? (
+            <dl className={`space-y-1.5 ${animatePrice ? 'animate-price-bump' : ''}`}>
+              <div className="flex justify-between items-baseline gap-3">
+                <dt className="text-sm font-bold text-slate-600">Estimated total</dt>
+                <dd className="text-2xl font-black text-slate-900 tracking-tight" aria-live="polite">{formatMoney(breakdown.total)}</dd>
+              </div>
+              <div className="flex justify-between gap-3 text-sm">
+                <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
+                <dd className="font-black text-slate-800">{formatMoney(breakdown.deposit)}</dd>
+              </div>
+              <div className="flex justify-between gap-3 text-sm">
+                <dt className="font-semibold text-slate-500">Due on the day (90%)</dt>
+                <dd className="font-black text-slate-800">{formatMoney(breakdown.balance)}</dd>
+              </div>
+            </dl>
           ) : (
-            <button
-              type="button"
-              onClick={onNext}
-              className={`min-h-14 px-5 font-black rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm text-white active:scale-[0.97] ${
-                isTruck ? 'bg-indigo-600 shadow-indigo-600/20' : 'bg-blue-600 shadow-blue-600/20'
-              }`}
-            >
-              Continue
-              <i className="ph-bold ph-arrow-right text-xs" aria-hidden="true"></i>
-            </button>
+            <p className="text-lg font-black text-slate-400">Your quote appears as you go</p>
           )}
-        </div>
+          {isTruck && !breakdown.isFixedTrip && showMoney && (
+            <p className="text-[11px] font-bold text-indigo-700 mt-2">Hourly truck — final total depends on time on the day</p>
+          )}
+        </button>
+
         {nextHint && (
-          <p className="text-xs text-rose-700 mt-2 font-medium" role="status">{nextHint}</p>
+          <p className="text-sm text-rose-700 mt-3 font-medium" role="status">{nextHint}</p>
         )}
         {isBookStep && (
-          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-            This is an estimate. Pay 10% now to hold the slot. The remaining 90% is due on the day.
+          <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+            This is an estimate. Pay 10% today to hold the slot. The rest is due on the day.
           </p>
+        )}
+
+        {isBookStep ? (
+          <button
+            type="button"
+            onClick={onBook}
+            className="mt-3 w-full min-h-16 font-black rounded-2xl shadow-lg bg-emerald-600 text-white shadow-emerald-600/20 active:scale-[0.98] text-lg"
+          >
+            Pay 10% deposit
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onNext}
+            className={`mt-3 w-full min-h-16 font-black rounded-2xl shadow-lg text-white active:scale-[0.98] text-lg ${
+              isTruck ? 'bg-indigo-600 shadow-indigo-600/20' : 'bg-blue-600 shadow-blue-600/20'
+            }`}
+          >
+            Continue
+          </button>
         )}
 
         {showBreakdown && (
           <div id="quote-breakdown" className="absolute bottom-full left-0 right-0 p-6 bg-white border-t border-slate-100 rounded-t-[2rem] shadow-2xl z-[48] max-h-[70vh] overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between mb-5">
-              <h4 className="text-xl font-black text-slate-900">What you’re paying for</h4>
+              <h4 className="text-xl font-black text-slate-900">What’s in the quote</h4>
               <button type="button" className="w-11 h-11 bg-slate-50 rounded-xl text-slate-500" onClick={() => setShowBreakdown(false)} aria-label="Close quote details">
                 <i className="ph ph-x text-xl" aria-hidden="true"></i>
               </button>
@@ -124,7 +131,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
 
             {isTruck && !breakdown.isFixedTrip && (
               <p className="mb-5 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-sm text-indigo-900">
-                Truck jobs are billed at {formatMoney(breakdown.hourlyRate)} per hour. The total below is an estimate until we finish on the day.
+                Truck jobs are {formatMoney(breakdown.hourlyRate)} per hour. We’ll confirm the final time with you on the day.
               </p>
             )}
 
@@ -177,21 +184,18 @@ const SummaryFooter: React.FC<FooterProps> = ({
 
             <div className="pt-5 mt-4 border-t border-slate-100 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="font-black text-slate-900">{isTruck && !breakdown.isFixedTrip ? 'Estimated total' : 'Quote total'}</span>
+                <span className="font-black text-slate-900">Estimated total</span>
                 <span className={`text-2xl font-black ${isTruck ? 'text-indigo-700' : 'text-blue-700'}`}>{formatMoney(breakdown.total)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600">10% deposit due now</span>
+                <span className="text-slate-600">Pay today (10%)</span>
                 <span className="font-bold">{formatMoney(breakdown.deposit)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Balance remaining</span>
+                <span className="text-slate-600">Due on the day (90%)</span>
                 <span className="font-bold">{formatMoney(breakdown.balance)}</span>
               </div>
             </div>
-            <p className="mt-4 text-xs text-slate-500 leading-relaxed">
-              Pay 10% now to hold the slot. The remaining 90% is due on the day. Card details are entered on Stripe, not on this site.
-            </p>
           </div>
         )}
       </footer>

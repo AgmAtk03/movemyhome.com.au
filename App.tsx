@@ -22,6 +22,7 @@ import { saveDemoJob } from './lib/jobsStore';
 import { sanitizePlainText } from './lib/sanitize';
 import { calculateQuote, EMPTY_BREAKDOWN } from './shared/quoteCalc';
 import { createCheckoutSession } from './lib/checkout';
+import { PAYMENTS_OFF_BODY, PAYMENT_START_ERROR, customerFacingError } from './lib/customerCopy';
 
 const INITIAL_INVENTORY: Inventory = {
   boxes: 0, sofa: 0, mattress: 0, bed: 0, fridge: 0, tv: 0, washer: 0,
@@ -150,8 +151,9 @@ const App: React.FC = () => {
     try {
       const result = await createCheckoutSession(state);
       if (!result.ok) {
-        setBookingNotice(result.error || 'We couldn’t start checkout.');
-        setNextHint(result.error || 'Checkout didn’t start. Try again or call us.');
+        const hint = customerFacingError(result.error, PAYMENT_START_ERROR);
+        setBookingNotice(hint);
+        setNextHint(hint);
         return;
       }
 
@@ -179,7 +181,7 @@ const App: React.FC = () => {
           paymentStatus: 'demo',
         });
         setDemoCheckout(true);
-        setBookingNotice(result.message || 'Demo mode — no charge / no email.');
+        setBookingNotice(PAYMENTS_OFF_BODY);
         setIsSuccess(true);
         return;
       }
@@ -189,9 +191,9 @@ const App: React.FC = () => {
         return;
       }
 
-      setNextHint('Checkout didn’t return a Stripe page. Please call us.');
+      setNextHint(PAYMENT_START_ERROR);
     } catch {
-      setNextHint('Something went wrong starting checkout. Please call us and we’ll sort it.');
+      setNextHint('Something went wrong. Please try again in a moment.');
     } finally {
       setIsBooking(false);
     }
@@ -334,13 +336,7 @@ const App: React.FC = () => {
 
   if (!isStarted) {
     return (
-      <Landing
-        onStart={() => setIsStarted(true)}
-        onOpenStaff={() => {
-          window.location.hash = 'staff-jobs';
-          setShowStaffBoard(true);
-        }}
-      />
+      <Landing onStart={() => setIsStarted(true)} />
     );
   }
 
@@ -359,7 +355,7 @@ const App: React.FC = () => {
       {isBooking && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md flex flex-col items-center justify-center text-white" role="status" aria-live="polite">
           <div className="loading-spinner mb-6"></div>
-          <p className="font-black text-xl tracking-tight">Starting secure checkout…</p>
+          <p className="font-black text-xl tracking-tight">Taking you to pay the deposit…</p>
         </div>
       )}
 

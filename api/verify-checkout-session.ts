@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isStripeConfigured } from './_lib/env';
 import { getStripe } from './_lib/stripeClient';
 import { formatMoney } from '../shared/money';
+import { PAYMENT_NOT_FOUND, PAYMENTS_OFF_SHORT } from '../lib/customerCopy';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -11,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const sessionId = String(req.query.session_id || '').trim();
   if (!sessionId.startsWith('cs_')) {
-    res.status(400).json({ paid: false, error: 'Missing Checkout session.' });
+    res.status(400).json({ paid: false, error: PAYMENT_NOT_FOUND });
     return;
   }
 
@@ -19,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json({
       paid: false,
       demoMode: true,
-      message: 'Demo mode — no charge / no email.',
+      message: PAYMENTS_OFF_SHORT,
     });
     return;
   }
@@ -52,6 +53,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       balanceLabel: balance ? formatMoney(balance) : '',
     });
   } catch {
-    res.status(404).json({ paid: false, error: 'That payment session was not found.' });
+    res.status(404).json({ paid: false, error: PAYMENT_NOT_FOUND });
   }
 }

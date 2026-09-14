@@ -1,5 +1,6 @@
 import { QuoteState } from '../types';
 import { sanitizePlainText } from './sanitize';
+import { PAYMENTS_OFF_SHORT, PAYMENT_OPEN_ERROR, PAYMENT_START_ERROR, customerFacingError } from './customerCopy';
 
 export interface CheckoutQuoted {
   quoteTotal: number;
@@ -62,7 +63,7 @@ export async function createCheckoutSession(state: QuoteState): Promise<Checkout
     return {
       ok: true,
       demoMode: true,
-      message: 'Demo mode — no charge / no email. The checkout API is not running locally.',
+      message: PAYMENTS_OFF_SHORT,
     };
   }
 
@@ -70,7 +71,7 @@ export async function createCheckoutSession(state: QuoteState): Promise<Checkout
     return {
       ok: true,
       demoMode: true,
-      message: 'Demo mode — no charge / no email. Serverless checkout is not available in this preview.',
+      message: PAYMENTS_OFF_SHORT,
     };
   }
 
@@ -79,14 +80,18 @@ export async function createCheckoutSession(state: QuoteState): Promise<Checkout
     return {
       ok: true,
       demoMode: true,
-      message: 'Demo mode — no charge / no email. The checkout API is not running (try npx vercel dev).',
+      message: PAYMENTS_OFF_SHORT,
     };
   }
 
   const data = await response.json().catch(() => ({})) as Partial<CheckoutResponse> & { error?: string };
 
   if (!response.ok) {
-    return { ok: false, demoMode: false, error: data.error || 'Could not start checkout.' };
+    return {
+      ok: false,
+      demoMode: false,
+      error: customerFacingError(data.error, PAYMENT_START_ERROR),
+    };
   }
 
   if ('demoMode' in data && data.demoMode) {
@@ -94,7 +99,7 @@ export async function createCheckoutSession(state: QuoteState): Promise<Checkout
       ok: true,
       demoMode: true,
       quoted: data.quoted,
-      message: data.message || 'Demo mode — no charge / no email.',
+      message: PAYMENTS_OFF_SHORT,
     };
   }
 
@@ -102,10 +107,9 @@ export async function createCheckoutSession(state: QuoteState): Promise<Checkout
     return { ok: true, demoMode: false, url: data.url, quoted: data.quoted };
   }
 
-  // Stripe test Checkout URLs are always https://checkout.stripe.com/...
   if ('url' in data && typeof data.url === 'string' && data.url.startsWith('https://') && data.url.includes('stripe.com')) {
     return { ok: true, demoMode: false, url: data.url, quoted: data.quoted };
   }
 
-  return { ok: false, demoMode: false, error: 'Checkout did not return a Stripe URL.' };
+  return { ok: false, demoMode: false, error: PAYMENT_OPEN_ERROR };
 }
