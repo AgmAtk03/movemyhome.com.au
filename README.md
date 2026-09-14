@@ -1,20 +1,152 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# My Home Removals — quote + 10% deposit
 
-# Run and deploy your AI Studio app
+Mobile-first quote and booking app for **My Home Removals** (Sydney and NSW home, room, and item moves). Australian English throughout.
 
-This contains everything you need to run your app locally.
+Live app repo: [AgmAtk03/movemyhome.com.au](https://github.com/AgmAtk03/movemyhome.com.au). Pointer-only repo: [AgmAtk03/aama-removals](https://github.com/AgmAtk03/aama-removals) — **do not put app code there**.
 
-View your app in AI Studio: https://ai.studio/apps/drive/11_3B_PMKhS6Phne8lOqdsXRdkyP9BIms
+The running total is an **estimate**. **Pay 10% deposit** creates a Stripe Checkout Session for that job’s deposit only. The remaining **90% is due on the day**. `/success` is not proof of payment — Stripe (verified webhook + session retrieve) is.
 
-## Run Locally
+## Run locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js 18+ (20/22 recommended)
 
+1. `npm install`
+2. Copy `.env.example` to `.env.local`. Leave secrets blank to try the UI in **demo mode**.
+3. `npm run dev` — UI on [http://localhost:3000](http://localhost:3000). Without API functions this is demo-only (no charge / no email).
+4. `npm run build` — `tsc` + Vite production build.
+5. `npx vercel dev` — UI **and** `/api/*` serverless functions (needed for real Stripe Checkout and webhooks). Set `PUBLIC_SITE_URL=http://localhost:3000` for test-mode redirects.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Never commit `.env.local`. Placeholders such as `YOUR_PUBLIC_KEY` and `YOUR_PHONE_NUMBER` are intentional.
+
+## Architecture
+
+```
+Contact submit
+  → POST /api/create-checkout-session
+  → server recalculates quote from shared/rates.ts (ignores browser totals)
+  → deposit = round(quoteTotal * 0.10, 2)
+  → balance = quoteTotal - deposit
+  → Stripe Checkout Session for Math.round(deposit * 100) cents (AUD)
+  → redirect to Stripe-hosted Checkout (no card form on this site)
+  → success_url /success?session_id={CHECKOUT_SESSION_ID}
+  → cancel_url /cancel
+  → webhook POST /api/stripe-webhook  (checkout.session.completed, signature verified)
+  → mark job paid (Stripe is the ledger) + EmailJS customer + business emails
+```
+
+Shared rate table: `shared/rates.ts` (same numbers as the historic wizard). Calculator: `shared/quoteCalc.ts`. Do not invent new rates.
+
+**Secrets:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `EMAILJS_PRIVATE_KEY` are server-only. They must never appear in `VITE_*` / `REACT_APP_*` variables or the frontend bundle. The browser does not need a publishable key; Checkout is hosted by Stripe.
+
+## Environment variables
+
+Set these in `.env.local` and in the Vercel project. Do not commit values.
+
+| Name | Where | Required for live deposits |
+| --- | --- | --- |
+| `STRIPE_SECRET_KEY` | Server | Yes (`sk_test_…` then `sk_live_…`) |
+| `STRIPE_WEBHOOK_SECRET` | Server | Yes (`whsec_…`) |
+| `STRIPE_PUBLISHABLE_KEY` | Server optional | No. `pk_` only. Unused unless you later add Stripe.js. |
+| `PUBLIC_SITE_URL` | Server | Yes in production. Example `https://www.your-domain.com` (no trailing slash). Success URL: `{PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`. Cancel URL: `{PUBLIC_SITE_URL}/cancel`. |
+| `VITE_PUBLIC_SITE_URL` | Same origin, optional | Fallback if `PUBLIC_SITE_URL` is empty. |
+| `VITE_EMAILJS_SERVICE_ID` | Client + webhook | For paid emails |
+| `VITE_EMAILJS_CLIENT_TEMPLATE_ID` | Client + webhook | Customer confirmation |
+| `VITE_EMAILJS_BUSINESS_TEMPLATE_ID` | Client + webhook | Business job sheet |
+| `VITE_EMAILJS_PUBLIC_KEY` | Client + webhook | EmailJS public key |
+| `EMAILJS_PRIVATE_KEY` | Server optional | Recommended for webhook sends |
+| `VITE_WHATSAPP_NUMBER` | Client | Digits with country code, e.g. `61412345678` |
+| `VITE_GOOGLE_MAPS_API_KEY` | Client | Places + Directions; HTTP-referrer restricted |
+| `VITE_LEGAL_TRADING_NAME` | Client | e.g. your registered trading name |
+| `VITE_COMPANY_EMAIL` | Client + webhook | Bookings inbox |
+| `VITE_COMPANY_PHONE` | Client | Display / call |
+| `VITE_COMPANY_WEBSITE` | Client | Public site |
+| `VITE_ABN` | Client | ABN placeholder until you fill it |
+
+Vercel also exposes `VERCEL_URL` / `VERCEL_PROJECT_PRODUCTION_URL`; the API uses those if `PUBLIC_SITE_URL` is unset.
+
+Rebuild the frontend after changing any `VITE_*` variable.
+
+## Stripe Checkout (dynamic 10% — not a Payment Link)
+
+A static Payment Link cannot charge a different 10% per job. This app creates a **Checkout Session** per booking.
+
+1. Create a Stripe account. Start in **test mode**.
+2. Developers → API keys → copy `sk_test_…` into `STRIPE_SECRET_KEY`. Do not put `sk_`, `rk_`, or `whsec_` in any `VITE_` variable.
+3. Developers → Webhooks → Add endpoint  
+   Production: `https://YOUR_DOMAIN/api/stripe-webhook`  
+   Events: `checkout.session.completed` (and optionally `checkout.session.async_payment_succeeded`).  
+   Copy the signing secret to `STRIPE_WEBHOOK_SECRET`.
+4. Currency is **AUD**. The Session line item is the **deposit only**.
+5. Success and cancel URLs are set in code from `PUBLIC_SITE_URL` (see table above).
+
+### Local webhook forwarding
+
+```bash
+npx vercel dev
+# in another terminal
+stripe listen --forward-to localhost:3000/api/stripe-webhook
+```
+
+Use the `whsec_…` that `stripe listen` prints as `STRIPE_WEBHOOK_SECRET` for local tests.
+
+### Test cards (Stripe test mode)
+
+| Card | Result |
+| --- | --- |
+| `4242 4242 4242 4242` | Success |
+| `4000 0025 0000 3155` | Requires 3-D Secure |
+| `4000 0000 0000 9995` | Insufficient funds |
+| `4000 0000 0000 0002` | Generic decline |
+
+Use any future expiry, any 3-digit CVC, and any Australian postcode. See [Stripe test cards](https://docs.stripe.com/testing).
+
+## EmailJS (paid path only)
+
+Emails go out from **`/api/stripe-webhook` after a verified paid session**. Demo mode skips email.
+
+Create two templates in one EmailJS service:
+
+| Template | Recipient | Suggested To |
+| --- | --- | --- |
+| Client confirmation | Customer | `{{to_email}}` |
+| Business job sheet | Office | `{{to_email}}` (app sends `VITE_COMPANY_EMAIL`) |
+
+Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{route}}` `{{job_details}}` `{{email_kind}}` (`client` or `business`) `{{stripe_session_id}}`.
+
+## Google Maps
+
+Enable Maps JavaScript API, Places API, and Directions API. **Restrict the new key** to HTTP referrers:
+
+- `http://localhost:3000/*`
+- `https://YOUR_PRODUCTION_DOMAIN/*`
+- `https://YOUR_VERCEL_PROJECT.vercel.app/*`
+
+Do not put an unrestricted key in `index.html` (the old hardcoded key was removed). Without a key, customers can still type addresses.
+
+## Demo mode
+
+If `STRIPE_SECRET_KEY` is missing, or you run `npm run dev` without `vercel dev`, checkout returns **Demo mode — no charge / no email**. The UI must not look like a real booking. `/success` without a paid Stripe session is **not** a booking.
+
+`/#staff-jobs` is a **local demo diary** (this browser’s `localStorage` only). It is **not** a production operations board and is not authenticated. Do not use it for real jobs. Paid work is confirmed by Stripe + email.
+
+## Owner checklist
+
+1. Fill `VITE_LEGAL_TRADING_NAME`, `VITE_COMPANY_EMAIL`, `VITE_COMPANY_PHONE`, `VITE_COMPANY_WEBSITE`, `VITE_ABN` (and WhatsApp if you use it). Do not invent licences.
+2. Create a Maps key, restrict referrers, set `VITE_GOOGLE_MAPS_API_KEY`.
+3. Stripe test keys + webhook + `PUBLIC_SITE_URL`. Charge a test deposit with `4242…`. Confirm webhook emails.
+4. Switch to `sk_live_` / live webhook secret only when ready. Deploy on **HTTPS**.
+5. Restrict EmailJS keys. Prefer `EMAILJS_PRIVATE_KEY` on the server.
+6. Confirm Vercel env vars are set for Production and Preview. Confirm Deployment Protection is off if the public site must be open.
+7. Delete any unused Google Maps keys that were previously hardcoded.
+
+## Security
+
+- `.gitignore` ignores `.env*`. Only `.env.example` is committed.
+- Vite `envPrefix` is `VITE_` so Stripe secrets are not baked into JS.
+- No public unauthenticated production job board.
+- No `console.log` of full customer records.
+- Assume HTTPS in production.
+
+## Out of scope
+
+Customer accounts, admin CMS, charging 100% up front, PayPal-only, crypto.

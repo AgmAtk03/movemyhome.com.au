@@ -48,3 +48,72 @@ export interface QuoteState {
   isCBD: boolean;
   isInterstate: boolean;
 }
+
+export interface PriceBreakdown {
+  total: number;
+  base: number;
+  distance: number;
+  inventory: number;
+  access: number;
+  potentialAccess: number;
+  cbd: number;
+  bedService: number;
+  hours: number;
+  fuel: number;
+  isFixedTrip: boolean;
+  hourlyRate: number;
+  deposit: number;
+  balance: number;
+  depositCents: number;
+}
+
+export interface QuoteSnapshot {
+  serviceLabel: string;
+  vehicleLabel: string;
+  crewLabel: string;
+  routeSummary: string;
+  pickupAddresses: string[];
+  dropoffAddresses: string[];
+  inventorySummary: string;
+  scheduleLabel: string;
+  distanceLabel: string;
+  travelTimeLabel: string;
+  moveType: string;
+  totalLabel: string;
+  depositLabel: string;
+  balanceLabel: string;
+  included: string[];
+  lines: { label: string; amount: string; note?: string }[];
+}
+
+export type JobWorkflowStatus = 'new' | 'confirmed' | 'in_progress' | 'done' | 'cancelled';
+export type JobBoardFilter = 'all' | 'new' | 'upcoming' | 'future' | 'done' | 'cancelled';
+export type JobScheduleBucket = 'new' | 'upcoming' | 'future' | 'done' | 'cancelled';
+
+export interface StoredJob {
+  id: string;
+  createdAt: string;
+  /** Staff workflow — persisted. Do not overwrite from the diary bucket. */
+  workflowStatus: JobWorkflowStatus;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  moveDate: string;
+  moveTime: string;
+  scheduleLabel: string;
+  serviceLabel: string;
+  vehicleLabel: string;
+  crewLabel: string;
+  routeSummary: string;
+  pickupAddresses: string[];
+  dropoffAddresses: string[];
+  inventorySummary: string;
+  totalLabel: string;
+  depositLabel?: string;
+  balanceLabel?: string;
+  instructions: string;
+  moveType: string;
+  distanceLabel: string;
+  paymentStatus?: 'demo' | 'unpaid' | 'deposit_paid';
+  stripeSessionId?: string;
+}

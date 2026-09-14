@@ -1,7 +1,5 @@
 {
-  "name": "My Home Sydney | Move Quote Wizard",
-  "description": "A high-end, mobile-first instant quote and booking application for moving services in Sydney, featuring dynamic pricing and route calculation.",
-  "requestFramePermissions": [
-    "geolocation"
-  ]
+  "name": "My Home Removals | Move Quote Wizard",
+  "description": "Sydney and NSW moving quotes with a 10% Stripe Checkout deposit. Balance due on the day.",
+  "requestFramePermissions": []
 }

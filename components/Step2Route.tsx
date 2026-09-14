@@ -1,6 +1,9 @@
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { LocationEntry, AccessType, VehicleType } from '../types';
+import { ACCESS_LABELS, RATES } from '../constants';
+import { isGoogleMapsConfigured, isGoogleMapsReady, loadGoogleMaps } from '../mapsLoader';
+import { formatMoney } from '../lib/quote';
 
 declare const google: any;
 
@@ -17,15 +20,38 @@ interface Step2Props {
 
 const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, isInterstate, onUpdatePickups, onUpdateDropoffs, onUpdateRouteInfo }) => {
   const acRefs = useRef<Record<string, any>>({});
+  const inputEls = useRef<Record<string, HTMLInputElement | null>>({});
   const [routeError, setRouteError] = useState<string | null>(null);
-  const isTruck = vehicle === 'truck';
+  const [mapsStatus, setMapsStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>(() => {
+    if (!isGoogleMapsConfigured()) return 'missing';
+    return isGoogleMapsReady() ? 'ready' : 'loading';
+  });
+  const mapsMissing = mapsStatus === 'missing' || mapsStatus === 'error';
+
+  useEffect(() => {
+    if (!isGoogleMapsConfigured()) {
+      setMapsStatus('missing');
+      return;
+    }
+    let cancelled = false;
+    loadGoogleMaps()
+      .then(() => {
+        if (!cancelled) setMapsStatus('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setMapsStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const calculateRoute = useCallback(() => {
     if (typeof google === 'undefined' || !google.maps || !google.maps.DirectionsService) return;
 
     const validAddresses = [...pickups, ...dropoffs]
-      .map(l => l.address.trim())
-      .filter(a => a.length > 10);
+      .map((l) => l.address.trim())
+      .filter((a) => a.length > 10);
 
     if (validAddresses.length < 2) {
       setRouteError(null);
@@ -33,11 +59,11 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
     }
 
     const service = new google.maps.DirectionsService();
-    
+
     service.route({
       origin: validAddresses[0],
       destination: validAddresses[validAddresses.length - 1],
-      waypoints: validAddresses.slice(1, -1).map(a => ({ location: a, stopover: true })),
+      waypoints: validAddresses.slice(1, -1).map((a) => ({ location: a, stopover: true })),
       travelMode: google.maps.TravelMode.DRIVING,
       optimizeWaypoints: false,
       avoidTolls: false,
@@ -54,28 +80,28 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
         result.routes[0].legs.forEach((leg: any) => {
           const startAddr = leg.start_address;
           const endAddr = leg.end_address;
-          
+
           if (startAddr.includes('2000') || endAddr.includes('2000')) {
             containsCBD = true;
           }
 
-          const destinationIsNSW = endAddr.toLowerCase().includes('nsw') || 
-                                 endAddr.toLowerCase().includes('new south wales') ||
-                                 endAddr.toLowerCase().includes('sydney');
-          
+          const destinationIsNSW = endAddr.toLowerCase().includes('nsw') ||
+            endAddr.toLowerCase().includes('new south wales') ||
+            endAddr.toLowerCase().includes('sydney');
+
           if (!destinationIsNSW && endAddr.length > 5) {
             movingInterstate = true;
           }
         });
-        
+
         onUpdateRouteInfo(totalDistance / 1000, containsCBD, movingInterstate, travelHrs);
       } else {
         if (status === 'NOT_FOUND') {
-          setRouteError("One or more addresses could not be found.");
+          setRouteError('We couldn’t find one of those addresses. Check the spelling, or pick a suggestion.');
         } else if (status === 'ZERO_RESULTS') {
-          setRouteError("No driving route found between these locations.");
+          setRouteError('We couldn’t find a driving route between those spots. Try a nearby street.');
         } else {
-          setRouteError("Unable to calculate route.");
+          setRouteError('We couldn’t map that route just now. You can still continue — we’ll confirm the distance with you.');
         }
         onUpdateRouteInfo(0, false, false, 0);
       }
@@ -83,12 +109,13 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
   }, [pickups, dropoffs, onUpdateRouteInfo]);
 
   useEffect(() => {
+    if (mapsStatus !== 'ready') return;
     const timer = setTimeout(calculateRoute, 1000);
     return () => clearTimeout(timer);
-  }, [pickups, dropoffs, calculateRoute]);
+  }, [pickups, dropoffs, calculateRoute, mapsStatus]);
 
   const initAC = (id: string, el: HTMLInputElement | null) => {
-    if (!el || acRefs.current[id] || typeof google === 'undefined') return;
+    if (!el || acRefs.current[id] || mapsStatus !== 'ready' || typeof google === 'undefined') return;
     try {
       const ac = new google.maps.places.Autocomplete(el, {
         componentRestrictions: { country: 'au' },
@@ -97,17 +124,27 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
       ac.addListener('place_changed', () => {
         const place = ac.getPlace();
         const addr = place.formatted_address || el.value;
-        if (pickups.find(p => p.id === id)) {
-          onUpdatePickups(pickups.map(p => p.id === id ? { ...p, address: addr } : p));
+        if (pickups.find((p) => p.id === id)) {
+          onUpdatePickups(pickups.map((p) => p.id === id ? { ...p, address: addr } : p));
         } else {
-          onUpdateDropoffs(dropoffs.map(d => d.id === id ? { ...d, address: addr } : d));
+          onUpdateDropoffs(dropoffs.map((d) => d.id === id ? { ...d, address: addr } : d));
         }
       });
       acRefs.current[id] = ac;
-    } catch (e) { 
-      console.warn("Autocomplete failed", e); 
+    } catch (e) {
+      console.warn('Autocomplete failed', e);
     }
   };
+
+  const bindInput = (id: string, el: HTMLInputElement | null) => {
+    inputEls.current[id] = el;
+    initAC(id, el);
+  };
+
+  useEffect(() => {
+    if (mapsStatus !== 'ready') return;
+    Object.entries(inputEls.current).forEach(([id, el]) => initAC(id, el));
+  }, [mapsStatus, pickups, dropoffs]);
 
   const addLocation = (type: 'pickup' | 'dropoff') => {
     const newLoc: LocationEntry = { id: `${type}-${Date.now()}`, address: '', access: 'ground', hasLoadingDock: false };
@@ -116,179 +153,154 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
   };
 
   const removeLocation = (id: string, type: 'pickup' | 'dropoff') => {
-    if (type === 'pickup' && pickups.length > 1) onUpdatePickups(pickups.filter(p => p.id !== id));
-    if (type === 'dropoff' && dropoffs.length > 1) onUpdateDropoffs(dropoffs.filter(d => d.id !== id));
+    if (type === 'pickup' && pickups.length > 1) onUpdatePickups(pickups.filter((p) => p.id !== id));
+    if (type === 'dropoff' && dropoffs.length > 1) onUpdateDropoffs(dropoffs.filter((d) => d.id !== id));
     delete acRefs.current[id];
   };
 
   const updateAccess = (id: string, access: AccessType, type: 'pickup' | 'dropoff') => {
-    if (type === 'pickup') onUpdatePickups(pickups.map(p => p.id === id ? { ...p, access } : p));
-    else onUpdateDropoffs(dropoffs.map(d => d.id === id ? { ...d, access } : d));
+    if (type === 'pickup') onUpdatePickups(pickups.map((p) => p.id === id ? { ...p, access } : p));
+    else onUpdateDropoffs(dropoffs.map((d) => d.id === id ? { ...d, access } : d));
   };
 
   const toggleDock = (id: string, type: 'pickup' | 'dropoff') => {
-    if (type === 'pickup') onUpdatePickups(pickups.map(p => p.id === id ? { ...p, hasLoadingDock: !p.hasLoadingDock } : p));
-    else onUpdateDropoffs(dropoffs.map(d => d.id === id ? { ...d, hasLoadingDock: !d.hasLoadingDock } : d));
+    if (type === 'pickup') onUpdatePickups(pickups.map((p) => p.id === id ? { ...p, hasLoadingDock: !p.hasLoadingDock } : p));
+    else onUpdateDropoffs(dropoffs.map((d) => d.id === id ? { ...d, hasLoadingDock: !d.hasLoadingDock } : d));
+  };
+
+  const renderStop = (loc: LocationEntry, idx: number, type: 'pickup' | 'dropoff') => {
+    const isLocCBD = loc.address.includes('2000');
+    const list = type === 'pickup' ? pickups : dropoffs;
+    const label = type === 'pickup' ? `Pickup ${list.length > 1 ? idx + 1 : 'address'}` : `Drop-off ${list.length > 1 ? idx + 1 : 'address'}`;
+    const accessId = `${loc.id}-access`;
+
+    return (
+      <div key={loc.id} className={`mb-4 p-5 bg-white border rounded-3xl shadow-sm space-y-3 ${isLocCBD ? 'border-blue-200' : 'border-slate-200'}`}>
+        {list.length > 1 && (
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-500">{label}</span>
+            <button
+              type="button"
+              onClick={() => removeLocation(loc.id, type)}
+              className="min-h-11 px-3 text-sm font-bold text-rose-700 bg-rose-50 rounded-full"
+            >
+              Remove
+            </button>
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <label htmlFor={loc.id} className="text-sm font-bold text-slate-700">{label}</label>
+          <input
+            id={loc.id}
+            ref={(el) => bindInput(loc.id, el)}
+            type="text"
+            autoComplete="street-address"
+            placeholder={type === 'pickup' ? 'Street, suburb, NSW…' : 'Where should we take it?'}
+            className="w-full min-h-12 p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500"
+            defaultValue={loc.address}
+            onChange={(e) => {
+              if (type === 'pickup') onUpdatePickups(pickups.map((item) => item.id === loc.id ? { ...item, address: e.target.value } : item));
+              else onUpdateDropoffs(dropoffs.map((item) => item.id === loc.id ? { ...item, address: e.target.value } : item));
+            }}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor={accessId} className="text-sm font-bold text-slate-700">How do we get in?</label>
+          <select
+            id={accessId}
+            className="w-full min-h-12 p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium text-slate-800"
+            value={loc.access}
+            onChange={(e) => updateAccess(loc.id, e.target.value as AccessType, type)}
+          >
+            {Object.entries(ACCESS_LABELS).map(([value, text]) => (
+              <option key={value} value={value}>{text}</option>
+            ))}
+          </select>
+        </div>
+
+        {isLocCBD && (
+          <button
+            type="button"
+            onClick={() => toggleDock(loc.id, type)}
+            aria-pressed={loc.hasLoadingDock}
+            className={`flex items-center gap-3 p-4 min-h-14 rounded-2xl border-2 w-full text-left ${loc.hasLoadingDock ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-blue-200 text-blue-800'}`}
+          >
+            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${loc.hasLoadingDock ? 'border-white' : 'border-blue-400'}`}>
+              {loc.hasLoadingDock && <span className="w-2 h-2 bg-white rounded-full" />}
+            </span>
+            <span>
+              <span className="block text-sm font-bold">There’s a loading dock</span>
+              <span className="block text-xs opacity-80">
+                {loc.hasLoadingDock ? 'CBD parking fee waived' : `Saves ${formatMoney(RATES.CBD_FEE)} CBD parking`}
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 pb-10">
-      <div className="border-b-2 border-slate-100 pb-2">
-        <h2 className="text-xl font-extrabold text-blue-600 flex items-center gap-2 tracking-tight">
-          <i className="ph-fill ph-map-pin"></i> Step 2: Route & Stops
+    <div className="space-y-6 animate-premium-in pb-24">
+      <div className="space-y-2">
+        <h2 tabIndex={-1} className="text-2xl font-black text-slate-900 tracking-tight outline-none">
+          Where are we heading?
         </h2>
+        <p className="text-slate-500 text-base font-medium leading-relaxed">
+          Add where we collect from and where it needs to go. Extra stops are fine.
+        </p>
       </div>
 
       <div className="space-y-3">
+        {mapsMissing && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-950 p-4 rounded-2xl text-sm font-medium leading-relaxed" role="status">
+            Address suggestions aren’t available right now. Type the full street and suburb — we’ll confirm the exact distance when we call.
+          </div>
+        )}
+
         {routeError && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in shake duration-500">
-            <i className="ph-fill ph-warning-octagon text-xl"></i>
+          <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl text-sm font-medium" role="alert">
             {routeError}
           </div>
         )}
 
         {isCBD && !routeError && (
-          <div className="bg-blue-600 text-white p-4 rounded-2xl shadow-lg shadow-blue-600/20 text-sm font-bold flex items-center gap-3 animate-in slide-in-from-top-4">
-            <i className="ph-fill ph-buildings text-xl"></i>
-            <div>
-              <p>Sydney CBD Detected</p>
-              <p className="text-[10px] opacity-90 font-medium">Please confirm loading dock availability for each stop to avoid parking fees.</p>
-            </div>
+          <div className="bg-blue-700 text-white p-4 rounded-2xl text-sm font-medium">
+            That looks like Sydney CBD. Tell us if there’s a loading dock so we can skip the parking fee.
+          </div>
+        )}
+
+        {isInterstate && (
+          <div className="bg-indigo-50 border border-indigo-100 text-indigo-900 p-4 rounded-2xl text-sm font-medium">
+            This looks like an interstate trip, so we’ll use the truck.
           </div>
         )}
       </div>
 
-      <div>
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Pickup Points</h3>
-        {pickups.map((p, idx) => {
-          const isLocCBD = p.address.includes('2000');
-          return (
-            <div key={p.id} className={`mb-4 p-5 bg-white border rounded-3xl shadow-sm space-y-3 transition-colors ${isLocCBD ? 'border-blue-200 bg-blue-50/20' : 'border-slate-100'}`}>
-              {pickups.length > 1 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1">
-                    Location #{idx + 1} {isLocCBD && <i className="ph-fill ph-seal-check text-blue-500"></i>}
-                  </span>
-                  <button onClick={() => removeLocation(p.id, 'pickup')} className="text-xs font-bold text-rose-500 flex items-center gap-1 bg-rose-50 px-3 py-1 rounded-full hover:bg-rose-100">
-                     <i className="ph ph-trash"></i>
-                  </button>
-                </div>
-              )}
-              <input
-                ref={(el) => initAC(p.id, el)}
-                type="text"
-                placeholder="Search pickup address..."
-                className="w-full p-4 bg-white border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                defaultValue={p.address}
-                onChange={(e) => onUpdatePickups(pickups.map(item => item.id === p.id ? { ...item, address: e.target.value } : item))}
-              />
-              
-              <div className="grid grid-cols-1 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Access Type</label>
-                  <select 
-                    className={`w-full p-4 bg-white border border-slate-100 rounded-2xl text-sm font-bold text-slate-700`}
-                    value={p.access}
-                    onChange={(e) => updateAccess(p.id, e.target.value as AccessType, 'pickup')}
-                  >
-                    <option value="ground">Elevator / Ground Floor</option>
-                    <option value="floor1">1st Floor Stairs</option>
-                    <option value="floor2">2nd Floor Stairs</option>
-                    <option value="floor3">3rd Floor Stairs</option>
-                    <option value="floor4">4th Floor Stairs</option>
-                  </select>
-                </div>
-
-                {isLocCBD && (
-                  <button 
-                    onClick={() => toggleDock(p.id, 'pickup')}
-                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${p.hasLoadingDock ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg' : 'bg-white border-blue-100 text-blue-600 hover:bg-blue-50'}`}
-                  >
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${p.hasLoadingDock ? 'border-white' : 'border-blue-300'}`}>
-                      {p.hasLoadingDock && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                    </div>
-                    <div className="flex flex-col items-start">
-                       <span className="text-sm font-bold">I have a loading dock</span>
-                       <span className={`text-[10px] font-bold ${p.hasLoadingDock ? 'text-emerald-100' : 'text-blue-400'}`}>
-                         {p.hasLoadingDock ? 'Parking Fee Waived' : 'Avoid $20 Parking Fee'}
-                       </span>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        <button onClick={() => addLocation('pickup')} className="w-full py-4 bg-blue-50 text-blue-600 border-2 border-dashed border-blue-200 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-100 transition-colors">
-          + Add Pickup Stop
+      <section>
+        <h3 className="text-sm font-bold text-slate-700 mb-3">Pick up from</h3>
+        {pickups.map((p, idx) => renderStop(p, idx, 'pickup'))}
+        <button
+          type="button"
+          onClick={() => addLocation('pickup')}
+          className="w-full min-h-12 bg-blue-50 text-blue-800 border-2 border-dashed border-blue-200 rounded-2xl font-bold text-sm"
+        >
+          + Add another pickup
         </button>
-      </div>
+      </section>
 
-      <div className="mt-8">
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Dropoff Points</h3>
-        {dropoffs.map((d, idx) => {
-          const isLocCBD = d.address.includes('2000');
-          return (
-            <div key={d.id} className={`mb-4 p-5 bg-white border rounded-3xl shadow-sm space-y-3 transition-colors ${isLocCBD ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-100'}`}>
-              {dropoffs.length > 1 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1">
-                    Destination #{idx + 1} {isLocCBD && <i className="ph-fill ph-seal-check text-emerald-500"></i>}
-                  </span>
-                  <button onClick={() => removeLocation(d.id, 'dropoff')} className="text-xs font-bold text-rose-500 flex items-center gap-1 bg-rose-50 px-3 py-1 rounded-full hover:bg-rose-100">
-                     <i className="ph ph-trash"></i>
-                  </button>
-                </div>
-              )}
-              <input
-                ref={(el) => initAC(d.id, el)}
-                type="text"
-                placeholder="Search dropoff address..."
-                className="w-full p-4 bg-white border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                defaultValue={d.address}
-                onChange={(e) => onUpdateDropoffs(dropoffs.map(item => item.id === d.id ? { ...item, address: e.target.value } : item))}
-              />
-
-              <div className="grid grid-cols-1 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Access Type</label>
-                  <select 
-                    className={`w-full p-4 bg-white border border-slate-100 rounded-2xl text-sm font-bold text-slate-700`}
-                    value={d.access}
-                    onChange={(e) => updateAccess(d.id, e.target.value as AccessType, 'dropoff')}
-                  >
-                    <option value="ground">Elevator / Ground Floor</option>
-                    <option value="floor1">1st Floor Stairs</option>
-                    <option value="floor2">2nd Floor Stairs</option>
-                    <option value="floor3">3rd Floor Stairs</option>
-                    <option value="floor4">4th Floor Stairs</option>
-                  </select>
-                </div>
-
-                {isLocCBD && (
-                  <button 
-                    onClick={() => toggleDock(d.id, 'dropoff')}
-                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${d.hasLoadingDock ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg' : 'bg-white border-emerald-100 text-emerald-600 hover:bg-emerald-50'}`}
-                  >
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${d.hasLoadingDock ? 'border-white' : 'border-emerald-300'}`}>
-                      {d.hasLoadingDock && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                    </div>
-                    <div className="flex flex-col items-start">
-                       <span className="text-sm font-bold">I have a loading dock</span>
-                       <span className={`text-[10px] font-bold ${d.hasLoadingDock ? 'text-emerald-100' : 'text-emerald-400'}`}>
-                         {d.hasLoadingDock ? 'Parking Fee Waived' : 'Avoid $20 Parking Fee'}
-                       </span>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        <button onClick={() => addLocation('dropoff')} className="w-full py-4 bg-emerald-50 text-emerald-600 border-2 border-dashed border-emerald-200 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-100 transition-colors">
-          + Add Dropoff Stop
+      <section>
+        <h3 className="text-sm font-bold text-slate-700 mb-3">Drop off at</h3>
+        {dropoffs.map((d, idx) => renderStop(d, idx, 'dropoff'))}
+        <button
+          type="button"
+          onClick={() => addLocation('dropoff')}
+          className="w-full min-h-12 bg-emerald-50 text-emerald-800 border-2 border-dashed border-emerald-200 rounded-2xl font-bold text-sm"
+        >
+          + Add another drop-off
         </button>
-      </div>
+      </section>
     </div>
   );
 };

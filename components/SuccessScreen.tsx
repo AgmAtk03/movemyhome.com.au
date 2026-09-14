@@ -1,57 +1,65 @@
-
 import React from 'react';
-import { CONFIG } from '../constants';
+import { PriceBreakdown } from '../types';
+import { formatMoney } from '../lib/quote';
+import { PAYMENTS_OFF_HEADING } from '../lib/customerCopy';
+import BookingExtras from './BookingExtras';
+import ConfiguredContact from './ConfiguredContact';
 
 interface SuccessProps {
   name: string;
   email: string;
+  demoMode: boolean;
+  notice?: string;
+  whatsappUrl: string | null;
+  quoted: PriceBreakdown;
   onReset: () => void;
 }
 
-const SuccessScreen: React.FC<SuccessProps> = ({ name, email, onReset }) => {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-white max-w-lg mx-auto animate-in fade-in zoom-in-95 duration-700">
-      <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
-        <i className="ph ph-check-circle-fill text-emerald-500 text-6xl"></i>
+const SuccessScreen: React.FC<SuccessProps> = ({
+  name, email, demoMode, whatsappUrl, quoted, onReset,
+}) => {
+  const firstName = name.split(' ')[0] || name;
+
+  if (!demoMode) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center p-6 text-center bg-white max-w-lg mx-auto pt-12">
+        <h2 className="text-2xl font-black text-slate-900">Taking you to pay the deposit…</h2>
+        <p className="text-slate-600 mt-3">If nothing happens, go back and tap Pay 10% deposit again.</p>
+        <button type="button" onClick={onReset} className="mt-8 min-h-11 text-slate-500 font-bold text-sm">Start another quote</button>
       </div>
-      
-      <h2 className="text-3xl font-black text-slate-800 mb-2">Move Requested!</h2>
-      <p className="text-slate-600 mb-8 max-w-xs mx-auto text-sm">
-        Thanks <span className="font-bold text-blue-600">{name}</span>. We've received your booking request and sent a copy to <span className="font-medium text-blue-600">{email}</span>.
+    );
+  }
+
+  return (
+    <div className="min-h-[100dvh] flex flex-col items-center p-6 text-center bg-white max-w-lg mx-auto pt-12 pb-10">
+      <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-5">
+        <i className="ph-fill ph-pause-circle text-amber-700 text-5xl" aria-hidden="true"></i>
+      </div>
+
+      <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">{PAYMENTS_OFF_HEADING}</h2>
+      <p className="text-slate-600 mb-6 max-w-sm mx-auto text-base leading-relaxed">
+        {firstName ? `${firstName}, nothing` : 'Nothing'} was charged and this move isn’t booked
+        {email ? ` — we haven’t emailed ${email}` : ''}. You can still look over the quote. We’ll take the 10% deposit once payments are on.
       </p>
 
-      <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mb-10 text-left w-full">
-        <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-          <i className="ph ph-info-fill"></i> What's next?
-        </h4>
-        <ul className="space-y-3 text-sm text-blue-800 font-medium">
-          <li className="flex items-start gap-2">
-            <span className="bg-blue-200 text-blue-800 w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">1</span>
-            Our team will review the details & confirm availability.
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="bg-blue-200 text-blue-800 w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">2</span>
-            You'll receive a confirmation call within 2 hours.
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="bg-blue-200 text-blue-800 w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">3</span>
-            Questions? Email us at <span className="underline">{CONFIG.COMPANY_EMAIL}</span>.
-          </li>
-        </ul>
+      <dl className="w-full text-left bg-slate-50 rounded-2xl p-5 mb-6 space-y-2 text-sm">
+        <div className="flex justify-between gap-3"><dt className="text-slate-500">Estimated total</dt><dd className="font-bold">{formatMoney(quoted.total)}</dd></div>
+        <div className="flex justify-between gap-3"><dt className="text-slate-500">Pay today (10%) — not charged</dt><dd className="font-bold">{formatMoney(quoted.deposit)}</dd></div>
+        <div className="flex justify-between gap-3"><dt className="text-slate-500">Due on the day (90%)</dt><dd className="font-bold">{formatMoney(quoted.balance)}</dd></div>
+      </dl>
+
+      <div className="w-full text-left mb-6">
+        <BookingExtras variant="success" whatsappUrl={whatsappUrl} />
       </div>
 
-      <button 
-        onClick={() => window.location.href = CONFIG.COMPANY_WEBSITE}
-        className="w-full py-4 bg-slate-800 text-white font-black rounded-2xl shadow-xl hover:bg-slate-900 transition-all active:scale-95 mb-4"
-      >
-        RETURN TO WEBSITE
-      </button>
+      <ConfiguredContact className="text-sm text-slate-500 mb-6" />
 
-      <button 
+      <button
+        type="button"
         onClick={onReset}
-        className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600"
+        className="w-full min-h-14 flex items-center justify-center bg-slate-900 text-white font-black rounded-2xl mb-4"
       >
-        Start New Quote
+        Start another quote
       </button>
     </div>
   );
