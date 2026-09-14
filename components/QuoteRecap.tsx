@@ -17,9 +17,6 @@ const QuoteRecap: React.FC<QuoteRecapProps> = ({ snapshot, compact = false }) =>
           <h3 id="quote-recap-heading" className="text-base font-black text-slate-900 tracking-tight">
             Your quote
           </h3>
-          <p className="text-sm text-slate-500 font-medium mt-0.5">
-            This is an estimate.
-          </p>
         </div>
         <p className="text-xl font-black text-blue-700 whitespace-nowrap">{snapshot.totalLabel}</p>
       </div>
