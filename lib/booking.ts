@@ -1,7 +1,7 @@
 import { CONFIG, isEmailJsConfigured, isWhatsAppConfigured } from '../constants';
 import { QuoteSnapshot, QuoteState } from '../types';
 import { buildCustomerMessage, buildJobDetailsBody } from './quote';
-import { sanitizePlainText } from './sanitize';
+import { htmlSafeMultiline, htmlSafePlainText, isSafeWhatsAppUrl, sanitizeMultiline, sanitizePlainText } from './sanitize';
 
 declare global {
   interface Window {
@@ -25,31 +25,34 @@ export interface BookingEmailResult {
 }
 
 function emailParams(state: QuoteState, snapshot: QuoteSnapshot): Record<string, string> {
+  // Strip tags/control chars. EmailJS {{ }} already HTML-escapes in HTML templates.
   return {
-    company_name: CONFIG.COMPANY_NAME,
-    company_email: CONFIG.COMPANY_EMAIL,
-    company_phone: CONFIG.COMPANY_PHONE,
+    company_name: sanitizePlainText(CONFIG.COMPANY_NAME, 80),
+    company_email: sanitizePlainText(CONFIG.COMPANY_EMAIL, 120),
+    company_phone: sanitizePlainText(CONFIG.COMPANY_PHONE, 24),
     from_name: sanitizePlainText(state.details.name, 80),
     customer_name: sanitizePlainText(state.details.name, 80),
     user_email: sanitizePlainText(state.details.email, 120),
     to_email: sanitizePlainText(state.details.email, 120),
     user_phone: sanitizePlainText(state.details.phone, 24),
-    move_date: snapshot.scheduleLabel,
-    move_time: snapshot.scheduleLabel,
-    service_type: snapshot.serviceLabel,
-    vehicle: snapshot.vehicleLabel,
-    crew_size: snapshot.crewLabel,
-    total_quote: snapshot.totalLabel,
-    inventory: snapshot.inventorySummary,
-    route: snapshot.routeSummary,
+    move_date: sanitizePlainText(snapshot.scheduleLabel, 80),
+    move_time: sanitizePlainText(snapshot.scheduleLabel, 80),
+    service_type: sanitizePlainText(snapshot.serviceLabel, 80),
+    vehicle: sanitizePlainText(snapshot.vehicleLabel, 40),
+    crew_size: sanitizePlainText(snapshot.crewLabel, 40),
+    total_quote: sanitizePlainText(snapshot.totalLabel, 24),
+    inventory: sanitizePlainText(snapshot.inventorySummary, 300),
+    route: sanitizeMultiline(snapshot.routeSummary, 600),
     special_instructions: sanitizePlainText(state.details.instructions || 'None', 800),
-    distance: snapshot.distanceLabel,
-    travel_time: snapshot.travelTimeLabel,
-    move_type: snapshot.moveType,
-    quote_lines: snapshot.lines.map((line) => `${line.label}: ${line.note || line.amount}`).join('\n'),
-    included: snapshot.included.join(', '),
-    job_details: buildJobDetailsBody(state, snapshot),
+    distance: sanitizePlainText(snapshot.distanceLabel, 24),
+    travel_time: sanitizePlainText(snapshot.travelTimeLabel, 24),
+    move_type: sanitizePlainText(snapshot.moveType, 80),
+    quote_lines: sanitizeMultiline(snapshot.lines.map((line) => `${line.label}: ${line.note || line.amount}`).join('\n'), 800),
+    included: sanitizePlainText(snapshot.included.join(', '), 240),
+    job_details: sanitizeMultiline(buildJobDetailsBody(state, snapshot), 2500),
     reply_to: sanitizePlainText(state.details.email, 120),
+    job_details_html: htmlSafeMultiline(buildJobDetailsBody(state, snapshot), 2500),
+    customer_name_html: htmlSafePlainText(state.details.name, 80),
   };
 }
 
@@ -80,7 +83,7 @@ export async function submitBookingEmails(
   };
   const businessParams = {
     ...params,
-    to_email: CONFIG.COMPANY_EMAIL,
+    to_email: sanitizePlainText(CONFIG.COMPANY_EMAIL, 120),
     email_kind: 'business',
     reply_to: params.user_email,
   };
@@ -129,5 +132,12 @@ export function buildWhatsAppUrl(state: QuoteState, snapshot: QuoteSnapshot): st
   const digits = CONFIG.WHATSAPP_NUMBER.replace(/\D/g, '');
   if (digits.length < 8) return null;
   const text = buildCustomerMessage(state, snapshot);
-  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+  const url = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+  return isSafeWhatsAppUrl(url) ? url : null;
+}
+
+export function clientReferenceId(state: QuoteState): string {
+  const name = sanitizePlainText(state.details.name, 40).replace(/\s+/g, '-');
+  const date = sanitizePlainText(state.details.date || 'tbc', 12);
+  return `mhr-${date}-${name}`.slice(0, 180);
 }

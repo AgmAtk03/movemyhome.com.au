@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { VehicleType, QuoteState, Inventory, MoveDetails, LocationEntry, ServiceType, PriceBreakdown } from './types';
-import { RATES, INVENTORY_COSTS, FLOOR_RATES, CONFIG, WIZARD_STEPS } from './constants';
+import { RATES, INVENTORY_COSTS, FLOOR_RATES, WIZARD_STEPS } from './constants';
 import Header from './components/Header';
 import Step1ServiceType from './components/Step1ServiceType';
 import Step2Vehicle from './components/Step1Vehicle';
@@ -12,11 +12,13 @@ import Step6Contact from './components/Step5Contact';
 import SummaryFooter from './components/SummaryFooter';
 import SuccessScreen from './components/SuccessScreen';
 import StaffJobsBoard from './components/StaffJobsBoard';
+import Landing from './components/Landing';
 import { addressesReady, buildQuoteSnapshot, scheduleReady } from './lib/quote';
 import { isContactValid, validateContact } from './lib/validation';
-import { buildWhatsAppUrl, submitBookingEmails } from './lib/booking';
+import { buildWhatsAppUrl, clientReferenceId, submitBookingEmails } from './lib/booking';
 import { saveDemoJob } from './lib/jobsStore';
 import { sanitizePlainText } from './lib/sanitize';
+import { buildStripePaymentUrl } from './lib/stripe';
 
 const INITIAL_INVENTORY: Inventory = {
   boxes: 0, sofa: 0, mattress: 0, bed: 0, fridge: 0, tv: 0, washer: 0,
@@ -182,6 +184,10 @@ const App: React.FC = () => {
 
   const snapshot = useMemo(() => buildQuoteSnapshot(state, priceBreakdown), [state, priceBreakdown]);
   const whatsappUrl = useMemo(() => buildWhatsAppUrl(state, snapshot), [state, snapshot]);
+  const stripeUrl = useMemo(
+    () => buildStripePaymentUrl(state.details.email, clientReferenceId(state)),
+    [state]
+  );
 
   const handleBooking = async () => {
     if (isBooking) return;
@@ -207,12 +213,18 @@ const App: React.FC = () => {
         customerPhone: sanitizePlainText(state.details.phone, 24),
         moveDate: state.details.date,
         moveTime: state.details.time,
+        scheduleLabel: snapshot.scheduleLabel,
         serviceLabel: snapshot.serviceLabel,
         vehicleLabel: snapshot.vehicleLabel,
+        crewLabel: snapshot.crewLabel,
         routeSummary: snapshot.routeSummary,
+        pickupAddresses: snapshot.pickupAddresses,
+        dropoffAddresses: snapshot.dropoffAddresses,
         inventorySummary: snapshot.inventorySummary,
         totalLabel: snapshot.totalLabel,
         instructions: sanitizePlainText(state.details.instructions || '', 800),
+        moveType: snapshot.moveType,
+        distanceLabel: snapshot.distanceLabel,
       });
 
       setEmailOutcome({
@@ -341,6 +353,7 @@ const App: React.FC = () => {
         demoMode={emailOutcome.demoMode}
         notice={bookingNotice}
         whatsappUrl={whatsappUrl}
+        stripeUrl={stripeUrl}
         onReset={() => window.location.reload()}
       />
     );
@@ -348,37 +361,13 @@ const App: React.FC = () => {
 
   if (!isStarted) {
     return (
-      <div className="min-h-[100dvh] bg-slate-950 flex flex-col justify-center items-center p-8 text-center relative overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-
-        <div className="relative z-10 max-w-sm w-full space-y-8">
-          <div className="mb-2 inline-block">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-blue-700 rounded-[2.5rem] rotate-[15deg] flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-premium-in">
-              <i className="ph-fill ph-house-line text-5xl text-white -rotate-[15deg]" aria-hidden="true"></i>
-            </div>
-          </div>
-          <div className="space-y-4 animate-premium-in">
-            <p className="text-blue-300 font-bold tracking-wide">{CONFIG.COMPANY_NAME}</p>
-            <h1 className="text-4xl font-black text-white tracking-tight leading-tight">
-              Sydney moving, <span className="text-blue-400">made simple.</span>
-            </h1>
-            <p className="text-slate-300 text-lg font-medium leading-relaxed px-2">
-              Honest quotes for home moves, room moves, and deliveries. No hard sell — just a clear price and a team who’ll look after your things.
-            </p>
-          </div>
-          <div className="pt-4 animate-premium-in">
-            <button
-              type="button"
-              onClick={() => setIsStarted(true)}
-              className="w-full min-h-16 bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-blue-600/20 active:scale-[0.97] transition-all text-xl"
-            >
-              Get my quote
-            </button>
-            <p className="text-slate-400 text-sm font-medium mt-5">About two minutes · No payment on this form</p>
-          </div>
-        </div>
-      </div>
+      <Landing
+        onStart={() => setIsStarted(true)}
+        onOpenStaff={() => {
+          window.location.hash = 'staff-jobs';
+          setShowStaffBoard(true);
+        }}
+      />
     );
   }
 
@@ -487,6 +476,7 @@ const App: React.FC = () => {
               details={state.details}
               snapshot={snapshot}
               whatsappUrl={whatsappUrl}
+              stripeUrl={stripeUrl}
               errors={contactErrors}
               showErrors={attemptedStep === 6}
               onUpdateDetails={(det) => setState((s) => ({ ...s, details: { ...s.details, ...det } }))}

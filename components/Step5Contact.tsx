@@ -10,6 +10,7 @@ interface Step5Props {
   onUpdateDetails: (d: Partial<MoveDetails>) => void;
   snapshot: QuoteSnapshot;
   whatsappUrl: string | null;
+  stripeUrl: string | null;
   errors: ContactErrors;
   showErrors: boolean;
 }
@@ -19,7 +20,7 @@ const fieldClass = (invalid: boolean) =>
     invalid ? 'border-rose-400' : 'border-slate-200 focus:border-blue-500'
   }`;
 
-const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, errors, showErrors }) => {
+const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, stripeUrl, errors, showErrors }) => {
   return (
     <div className="space-y-8 animate-premium-in pb-10">
       <div className="space-y-2">
@@ -128,7 +129,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
         </p>
       </div>
 
-      <BookingExtras whatsappUrl={whatsappUrl} />
+      <BookingExtras whatsappUrl={whatsappUrl} stripeUrl={stripeUrl} />
     </div>
   );
 };

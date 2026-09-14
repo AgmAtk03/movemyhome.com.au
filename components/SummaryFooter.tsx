@@ -170,7 +170,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
               <span className={`text-2xl font-black ${isTruck ? 'text-indigo-700' : 'text-blue-700'}`}>{formatMoney(breakdown.total)}</span>
             </div>
             <p className="mt-4 text-xs text-slate-500 leading-relaxed">
-              Quotes include transit insurance and public liability. We’ll talk through anything that might change the price before we start.
+              We’ll talk through anything that might change the price before we start. Local Sydney movers — we look after your things.
             </p>
           </div>
         )}

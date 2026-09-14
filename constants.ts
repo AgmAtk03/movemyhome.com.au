@@ -1,3 +1,5 @@
+import { isSafeStripePaymentLink } from './lib/sanitize';
+
 function envText(key: keyof ImportMetaEnv, fallback: string): string {
   const value = String(import.meta.env[key] ?? '').trim();
   return value || fallback;
@@ -40,7 +42,7 @@ export const isWhatsAppConfigured = (): boolean =>
   !isUnset(CONFIG.WHATSAPP_NUMBER, ['YOUR_WHATSAPP']);
 
 export const isStripePaymentLinkConfigured = (): boolean =>
-  CONFIG.STRIPE_PAYMENT_LINK.startsWith('https://');
+  isSafeStripePaymentLink(CONFIG.STRIPE_PAYMENT_LINK);
 
 export const WIZARD_STEPS = [
   { id: 1, label: 'Service', title: 'What are you moving?' },
@@ -126,3 +128,15 @@ export const INVENTORY_LABELS: Record<string, string> = {
   washer: 'Washing machine',
   tv: 'TV',
 };
+
+export const SERVICE_AREAS = [
+  'Sydney CBD',
+  'Inner West',
+  'Eastern Suburbs',
+  'North Shore',
+  'Northern Beaches',
+  'Hills District',
+  'South Sydney',
+  'Greater Sydney',
+] as const;
+

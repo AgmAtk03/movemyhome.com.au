@@ -69,8 +69,8 @@ export function buildQuoteSnapshot(
   breakdown: PriceBreakdown
 ): QuoteSnapshot {
   const included = [
-    'Transit insurance',
-    'Public liability cover',
+    'We’ll confirm the plan before moving day',
+    'A clear quote you can see as you go',
   ];
   if (state.vehicle === 'truck' && breakdown.potentialAccess > 0) {
     included.push('Stairs and access (included with the truck)');
@@ -189,4 +189,48 @@ export function addressesReady(pickups: LocationEntry[], dropoffs: LocationEntry
 
 export function scheduleReady(details: MoveDetails): boolean {
   return Boolean(details.date && details.time);
+}
+
+export function buildCrewJobSheet(job: {
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  scheduleLabel: string;
+  moveDate: string;
+  moveTime: string;
+  serviceLabel: string;
+  vehicleLabel: string;
+  crewLabel: string;
+  routeSummary: string;
+  inventorySummary: string;
+  totalLabel: string;
+  instructions: string;
+  moveType: string;
+  workflowStatus?: string;
+}): string {
+  const when = job.scheduleLabel || [formatDateAu(job.moveDate), formatTimeAu(job.moveTime)].filter(Boolean).join(', ');
+  return sanitizeMultiline(
+    [
+      `JOB SHEET — ${CONFIG_NAME()}`,
+      `Status: ${job.workflowStatus || 'new'}`,
+      `When: ${when || 'To confirm'} (about a one-hour arrival window)`,
+      `Customer: ${sanitizePlainText(job.customerName, 80)}`,
+      `Phone: ${sanitizePlainText(job.customerPhone, 24)}`,
+      `Email: ${sanitizePlainText(job.customerEmail, 120)}`,
+      `Service: ${job.serviceLabel}`,
+      `Vehicle: ${job.vehicleLabel}${job.crewLabel ? ` · ${job.crewLabel}` : ''}`,
+      job.moveType ? `Type: ${job.moveType}` : '',
+      job.routeSummary,
+      `Items: ${job.inventorySummary}`,
+      `Quote: ${job.totalLabel}`,
+      job.instructions ? `Notes: ${sanitizeMultiline(job.instructions, 800)}` : 'Notes: none',
+    ].filter(Boolean).join('\n'),
+    2200
+  );
+}
+
+export function buildWhatsAppShareUrl(message: string): string | null {
+  const text = sanitizeMultiline(message, 1400);
+  if (!text) return null;
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
