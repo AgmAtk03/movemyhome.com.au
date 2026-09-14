@@ -74,6 +74,15 @@ export async function createCheckoutSession(state: QuoteState): Promise<Checkout
     };
   }
 
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    return {
+      ok: true,
+      demoMode: true,
+      message: 'Demo mode — no charge / no email. The checkout API is not running (try npx vercel dev).',
+    };
+  }
+
   const data = await response.json().catch(() => ({})) as Partial<CheckoutResponse> & { error?: string };
 
   if (!response.ok) {
