@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MoveDetails, QuoteSnapshot } from '../types';
 import { ContactErrors } from '../lib/validation';
@@ -10,7 +9,6 @@ interface Step5Props {
   onUpdateDetails: (d: Partial<MoveDetails>) => void;
   snapshot: QuoteSnapshot;
   whatsappUrl: string | null;
-  stripeUrl: string | null;
   errors: ContactErrors;
   showErrors: boolean;
 }
@@ -20,7 +18,7 @@ const fieldClass = (invalid: boolean) =>
     invalid ? 'border-rose-400' : 'border-slate-200 focus:border-blue-500'
   }`;
 
-const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, stripeUrl, errors, showErrors }) => {
+const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, errors, showErrors }) => {
   return (
     <div className="space-y-8 animate-premium-in pb-10">
       <div className="space-y-2">
@@ -28,7 +26,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           How can we reach you?
         </h2>
         <p className="text-slate-500 text-base font-medium leading-relaxed">
-          This is the booking request — it sends your quote to us. You’re not paying yet. We’ll call to confirm before moving day.
+          This is an estimate. Pay 10% now to hold the slot. The remaining 90% is due on the day. You’ll enter card details on Stripe — not on this page.
         </p>
       </div>
 
@@ -123,13 +121,13 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
       </div>
 
       <div className="bg-emerald-50 p-5 rounded-[1.75rem] border border-emerald-100">
-        <h3 className="font-bold text-emerald-950">Get my quote vs Book this move</h3>
+        <h3 className="font-bold text-emerald-950">Pay 10% to hold this slot</h3>
         <p className="text-sm text-emerald-900 mt-2 leading-relaxed">
-          The running total at the bottom is your live quote. <strong>Book this move</strong> sends that quote and your details to our team. We’ll confirm the time — no payment is taken here.
+          We recalculate the quote on the server from the same rate table. You are not charged the full amount. Card details stay on Stripe.
         </p>
       </div>
 
-      <BookingExtras whatsappUrl={whatsappUrl} stripeUrl={stripeUrl} />
+      <BookingExtras whatsappUrl={whatsappUrl} />
     </div>
   );
 };

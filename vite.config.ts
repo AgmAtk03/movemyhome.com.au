@@ -3,11 +3,10 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   return {
-    base: './',
+    base: '/',
     plugins: [react()],
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
-      'global': 'window',
     },
     server: {
       port: 3000,
@@ -17,6 +16,6 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       sourcemap: true,
     },
-    envPrefix: 'VITE_',
+    envPrefix: ['VITE_'],
   };
 });

@@ -68,9 +68,15 @@ function migrateLegacy(raw: unknown): StoredJob | null {
     dropoffAddresses: Array.isArray(row.dropoffAddresses) ? row.dropoffAddresses.map(String) : [],
     inventorySummary: String(row.inventorySummary || ''),
     totalLabel: String(row.totalLabel || ''),
+    depositLabel: String(row.depositLabel || ''),
+    balanceLabel: String(row.balanceLabel || ''),
     instructions: String(row.instructions || ''),
     moveType: String(row.moveType || ''),
     distanceLabel: String(row.distanceLabel || ''),
+    paymentStatus: row.paymentStatus === 'deposit_paid' || row.paymentStatus === 'unpaid' || row.paymentStatus === 'demo'
+      ? row.paymentStatus
+      : 'demo',
+    stripeSessionId: String(row.stripeSessionId || ''),
   };
 }
 

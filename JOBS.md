@@ -1,40 +1,15 @@
-# How staff see bookings — My Home Removals
+# How bookings are recorded — My Home Removals
 
-There is **no server** in this app today. A booking lives in:
+Production source of truth for a **held slot**:
 
-1. **The business inbox** (primary, production) — EmailJS business template
-2. **The customer’s inbox** (confirmation copy)
-3. **This browser only** — `/#staff-jobs` demo diary (`localStorage` key `mhr_demo_jobs`)
+1. Stripe Checkout Session (deposit amount in cents, metadata, `payment_status=paid`)
+2. Webhook `checkout.session.completed` with a **verified signature**
+3. EmailJS customer confirmation + business job sheet (when configured)
 
-Do not treat the demo board as the company of record. Another phone will not see it. Clearing site data deletes it.
+`/success?session_id=` is **not** proof of payment by itself. The page calls `/api/verify-checkout-session`, which retrieves the session from Stripe.
 
-## New / upcoming / future (demo board)
+## Demo diary (`/#staff-jobs`)
 
-| List | Rule |
-| --- | --- |
-| **New** | Booked in the last 24 hours and still workflow **new** (not confirmed yet) |
-| **Upcoming** | Active job whose move date is today through the next 7 days |
-| **Future** | Active job more than 7 days out |
-| **Done** / **Cancelled** | After you tap those actions |
+**DEMO ONLY — not production ops.** Jobs on that screen live in this browser (`localStorage` key `mhr_demo_jobs`). Another phone will not see them. Clearing site data deletes them. There is no login; do not treat this as a staff system.
 
-Mark **confirmed → in progress → done** (or **cancel**). That status is saved in this browser. Copy the **job sheet** or **WhatsApp to crew** (WhatsApp opens with the sheet so you can pick a crew chat).
-
-Production habit if EmailJS is on: still watch `CONFIG.COMPANY_EMAIL` first, then mirror the job on this device if you like a visual list.
-
-## Intended server model (later)
-
-When you add an API, store at least:
-
-| Field | Why |
-| --- | --- |
-| `id`, `createdAt`, `workflowStatus` | `new` / `confirmed` / `in_progress` / `done` / `cancelled` |
-| `customerName`, `email`, `phone` | Contact |
-| `pickup[]`, `dropoff[]` | Addresses, access, loading dock |
-| `moveDate`, `moveTime` | Diary + “upcoming vs future” |
-| `serviceType`, `vehicle`, `crewSize`, `inventory` | Crew planning |
-| `quoteTotal`, `quoteLines`, `currency=AUD` | Money |
-| `notes`, `distanceKm`, `isInterstate` | Ops |
-| `emailClientSent`, `emailBusinessSent` | Support |
-| `stripePaymentLinkId` / `client_reference_id` | Match deposits |
-
-A simple next step: a password-protected `/staff` page that reads from a hosted database (e.g. Supabase) or from inbound EmailJS webhooks. Until then, **the inbox is the source of truth**; `/#staff-jobs` is a labelled in-browser aid.
+Demo-mode checkout (missing Stripe keys) stores an unpaid/demo row here so you can try the UI. That is not a paid booking.

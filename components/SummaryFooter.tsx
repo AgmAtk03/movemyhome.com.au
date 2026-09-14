@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { VehicleType } from '../types';
 import { formatMoney } from '../lib/quote';
@@ -17,6 +16,8 @@ interface FooterProps {
     fuel: number;
     isFixedTrip: boolean;
     hourlyRate: number;
+    deposit: number;
+    balance: number;
   };
   vehicle: VehicleType | null;
   isInterstate: boolean;
@@ -34,6 +35,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
   const prevTotalRef = useRef(breakdown.total);
   const isTruck = vehicle === 'truck';
   const isBookStep = step >= 6;
+  const showMoney = step > 1 && Boolean(vehicle);
 
   useEffect(() => {
     if (prevTotalRef.current !== breakdown.total) {
@@ -55,7 +57,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
       )}
 
       <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-2xl border-t border-slate-100 px-5 pt-4 pb-safe z-50 rounded-t-[2rem] shadow-[0_-12px_40px_rgba(0,0,0,0.08)]">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-start justify-between gap-4">
           <button
             type="button"
             className="flex flex-col flex-1 text-left"
@@ -64,14 +66,20 @@ const SummaryFooter: React.FC<FooterProps> = ({
             aria-controls="quote-breakdown"
           >
             <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-              Live quote
+              Estimated total
               <i className={`ph-bold ph-caret-up text-[10px] text-blue-600 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} aria-hidden="true"></i>
             </span>
             <span className={`font-black tracking-tight text-slate-900 ${animatePrice ? 'animate-price-bump' : ''}`} style={{ fontSize: 'clamp(1.5rem, 6vw, 2.1rem)' }} aria-live="polite">
-              {step === 1 || !vehicle ? 'As you go' : formatMoney(breakdown.total)}
+              {showMoney ? formatMoney(breakdown.total) : 'As you go'}
             </span>
-            {isTruck && !breakdown.isFixedTrip && (
-              <span className="text-[11px] font-bold text-indigo-700">Estimate · billed on time</span>
+            {showMoney && (
+              <span className="text-[11px] font-bold text-slate-600 mt-1 leading-snug">
+                10% deposit due now {formatMoney(breakdown.deposit)}
+                <span className="block font-semibold text-slate-500">Balance remaining {formatMoney(breakdown.balance)}</span>
+              </span>
+            )}
+            {isTruck && !breakdown.isFixedTrip && showMoney && (
+              <span className="text-[11px] font-bold text-indigo-700 mt-1">Estimate · billed on time</span>
             )}
           </button>
 
@@ -79,9 +87,9 @@ const SummaryFooter: React.FC<FooterProps> = ({
             <button
               type="button"
               onClick={onBook}
-              className="min-h-14 px-5 font-black rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm bg-emerald-600 text-white shadow-emerald-600/20 active:scale-[0.97]"
+              className="min-h-14 px-4 font-black rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm bg-emerald-600 text-white shadow-emerald-600/20 active:scale-[0.97]"
             >
-              Book this move
+              Pay 10% deposit
             </button>
           ) : (
             <button
@@ -100,7 +108,9 @@ const SummaryFooter: React.FC<FooterProps> = ({
           <p className="text-xs text-rose-700 mt-2 font-medium" role="status">{nextHint}</p>
         )}
         {isBookStep && (
-          <p className="text-xs text-slate-500 mt-2">Sends your quote to us. No payment is taken on this screen.</p>
+          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+            This is an estimate. Pay 10% now to hold the slot. The remaining 90% is due on the day.
+          </p>
         )}
 
         {showBreakdown && (
@@ -165,12 +175,22 @@ const SummaryFooter: React.FC<FooterProps> = ({
               )}
             </ul>
 
-            <div className="pt-5 mt-4 border-t border-slate-100 flex justify-between items-center">
-              <span className="font-black text-slate-900">{isTruck && !breakdown.isFixedTrip ? 'Estimated total' : 'Quote total'}</span>
-              <span className={`text-2xl font-black ${isTruck ? 'text-indigo-700' : 'text-blue-700'}`}>{formatMoney(breakdown.total)}</span>
+            <div className="pt-5 mt-4 border-t border-slate-100 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-black text-slate-900">{isTruck && !breakdown.isFixedTrip ? 'Estimated total' : 'Quote total'}</span>
+                <span className={`text-2xl font-black ${isTruck ? 'text-indigo-700' : 'text-blue-700'}`}>{formatMoney(breakdown.total)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">10% deposit due now</span>
+                <span className="font-bold">{formatMoney(breakdown.deposit)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Balance remaining</span>
+                <span className="font-bold">{formatMoney(breakdown.balance)}</span>
+              </div>
             </div>
             <p className="mt-4 text-xs text-slate-500 leading-relaxed">
-              We’ll talk through anything that might change the price before we start. Local Sydney movers — we look after your things.
+              Pay 10% now to hold the slot. The remaining 90% is due on the day. Card details are entered on Stripe, not on this site.
             </p>
           </div>
         )}

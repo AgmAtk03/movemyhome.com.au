@@ -62,6 +62,9 @@ export interface PriceBreakdown {
   fuel: number;
   isFixedTrip: boolean;
   hourlyRate: number;
+  deposit: number;
+  balance: number;
+  depositCents: number;
 }
 
 export interface QuoteSnapshot {
@@ -77,6 +80,8 @@ export interface QuoteSnapshot {
   travelTimeLabel: string;
   moveType: string;
   totalLabel: string;
+  depositLabel: string;
+  balanceLabel: string;
   included: string[];
   lines: { label: string; amount: string; note?: string }[];
 }
@@ -104,7 +109,11 @@ export interface StoredJob {
   dropoffAddresses: string[];
   inventorySummary: string;
   totalLabel: string;
+  depositLabel?: string;
+  balanceLabel?: string;
   instructions: string;
   moveType: string;
   distanceLabel: string;
+  paymentStatus?: 'demo' | 'unpaid' | 'deposit_paid';
+  stripeSessionId?: string;
 }

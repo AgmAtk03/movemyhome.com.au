@@ -18,7 +18,7 @@ const QuoteRecap: React.FC<QuoteRecapProps> = ({ snapshot, compact = false }) =>
             Your quote
           </h3>
           <p className="text-sm text-slate-500 font-medium mt-0.5">
-            Here’s what that figure includes. We’ll confirm the final total when we call.
+            Estimate only. 10% holds the slot; 90% is due on the day.
           </p>
         </div>
         <p className="text-xl font-black text-blue-700 whitespace-nowrap">{snapshot.totalLabel}</p>
@@ -56,6 +56,16 @@ const QuoteRecap: React.FC<QuoteRecapProps> = ({ snapshot, compact = false }) =>
         ))}
       </ul>
 
+      <div className="mt-4 space-y-1.5 border-t border-slate-200 pt-4 text-sm">
+        <div className="flex justify-between gap-3">
+          <span className="text-slate-600">10% deposit due now</span>
+          <span className="font-bold text-slate-900">{snapshot.depositLabel}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-slate-600">Balance remaining</span>
+          <span className="font-bold text-slate-900">{snapshot.balanceLabel}</span>
+        </div>
+      </div>
       <p className="mt-4 text-xs font-medium text-slate-500 leading-relaxed">
         Included: {snapshot.included.join(', ')}.
       </p>

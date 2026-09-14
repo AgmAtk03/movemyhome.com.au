@@ -221,10 +221,10 @@ const StaffJobsBoard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   return (
     <div className="min-h-[100dvh] bg-slate-50 max-w-lg mx-auto">
       <header className="bg-amber-100 border-b border-amber-200 px-5 py-4">
-        <p className="text-[11px] font-black uppercase tracking-widest text-amber-900">Browser-local demo — not a live diary</p>
-        <h1 className="text-xl font-black text-slate-900 mt-1">{CONFIG.COMPANY_NAME} jobs</h1>
+        <p className="text-[11px] font-black uppercase tracking-widest text-amber-900">DEMO ONLY — not a production staff board</p>
+        <h1 className="text-xl font-black text-slate-900 mt-1">{CONFIG.COMPANY_NAME} local diary</h1>
         <p className="text-sm text-slate-700 mt-1 leading-relaxed">
-          Jobs live only in this browser until an API exists. Production source of truth is still the business inbox. See JOBS.md.
+          Jobs on this screen live only in this browser (localStorage). This is not operations, not authenticated, and not the company of record. Paid jobs are confirmed by the Stripe webhook and email — not this page.
         </p>
       </header>
 

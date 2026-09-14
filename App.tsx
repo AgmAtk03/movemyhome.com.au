@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import { VehicleType, QuoteState, Inventory, MoveDetails, LocationEntry, ServiceType, PriceBreakdown } from './types';
-import { RATES, INVENTORY_COSTS, FLOOR_RATES, WIZARD_STEPS } from './constants';
+import { VehicleType, QuoteState, Inventory, MoveDetails, LocationEntry, ServiceType } from './types';
+import { RATES, WIZARD_STEPS } from './constants';
 import Header from './components/Header';
 import Step1ServiceType from './components/Step1ServiceType';
 import Step2Vehicle from './components/Step1Vehicle';
@@ -13,12 +12,16 @@ import SummaryFooter from './components/SummaryFooter';
 import SuccessScreen from './components/SuccessScreen';
 import StaffJobsBoard from './components/StaffJobsBoard';
 import Landing from './components/Landing';
+import PrivacyPage from './components/PrivacyPage';
+import PaymentResultScreen from './components/PaymentResultScreen';
+import CancelScreen from './components/CancelScreen';
 import { addressesReady, buildQuoteSnapshot, scheduleReady } from './lib/quote';
 import { isContactValid, validateContact } from './lib/validation';
-import { buildWhatsAppUrl, clientReferenceId, submitBookingEmails } from './lib/booking';
+import { buildWhatsAppUrl } from './lib/booking';
 import { saveDemoJob } from './lib/jobsStore';
 import { sanitizePlainText } from './lib/sanitize';
-import { buildStripePaymentUrl } from './lib/stripe';
+import { calculateQuote, EMPTY_BREAKDOWN } from './shared/quoteCalc';
+import { createCheckoutSession } from './lib/checkout';
 
 const INITIAL_INVENTORY: Inventory = {
   boxes: 0, sofa: 0, mattress: 0, bed: 0, fridge: 0, tv: 0, washer: 0,
@@ -29,12 +32,12 @@ const INITIAL_DETAILS: MoveDetails = {
   bedDisassembly: false, bedIsAssembled: true,
 };
 
-const EMPTY_BREAKDOWN: PriceBreakdown = {
-  total: 0, base: 0, distance: 0, inventory: 0, access: 0, potentialAccess: 0,
-  cbd: 0, bedService: 0, hours: 0, fuel: 0, isFixedTrip: false, hourlyRate: 0,
-};
+function currentPath(): string {
+  return window.location.pathname.replace(/\/+$/, '') || '/';
+}
 
 const App: React.FC = () => {
+  const [path, setPath] = useState(currentPath);
   const [isStarted, setIsStarted] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
@@ -44,7 +47,7 @@ const App: React.FC = () => {
   const [attemptedStep, setAttemptedStep] = useState<number | null>(null);
   const [nextHint, setNextHint] = useState('');
   const [bookingNotice, setBookingNotice] = useState('');
-  const [emailOutcome, setEmailOutcome] = useState({ emailsSent: false, clientSent: false, businessSent: false, demoMode: false });
+  const [demoCheckout, setDemoCheckout] = useState(false);
 
   const [state, setState] = useState<QuoteState>({
     step: 1,
@@ -64,10 +67,18 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    const onHash = () => setShowStaffBoard(window.location.hash === '#staff-jobs');
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    const onNav = () => {
+      setPath(currentPath());
+      setShowStaffBoard(window.location.hash === '#staff-jobs');
+    };
+    window.addEventListener('hashchange', onNav);
+    window.addEventListener('popstate', onNav);
+    return () => {
+      window.removeEventListener('hashchange', onNav);
+      window.removeEventListener('popstate', onNav);
+    };
   }, []);
+
   useEffect(() => {
     setState((prev) => {
       const updates: Partial<QuoteState> = {};
@@ -97,97 +108,34 @@ const App: React.FC = () => {
     if (state.step === 6 && contactOk) setNextHint('');
   }, [state.step, state.vehicle, state.pickups, state.dropoffs, state.details, contactOk]);
 
-  const priceBreakdown = useMemo(() => {
-    if (!state.vehicle || state.step === 1) return EMPTY_BREAKDOWN;
-
-    let base = 0;
-    let distance = 0;
-    let inventory = 0;
-    let access = 0;
-    let potentialAccess = 0;
-    let bedService = 0;
-    let fuel = 0;
-    let hours = 0;
-    let isFixedTrip = false;
-    let hourlyRate = 0;
-
-    let cbdFee = 0;
-    [...state.pickups, ...state.dropoffs].forEach((loc) => {
-      const isLocCBD = loc.address.includes('2000');
-      if (isLocCBD && !loc.hasLoadingDock) {
-        cbdFee += RATES.CBD_FEE;
-      }
-      potentialAccess += FLOOR_RATES[loc.access] || 0;
-    });
-
-    if (state.vehicle === 'truck') {
-      const isLongDistance = state.distanceKm > RATES.LONG_DISTANCE_THRESHOLD;
-      hourlyRate = state.crewSize === 1 ? RATES.TRUCK_HOURLY_SOLO : RATES.TRUCK_HOURLY_TEAM;
-
-      if (isLongDistance) {
-        isFixedTrip = true;
-        const fuelCostPerKm = (RATES.TRUCK_L_PER_100KM / 100) * RATES.DIESEL_PRICE_PER_L;
-        const rawCostPerKmTotal = fuelCostPerKm + RATES.TRUCK_WEAR_PER_KM;
-        const totalDistanceDiscountedReturn = state.distanceKm * 1.8;
-        const rawCost = totalDistanceDiscountedReturn * rawCostPerKmTotal;
-        const marginPerKm = state.crewSize === 1 ? RATES.MARGIN_SOLO_PER_KM : RATES.MARGIN_TEAM_PER_KM;
-        const laborMargin = state.distanceKm * marginPerKm;
-        base = rawCost + laborMargin;
-        fuel = 0;
-        hours = state.travelTimeHrs;
-      } else {
-        hours = state.isInterstate ? state.travelTimeHrs : Math.max(RATES.TRUCK_MIN_HOURS, state.truckHours);
-        base = hours * hourlyRate;
-        fuel = (state.distanceKm / 100) * RATES.TRUCK_L_PER_100KM * RATES.DIESEL_PRICE_PER_L;
-      }
-    } else {
-      base = RATES.VAN_BASE;
-      distance = state.distanceKm * RATES.VAN_PER_KM;
-      access = potentialAccess;
-    }
-
-    (Object.keys(state.inventory) as (keyof Inventory)[]).forEach((key) => {
-      inventory += state.inventory[key] * INVENTORY_COSTS[key];
-    });
-
-    if (state.inventory.bed > 0 && state.details.bedIsAssembled && state.details.bedDisassembly) {
-      bedService = RATES.BED_SERVICE_FEE;
-    }
-
-    const showInventoryCosts = state.step >= 4;
-    const showRouteCosts = state.step >= 3;
-
-    const filteredInventory = showInventoryCosts ? inventory : 0;
-    const filteredBedService = showInventoryCosts ? bedService : 0;
-    const filteredDistance = showRouteCosts ? distance : 0;
-    const filteredFuel = showRouteCosts ? fuel : 0;
-    const filteredCBD = showRouteCosts ? cbdFee : 0;
-    const filteredAccess = showRouteCosts ? access : 0;
-
-    const total = base + filteredDistance + filteredInventory + filteredAccess + filteredCBD + filteredBedService + filteredFuel;
-
-    return {
-      total,
-      base,
-      distance: filteredDistance,
-      inventory: filteredInventory,
-      access: filteredAccess,
-      potentialAccess: showRouteCosts ? potentialAccess : 0,
-      cbd: filteredCBD,
-      bedService: filteredBedService,
-      hours,
-      fuel: filteredFuel,
-      isFixedTrip,
-      hourlyRate,
-    };
-  }, [state]);
+  const priceBreakdown = useMemo(
+    () => calculateQuote({
+      vehicle: state.vehicle,
+      truckHours: state.truckHours,
+      crewSize: state.crewSize,
+      pickups: state.pickups,
+      dropoffs: state.dropoffs,
+      inventory: state.inventory,
+      bedDisassembly: state.details.bedDisassembly,
+      bedIsAssembled: state.details.bedIsAssembled,
+      distanceKm: state.distanceKm,
+      travelTimeHrs: state.travelTimeHrs,
+      isInterstate: state.isInterstate,
+      step: state.step,
+    }),
+    [state]
+  );
 
   const snapshot = useMemo(() => buildQuoteSnapshot(state, priceBreakdown), [state, priceBreakdown]);
   const whatsappUrl = useMemo(() => buildWhatsAppUrl(state, snapshot), [state, snapshot]);
-  const stripeUrl = useMemo(
-    () => buildStripePaymentUrl(state.details.email, clientReferenceId(state)),
-    [state]
-  );
+
+  const goHome = () => {
+    window.history.pushState({}, '', '/');
+    setPath('/');
+    setIsStarted(false);
+    setIsSuccess(false);
+    setDemoCheckout(false);
+  };
 
   const handleBooking = async () => {
     if (isBooking) return;
@@ -200,44 +148,50 @@ const App: React.FC = () => {
     setNextHint('');
 
     try {
-      const result = await submitBookingEmails(state, snapshot);
-      if (!result.businessSent && !result.demoMode) {
-        setBookingNotice(result.error || 'We couldn’t send your booking. Please try WhatsApp or call us.');
-        setNextHint(result.error || 'Booking didn’t send. Try WhatsApp or call us.');
+      const result = await createCheckoutSession(state);
+      if (!result.ok) {
+        setBookingNotice(result.error || 'We couldn’t start checkout.');
+        setNextHint(result.error || 'Checkout didn’t start. Try again or call us.');
         return;
       }
 
-      saveDemoJob({
-        customerName: sanitizePlainText(state.details.name, 80),
-        customerEmail: sanitizePlainText(state.details.email, 120),
-        customerPhone: sanitizePlainText(state.details.phone, 24),
-        moveDate: state.details.date,
-        moveTime: state.details.time,
-        scheduleLabel: snapshot.scheduleLabel,
-        serviceLabel: snapshot.serviceLabel,
-        vehicleLabel: snapshot.vehicleLabel,
-        crewLabel: snapshot.crewLabel,
-        routeSummary: snapshot.routeSummary,
-        pickupAddresses: snapshot.pickupAddresses,
-        dropoffAddresses: snapshot.dropoffAddresses,
-        inventorySummary: snapshot.inventorySummary,
-        totalLabel: snapshot.totalLabel,
-        instructions: sanitizePlainText(state.details.instructions || '', 800),
-        moveType: snapshot.moveType,
-        distanceLabel: snapshot.distanceLabel,
-      });
+      if (result.demoMode) {
+        saveDemoJob({
+          customerName: sanitizePlainText(state.details.name, 80),
+          customerEmail: sanitizePlainText(state.details.email, 120),
+          customerPhone: sanitizePlainText(state.details.phone, 24),
+          moveDate: state.details.date,
+          moveTime: state.details.time,
+          scheduleLabel: snapshot.scheduleLabel,
+          serviceLabel: snapshot.serviceLabel,
+          vehicleLabel: snapshot.vehicleLabel,
+          crewLabel: snapshot.crewLabel,
+          routeSummary: snapshot.routeSummary,
+          pickupAddresses: snapshot.pickupAddresses,
+          dropoffAddresses: snapshot.dropoffAddresses,
+          inventorySummary: snapshot.inventorySummary,
+          totalLabel: result.quoted?.quoteTotalLabel || snapshot.totalLabel,
+          depositLabel: result.quoted?.depositLabel || snapshot.depositLabel,
+          balanceLabel: result.quoted?.balanceLabel || snapshot.balanceLabel,
+          instructions: sanitizePlainText(state.details.instructions || '', 800),
+          moveType: snapshot.moveType,
+          distanceLabel: snapshot.distanceLabel,
+          paymentStatus: 'demo',
+        });
+        setDemoCheckout(true);
+        setBookingNotice(result.message || 'Demo mode — no charge / no email.');
+        setIsSuccess(true);
+        return;
+      }
 
-      setEmailOutcome({
-        emailsSent: result.emailsSent,
-        clientSent: result.clientSent,
-        businessSent: result.businessSent,
-        demoMode: result.demoMode,
-      });
-      setBookingNotice(result.error || '');
-      setIsSuccess(true);
-    } catch (error) {
-      console.error('Booking error:', error);
-      setNextHint('Something went wrong sending that. Please WhatsApp or call us and we’ll sort it.');
+      if (result.url) {
+        window.location.assign(result.url);
+        return;
+      }
+
+      setNextHint('Checkout didn’t return a Stripe page. Please call us.');
+    } catch {
+      setNextHint('Something went wrong starting checkout. Please call us and we’ll sort it.');
     } finally {
       setIsBooking(false);
     }
@@ -331,6 +285,28 @@ const App: React.FC = () => {
     setNextHint('');
   };
 
+  if (path === '/privacy') {
+    return <PrivacyPage onBack={goHome} />;
+  }
+
+  if (path === '/success') {
+    return <PaymentResultScreen onReset={goHome} />;
+  }
+
+  if (path === '/cancel') {
+    return (
+      <CancelScreen
+        onRetry={() => {
+          window.history.pushState({}, '', '/');
+          setPath('/');
+          setIsStarted(true);
+          setState((prev) => ({ ...prev, step: 6 }));
+        }}
+        onHome={goHome}
+      />
+    );
+  }
+
   if (showStaffBoard) {
     return (
       <StaffJobsBoard
@@ -347,13 +323,10 @@ const App: React.FC = () => {
       <SuccessScreen
         name={state.details.name}
         email={state.details.email}
-        emailsSent={emailOutcome.emailsSent}
-        clientSent={emailOutcome.clientSent}
-        businessSent={emailOutcome.businessSent}
-        demoMode={emailOutcome.demoMode}
+        demoMode={demoCheckout}
         notice={bookingNotice}
         whatsappUrl={whatsappUrl}
-        stripeUrl={stripeUrl}
+        quoted={priceBreakdown}
         onReset={() => window.location.reload()}
       />
     );
@@ -386,7 +359,7 @@ const App: React.FC = () => {
       {isBooking && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md flex flex-col items-center justify-center text-white" role="status" aria-live="polite">
           <div className="loading-spinner mb-6"></div>
-          <p className="font-black text-xl tracking-tight">Sending your booking…</p>
+          <p className="font-black text-xl tracking-tight">Starting secure checkout…</p>
         </div>
       )}
 
@@ -409,7 +382,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 px-5 pt-8 pb-64 overflow-y-auto no-scrollbar bg-white">
+      <main className="flex-1 px-5 pt-8 pb-72 overflow-y-auto no-scrollbar bg-white">
         <div className="max-w-md mx-auto">
           {state.step === 1 && (
             <Step1ServiceType
@@ -476,7 +449,6 @@ const App: React.FC = () => {
               details={state.details}
               snapshot={snapshot}
               whatsappUrl={whatsappUrl}
-              stripeUrl={stripeUrl}
               errors={contactErrors}
               showErrors={attemptedStep === 6}
               onUpdateDetails={(det) => setState((s) => ({ ...s, details: { ...s.details, ...det } }))}
@@ -486,7 +458,7 @@ const App: React.FC = () => {
       </main>
 
       <SummaryFooter
-        breakdown={priceBreakdown}
+        breakdown={priceBreakdown.total === 0 && state.step === 1 ? EMPTY_BREAKDOWN : priceBreakdown}
         vehicle={state.vehicle}
         isInterstate={state.isInterstate}
         step={state.step}
