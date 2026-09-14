@@ -57,7 +57,7 @@ const SuccessScreen: React.FC<SuccessProps> = ({
       <button
         type="button"
         onClick={onReset}
-        className="w-full min-h-14 flex items-center justify-center bg-slate-900 text-white font-black rounded-2xl mb-4"
+        className="btn-primary w-full mb-4"
       >
         Start another quote
       </button>

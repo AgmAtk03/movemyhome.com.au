@@ -81,7 +81,7 @@ const Step3Inventory: React.FC<Step3Props> = ({ inventory, details, vehicle, isM
         </p>
       </div>
 
-      <p className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${vehicle === 'truck' ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'}`}>
+      <p className="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-[#e7f2fa] text-[#0f5a94]">
         Using the {vehicle === 'truck' ? 'truck' : 'van'}
       </p>
 
@@ -101,11 +101,11 @@ const Step3Inventory: React.FC<Step3Props> = ({ inventory, details, vehicle, isM
               >
                 <i className="ph ph-minus" aria-hidden="true"></i>
               </button>
-              <span className="w-10 text-center font-black text-blue-700 text-lg" aria-live="polite">{inventory[item.key]}</span>
+              <span className="w-10 text-center font-black text-[#146eb4] text-lg" aria-live="polite">{inventory[item.key]}</span>
               <button
                 type="button"
                 onClick={() => updateCount(item.key, 1)}
-                className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center"
+                className="w-11 h-11 rounded-xl bg-[#146eb4] text-white flex items-center justify-center"
                 aria-label={`Add one ${item.name}`}
               >
                 <i className="ph ph-plus" aria-hidden="true"></i>
@@ -122,15 +122,15 @@ const Step3Inventory: React.FC<Step3Props> = ({ inventory, details, vehicle, isM
       )}
 
       {inventory.bed > 0 && (
-        <fieldset className="space-y-3 p-5 bg-blue-50 rounded-[1.75rem] border border-blue-100">
-          <legend className="font-bold text-blue-950 text-sm">Bed frame</legend>
-          <p className="text-sm text-blue-800">Is the bed already put together?</p>
+        <fieldset className="space-y-3 p-5 bg-[#e7f2fa] rounded-[1.75rem] border border-[#c5dff0]">
+          <legend className="font-bold text-[#0f172a] text-sm">Bed frame</legend>
+          <p className="text-sm text-[#0f5a94]">Is the bed already put together?</p>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => onUpdateDetails({ bedIsAssembled: true })}
               aria-pressed={details.bedIsAssembled}
-              className={`min-h-14 rounded-2xl border-2 font-bold text-sm ${details.bedIsAssembled ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
+              className={`min-h-14 rounded-2xl border-2 font-bold text-sm ${details.bedIsAssembled ? 'bg-[#146eb4] border-[#146eb4] text-white' : 'bg-white border-slate-200 text-slate-600'}`}
             >
               Yes, it’s assembled
             </button>
@@ -138,7 +138,7 @@ const Step3Inventory: React.FC<Step3Props> = ({ inventory, details, vehicle, isM
               type="button"
               onClick={() => onUpdateDetails({ bedIsAssembled: false, bedDisassembly: false })}
               aria-pressed={!details.bedIsAssembled}
-              className={`min-h-14 rounded-2xl border-2 font-bold text-sm ${!details.bedIsAssembled ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
+              className={`min-h-14 rounded-2xl border-2 font-bold text-sm ${!details.bedIsAssembled ? 'bg-[#146eb4] border-[#146eb4] text-white' : 'bg-white border-slate-200 text-slate-600'}`}
             >
               No, it’s in pieces
             </button>
@@ -149,7 +149,7 @@ const Step3Inventory: React.FC<Step3Props> = ({ inventory, details, vehicle, isM
               type="button"
               onClick={() => onUpdateDetails({ bedDisassembly: !details.bedDisassembly })}
               aria-pressed={details.bedDisassembly}
-              className={`w-full flex items-center gap-3 p-4 min-h-14 rounded-2xl border-2 text-left ${details.bedDisassembly ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-700'}`}
+              className={`w-full flex items-center gap-3 p-4 min-h-14 rounded-2xl border-2 text-left ${details.bedDisassembly ? 'bg-[#146eb4] border-[#146eb4] text-white' : 'bg-white border-slate-200 text-slate-700'}`}
             >
               <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${details.bedDisassembly ? 'border-white' : 'border-slate-300'}`}>
                 {details.bedDisassembly && <span className="w-2 h-2 bg-white rounded-full" />}

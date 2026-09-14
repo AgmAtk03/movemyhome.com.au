@@ -7,6 +7,12 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        brand: {
+          orange: '#ff9900',
+          blue: '#146eb4',
+        },
+      },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },

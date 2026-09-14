@@ -132,10 +132,10 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
           onClick={() => setActivePicker(activePicker === 'date' ? null : 'date')}
           aria-expanded={activePicker === 'date'}
           className={`flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 text-left ${
-            missingDate ? 'border-rose-400 bg-rose-50' : activePicker === 'date' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-200 bg-white'
+            missingDate ? 'border-rose-400 bg-rose-50' : activePicker === 'date' ? 'border-[#146eb4] bg-[#e7f2fa]/50' : 'border-slate-200 bg-white'
           }`}
         >
-          <div className={`w-14 h-14 flex items-center justify-center text-2xl rounded-2xl ${details.date ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400'}`}>
+          <div className={`w-14 h-14 flex items-center justify-center text-2xl rounded-2xl ${details.date ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-400'}`}>
             <i className="ph-fill ph-calendar" aria-hidden="true"></i>
           </div>
           <div className="flex-1">
@@ -148,7 +148,7 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
 
         {activePicker === 'date' && (
           <div className="bg-white border-2 border-slate-100 rounded-[2rem] overflow-hidden">
-            <div className="bg-blue-600 p-4 flex justify-between items-center text-white">
+            <div className="bg-[#146eb4] p-4 flex justify-between items-center text-white">
               <button type="button" onClick={() => changeMonth(-1)} className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/20" aria-label="Previous month">
                 <i className="ph-bold ph-caret-left" aria-hidden="true"></i>
               </button>
@@ -179,8 +179,8 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
                       disabled={isPast}
                       onClick={() => handleDateSelect(date)}
                       className={`h-11 rounded-xl text-sm font-bold ${
-                        isSelected ? 'bg-blue-600 text-white' : isPast ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-blue-50'
-                      } ${isToday && !isSelected ? 'text-blue-700 ring-2 ring-blue-100' : ''}`}
+                        isSelected ? 'bg-[#146eb4] text-white' : isPast ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-[#e7f2fa]'
+                      } ${isToday && !isSelected ? 'text-[#146eb4] ring-2 ring-[#c5dff0]' : ''}`}
                     >
                       {date.getDate()}
                     </button>
@@ -199,10 +199,10 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
           }}
           aria-expanded={activePicker === 'time'}
           className={`flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 text-left ${
-            missingTime ? 'border-rose-400 bg-rose-50' : activePicker === 'time' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 bg-white'
+            missingTime ? 'border-rose-400 bg-rose-50' : activePicker === 'time' ? 'border-[#146eb4] bg-[#e7f2fa]/50' : 'border-slate-200 bg-white'
           }`}
         >
-          <div className={`w-14 h-14 flex items-center justify-center text-2xl rounded-2xl ${details.time ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-400'}`}>
+          <div className={`w-14 h-14 flex items-center justify-center text-2xl rounded-2xl ${details.time ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-400'}`}>
             <i className="ph-fill ph-clock" aria-hidden="true"></i>
           </div>
           <div className="flex-1">
@@ -225,13 +225,13 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
                   {currentMinute.toString().padStart(2, '0')}
                 </button>
                 <div className="flex flex-col gap-2 ml-4">
-                  <button type="button" onClick={() => togglePeriod('AM')} className={`min-h-9 text-[11px] font-bold px-3 py-1.5 rounded-lg border ${period === 'AM' ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-600 text-slate-400'}`}>AM</button>
-                  <button type="button" onClick={() => togglePeriod('PM')} className={`min-h-9 text-[11px] font-bold px-3 py-1.5 rounded-lg border ${period === 'PM' ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-600 text-slate-400'}`}>PM</button>
+                  <button type="button" onClick={() => togglePeriod('AM')} className={`min-h-9 text-[11px] font-bold px-3 py-1.5 rounded-lg border ${period === 'AM' ? 'bg-[#146eb4] border-[#146eb4] text-white' : 'border-slate-600 text-slate-400'}`}>AM</button>
+                  <button type="button" onClick={() => togglePeriod('PM')} className={`min-h-9 text-[11px] font-bold px-3 py-1.5 rounded-lg border ${period === 'PM' ? 'bg-[#146eb4] border-[#146eb4] text-white' : 'border-slate-600 text-slate-400'}`}>PM</button>
                 </div>
               </div>
 
               <div className="relative w-56 h-56 rounded-full bg-slate-800/50 border-4 border-slate-800 flex items-center justify-center">
-                <div className="absolute w-2 h-2 bg-blue-500 rounded-full z-20"></div>
+                <div className="absolute w-2 h-2 bg-[#ff9900] rounded-full z-20"></div>
                 {(timeMode === 'hour' ? hours : minutes).map((val, i) => {
                   const angle = (i * 30) - 90;
                   const rad = (angle * Math.PI) / 180;
@@ -246,7 +246,7 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
                       type="button"
                       onClick={() => setClockTime(val, timeMode)}
                       aria-label={timeMode === 'hour' ? `${val} o'clock` : `${val} minutes`}
-                      className={`absolute w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold ${isActive ? 'text-white bg-blue-600' : 'text-slate-400'}`}
+                      className={`absolute w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold ${isActive ? 'text-white bg-[#146eb4]' : 'text-slate-400'}`}
                       style={{ left: `calc(50% + ${x}px - 22px)`, top: `calc(50% + ${y}px - 22px)` }}
                     >
                       {timeMode === 'minute' ? val.toString().padStart(2, '0') : val}
@@ -262,8 +262,8 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
         )}
       </div>
 
-      <div className="p-5 bg-blue-50 border border-blue-100 rounded-[1.75rem]">
-        <p className="text-sm font-medium text-blue-900 leading-relaxed">
+      <div className="p-5 bg-[#e7f2fa] border border-[#c5dff0] rounded-[1.75rem]">
+        <p className="text-sm font-medium text-[#0f5a94] leading-relaxed">
           We’ll aim for a one-hour window around your time, and call about 30 minutes before we arrive so you’re not waiting around.
         </p>
       </div>

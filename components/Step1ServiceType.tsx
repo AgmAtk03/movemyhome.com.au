@@ -27,19 +27,19 @@ const Step1ServiceType: React.FC<Step1ServiceTypeProps> = ({ selected, onSelect 
           aria-pressed={selected === 'home_move'}
           className={`group flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 transition-all duration-300 text-left ${
             selected === 'home_move'
-              ? 'border-blue-600 bg-blue-50/70 shadow-lg shadow-blue-500/10'
+              ? 'border-[#146eb4] bg-[#e7f2fa] shadow-lg shadow-[#146eb4]/10'
               : 'border-slate-200 bg-white hover:border-slate-300 active:scale-[0.99]'
           }`}
         >
           <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
-            selected === 'home_move' ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-700'
+            selected === 'home_move' ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-700'
           }`}>
             <i className="ph-fill ph-house-line" aria-hidden="true"></i>
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-black text-lg text-slate-900 tracking-tight">Whole home</h3>
-              <span className="bg-blue-100 text-blue-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Most popular</span>
+              <span className="bg-[#fff4e0] text-[#0f172a] text-[11px] font-bold px-2 py-0.5 rounded-full">Most popular</span>
             </div>
             <p className="text-sm text-slate-500 font-medium mt-1">House, unit, or a full apartment move.</p>
             <p className="text-xs font-semibold text-slate-400 mt-1">From {formatMoney(RATES.TRUCK_HOURLY_TEAM * 2)} · 2-hour truck minimum</p>
@@ -52,12 +52,12 @@ const Step1ServiceType: React.FC<Step1ServiceTypeProps> = ({ selected, onSelect 
           aria-pressed={selected === 'room_move'}
           className={`group flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 transition-all duration-300 text-left ${
             selected === 'room_move'
-              ? 'border-violet-600 bg-violet-50/70 shadow-lg shadow-violet-500/10'
+              ? 'border-[#146eb4] bg-[#e7f2fa] shadow-lg shadow-[#146eb4]/10'
               : 'border-slate-200 bg-white hover:border-slate-300 active:scale-[0.99]'
           }`}
         >
           <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
-            selected === 'room_move' ? 'bg-violet-600 text-white' : 'bg-slate-50 text-slate-700'
+            selected === 'room_move' ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-700'
           }`}>
             <i className="ph-fill ph-door-open" aria-hidden="true"></i>
           </div>
@@ -74,12 +74,12 @@ const Step1ServiceType: React.FC<Step1ServiceTypeProps> = ({ selected, onSelect 
           aria-pressed={selected === 'item_delivery'}
           className={`group flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 transition-all duration-300 text-left ${
             selected === 'item_delivery'
-              ? 'border-indigo-600 bg-indigo-50/70 shadow-lg shadow-indigo-500/10'
+              ? 'border-[#146eb4] bg-[#e7f2fa] shadow-lg shadow-[#146eb4]/10'
               : 'border-slate-200 bg-white hover:border-slate-300 active:scale-[0.99]'
           }`}
         >
           <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
-            selected === 'item_delivery' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-700'
+            selected === 'item_delivery' ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-700'
           }`}>
             <i className="ph-fill ph-package" aria-hidden="true"></i>
           </div>

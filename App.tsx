@@ -23,6 +23,7 @@ import { sanitizePlainText } from './lib/sanitize';
 import { calculateQuote, EMPTY_BREAKDOWN } from './shared/quoteCalc';
 import { createCheckoutSession } from './lib/checkout';
 import { PAYMENTS_OFF_BODY, PAYMENT_START_ERROR, customerFacingError } from './lib/customerCopy';
+import { currentPath, isQuoteRoute, navigateTo } from './lib/nav';
 
 const INITIAL_INVENTORY: Inventory = {
   boxes: 0, sofa: 0, mattress: 0, bed: 0, fridge: 0, tv: 0, washer: 0,
@@ -33,13 +34,8 @@ const INITIAL_DETAILS: MoveDetails = {
   bedDisassembly: false, bedIsAssembled: true,
 };
 
-function currentPath(): string {
-  return window.location.pathname.replace(/\/+$/, '') || '/';
-}
-
 const App: React.FC = () => {
   const [path, setPath] = useState(currentPath);
-  const [isStarted, setIsStarted] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
@@ -131,11 +127,13 @@ const App: React.FC = () => {
   const whatsappUrl = useMemo(() => buildWhatsAppUrl(state, snapshot), [state, snapshot]);
 
   const goHome = () => {
-    window.history.pushState({}, '', '/');
-    setPath('/');
-    setIsStarted(false);
+    navigateTo('/');
     setIsSuccess(false);
     setDemoCheckout(false);
+  };
+
+  const startQuote = () => {
+    navigateTo('/quote');
   };
 
   const handleBooking = async () => {
@@ -288,7 +286,7 @@ const App: React.FC = () => {
   };
 
   if (path === '/privacy') {
-    return <PrivacyPage onBack={goHome} />;
+    return <PrivacyPage onBack={goHome} onQuote={startQuote} />;
   }
 
   if (path === '/success') {
@@ -299,9 +297,7 @@ const App: React.FC = () => {
     return (
       <CancelScreen
         onRetry={() => {
-          window.history.pushState({}, '', '/');
-          setPath('/');
-          setIsStarted(true);
+          startQuote();
           setState((prev) => ({ ...prev, step: 6 }));
         }}
         onHome={goHome}
@@ -334,9 +330,9 @@ const App: React.FC = () => {
     );
   }
 
-  if (!isStarted) {
+  if (!isQuoteRoute(path)) {
     return (
-      <Landing onStart={() => setIsStarted(true)} />
+      <Landing onStart={startQuote} />
     );
   }
 
@@ -345,9 +341,14 @@ const App: React.FC = () => {
       <Header
         step={state.step}
         totalSteps={WIZARD_STEPS.length}
+        onHome={goHome}
         onBack={() => {
           setNextHint('');
           setAttemptedStep(null);
+          if (state.step <= 1) {
+            goHome();
+            return;
+          }
           setState((p) => ({ ...p, step: p.step - 1 }));
         }}
       />
@@ -367,10 +368,10 @@ const App: React.FC = () => {
               Pickup and drop-off look identical. That’s okay if you meant it — for example moving items within the same building.
             </p>
             <div className="space-y-3">
-              <button type="button" onClick={confirmDuplicate} className="w-full min-h-14 bg-blue-600 text-white font-black rounded-2xl">
+              <button type="button" onClick={confirmDuplicate} className="btn-primary w-full">
                 Yes, that’s right
               </button>
-              <button type="button" onClick={() => setShowDuplicateWarning(false)} className="w-full min-h-14 bg-slate-100 text-slate-700 font-black rounded-2xl">
+              <button type="button" onClick={() => setShowDuplicateWarning(false)} className="btn-quiet w-full">
                 Let me fix it
               </button>
             </div>

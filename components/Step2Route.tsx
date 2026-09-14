@@ -224,9 +224,9 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
             type="button"
             onClick={() => toggleDock(loc.id, type)}
             aria-pressed={loc.hasLoadingDock}
-            className={`flex items-center gap-3 p-4 min-h-14 rounded-2xl border-2 w-full text-left ${loc.hasLoadingDock ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-blue-200 text-blue-800'}`}
+            className={`flex items-center gap-3 p-4 min-h-14 rounded-2xl border-2 w-full text-left ${loc.hasLoadingDock ? 'bg-[#146eb4] border-[#146eb4] text-white' : 'bg-white border-[#c5dff0] text-[#0f5a94]'}`}
           >
-            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${loc.hasLoadingDock ? 'border-white' : 'border-blue-400'}`}>
+            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${loc.hasLoadingDock ? 'border-white' : 'border-[#146eb4]'}`}>
               {loc.hasLoadingDock && <span className="w-2 h-2 bg-white rounded-full" />}
             </span>
             <span>
@@ -266,13 +266,13 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
         )}
 
         {isCBD && !routeError && (
-          <div className="bg-blue-700 text-white p-4 rounded-2xl text-sm font-medium">
+          <div className="bg-[#146eb4] text-white p-4 rounded-2xl text-sm font-medium">
             That looks like Sydney CBD. Tell us if there’s a loading dock so we can skip the parking fee.
           </div>
         )}
 
         {isInterstate && (
-          <div className="bg-indigo-50 border border-indigo-100 text-indigo-900 p-4 rounded-2xl text-sm font-medium">
+          <div className="bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] p-4 rounded-2xl text-sm font-medium">
             This looks like an interstate trip, so we’ll use the truck.
           </div>
         )}
@@ -284,7 +284,7 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
         <button
           type="button"
           onClick={() => addLocation('pickup')}
-          className="w-full min-h-12 bg-blue-50 text-blue-800 border-2 border-dashed border-blue-200 rounded-2xl font-bold text-sm"
+          className="w-full min-h-12 bg-[#e7f2fa] text-[#0f5a94] border-2 border-dashed border-[#c5dff0] rounded-2xl font-bold text-sm"
         >
           + Add another pickup
         </button>
@@ -296,7 +296,7 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
         <button
           type="button"
           onClick={() => addLocation('dropoff')}
-          className="w-full min-h-12 bg-emerald-50 text-emerald-800 border-2 border-dashed border-emerald-200 rounded-2xl font-bold text-sm"
+          className="w-full min-h-12 bg-[#fff4e0] text-[#0f172a] border-2 border-dashed border-[#ffcc80] rounded-2xl font-bold text-sm"
         >
           + Add another drop-off
         </button>

@@ -54,13 +54,13 @@ const Step1Vehicle: React.FC<Step1Props> = ({
               onClick={() => onSelect(opt.id as VehicleType)}
               className={`group relative flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 transition-all duration-300 text-left ${
                 isSelected
-                  ? 'border-blue-600 bg-blue-50/70 shadow-lg shadow-blue-500/10'
+                  ? 'border-[#146eb4] bg-[#e7f2fa] shadow-lg shadow-[#146eb4]/10'
                   : isDisabled
                     ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
                     : 'border-slate-200 bg-white hover:border-slate-300 active:scale-[0.99]'
               }`}
             >
-              <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${isSelected ? 'bg-blue-600' : 'bg-slate-50'}`}>
+              <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${isSelected ? 'bg-[#146eb4]' : 'bg-slate-50'}`}>
                 <span aria-hidden="true">{opt.icon}</span>
               </div>
               <div className="flex-1">
@@ -88,61 +88,61 @@ const Step1Vehicle: React.FC<Step1Props> = ({
                 type="button"
                 onClick={() => onCrewSizeChange(1)}
                 aria-pressed={crewSize === 1}
-                className={`min-h-[5.5rem] p-4 rounded-3xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${crewSize === 1 ? 'border-indigo-600 bg-indigo-50 text-indigo-800' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
+                className={`min-h-[5.5rem] p-4 rounded-3xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${crewSize === 1 ? 'border-[#146eb4] bg-[#e7f2fa] text-[#0f5a94]' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
               >
-                <i className={`ph-fill ph-user text-2xl ${crewSize === 1 ? 'text-indigo-600' : 'text-slate-300'}`} aria-hidden="true"></i>
+                <i className={`ph-fill ph-user text-2xl ${crewSize === 1 ? 'text-[#146eb4]' : 'text-slate-300'}`} aria-hidden="true"></i>
                 <span className="font-bold text-sm">Just one of us</span>
               </button>
               <button
                 type="button"
                 onClick={() => onCrewSizeChange(2)}
                 aria-pressed={crewSize === 2}
-                className={`min-h-[5.5rem] p-4 rounded-3xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${crewSize === 2 ? 'border-indigo-600 bg-indigo-50 text-indigo-800' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
+                className={`min-h-[5.5rem] p-4 rounded-3xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${crewSize === 2 ? 'border-[#146eb4] bg-[#e7f2fa] text-[#0f5a94]' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
               >
                 <div className="flex gap-1" aria-hidden="true">
-                  <i className={`ph-fill ph-user text-2xl ${crewSize === 2 ? 'text-indigo-600' : 'text-slate-300'}`}></i>
-                  <i className={`ph-fill ph-user text-2xl ${crewSize === 2 ? 'text-indigo-600' : 'text-slate-300'}`}></i>
+                  <i className={`ph-fill ph-user text-2xl ${crewSize === 2 ? 'text-[#146eb4]' : 'text-slate-300'}`}></i>
+                  <i className={`ph-fill ph-user text-2xl ${crewSize === 2 ? 'text-[#146eb4]' : 'text-slate-300'}`}></i>
                 </div>
                 <span className="font-bold text-sm">A pair of us</span>
               </button>
             </div>
           </fieldset>
 
-          <div className={`p-5 rounded-[1.75rem] border-2 ${isLongDistance || isInterstate ? 'bg-blue-50 border-blue-100' : 'bg-indigo-50/60 border-indigo-100'}`}>
+          <div className={`p-5 rounded-[1.75rem] border-2 ${isLongDistance || isInterstate ? 'bg-[#e7f2fa] border-[#c5dff0]' : 'bg-[#e7f2fa]/80 border-[#c5dff0]'}`}>
             <div className="flex items-center justify-between mb-4 gap-2">
-              <p className={`font-bold text-sm ${isLongDistance || isInterstate ? 'text-blue-800' : 'text-indigo-800'}`}>
+              <p className="font-bold text-sm text-[#0f5a94]">
                 {isLongDistance ? 'Drive time (from your route)' : 'Hours on the job'}
               </p>
-              <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${isLongDistance || isInterstate ? 'bg-blue-600 text-white' : 'bg-indigo-600 text-white'}`}>
+              <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-[#146eb4] text-white">
                 {isLongDistance ? 'Fixed trip' : '2 hour minimum'}
               </span>
             </div>
 
             {(isLongDistance || isInterstate) ? (
-              <p className="w-full p-4 bg-white border border-blue-200 rounded-2xl text-2xl font-black text-blue-800 flex items-center justify-between">
+              <p className="w-full p-4 bg-white border border-[#c5dff0] rounded-2xl text-2xl font-black text-[#0f5a94] flex items-center justify-between">
                 {travelTimeHrs > 0 ? `${travelTimeHrs.toFixed(1)}` : '—'}
-                <span className="text-sm font-bold text-blue-400">hours</span>
+                <span className="text-sm font-bold text-[#146eb4]/70">hours</span>
               </p>
             ) : (
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => handleAdjustHours(-0.5)}
-                  className="w-14 h-14 bg-white border-2 border-indigo-100 rounded-2xl text-indigo-700 flex items-center justify-center text-2xl active:scale-95"
+                  className="w-14 h-14 bg-white border-2 border-[#c5dff0] rounded-2xl text-[#146eb4] flex items-center justify-center text-2xl active:scale-95"
                   aria-label="Reduce hours by half an hour"
                 >
                   <i className="ph-bold ph-minus" aria-hidden="true"></i>
                 </button>
 
-                <p className="flex-1 p-4 bg-white border-2 border-indigo-100 rounded-2xl text-3xl font-black text-indigo-800 flex items-center justify-center gap-2" aria-live="polite">
+                <p className="flex-1 p-4 bg-white border-2 border-[#c5dff0] rounded-2xl text-3xl font-black text-[#0f5a94] flex items-center justify-center gap-2" aria-live="polite">
                   {truckHours}
-                  <span className="text-sm text-indigo-400">hrs</span>
+                  <span className="text-sm text-[#146eb4]/70">hrs</span>
                 </p>
 
                 <button
                   type="button"
                   onClick={() => handleAdjustHours(0.5)}
-                  className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-2xl active:scale-95"
+                  className="w-14 h-14 bg-[#146eb4] text-white rounded-2xl flex items-center justify-center text-2xl active:scale-95"
                   aria-label="Add half an hour"
                 >
                   <i className="ph-bold ph-plus" aria-hidden="true"></i>

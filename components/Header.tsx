@@ -1,33 +1,54 @@
 import React from 'react';
 import { CONFIG, WIZARD_STEPS } from '../constants';
+import { navigateTo } from '../lib/nav';
 
 interface HeaderProps {
   step: number;
   totalSteps: number;
   onBack?: () => void;
+  onHome?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ step, totalSteps, onBack }) => {
+const Header: React.FC<HeaderProps> = ({ step, totalSteps, onBack, onHome }) => {
   const current = WIZARD_STEPS[step - 1];
+  const goHome = (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (onHome) onHome();
+    else navigateTo('/');
+  };
+  const goPrivacy = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    navigateTo('/privacy');
+  };
 
   return (
     <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 pt-safe">
-      <div className="px-5 py-3 flex items-center justify-center relative min-h-[56px]">
-        {step > 1 && onBack && (
+      <div className="px-3 py-3 flex items-center gap-2 min-h-[56px]">
+        {onBack && (
           <button
             type="button"
             onClick={onBack}
-            className="absolute left-4 min-w-11 min-h-11 flex items-center justify-center bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 active:scale-95 transition-all border border-slate-100"
-            aria-label="Go back to the previous step"
+            className="min-w-11 min-h-11 flex items-center justify-center bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 active:scale-95 transition-all border border-slate-100 flex-shrink-0"
+            aria-label={step > 1 ? 'Go back to the previous step' : 'Back to home'}
           >
             <i className="ph-bold ph-caret-left text-lg" aria-hidden="true"></i>
           </button>
         )}
 
-        <p className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
-          <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-lg text-sm" aria-hidden="true">M</span>
-          <span>{CONFIG.COMPANY_NAME}</span>
-        </p>
+        <a href="/" onClick={goHome} className="flex items-center gap-2 min-h-11 min-w-0 flex-1">
+          <span className="bg-[#146eb4] text-white w-7 h-7 flex items-center justify-center rounded-lg text-sm flex-shrink-0" aria-hidden="true">M</span>
+          <span className="font-black tracking-tight text-slate-900 truncate">{CONFIG.COMPANY_NAME}</span>
+        </a>
+
+        <nav className="flex items-center flex-shrink-0" aria-label="Site">
+          <a href="/" onClick={goHome} className="min-h-11 px-2 inline-flex items-center text-xs font-bold text-slate-600">
+            Home
+          </a>
+          <a href="/privacy" onClick={goPrivacy} className="min-h-11 px-2 inline-flex items-center text-xs font-bold text-slate-600">
+            Privacy
+          </a>
+        </nav>
       </div>
 
       <div className="px-5 pb-3">
@@ -43,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({ step, totalSteps, onBack }) => {
               <li key={item.id} className="flex-1">
                 <span
                   className={`block h-1.5 rounded-full ${
-                    active ? 'bg-blue-600' : done ? 'bg-blue-300' : 'bg-slate-200'
+                    active ? 'bg-[#ff9900]' : done ? 'bg-[#146eb4]' : 'bg-slate-200'
                   }`}
                 />
                 <span className="sr-only">

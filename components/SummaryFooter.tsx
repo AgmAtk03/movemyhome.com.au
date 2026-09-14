@@ -66,7 +66,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
         >
           <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mb-2">
             Tap for a breakdown
-            <i className={`ph-bold ph-caret-up text-[10px] text-blue-600 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} aria-hidden="true"></i>
+            <i className={`ph-bold ph-caret-up text-[10px] text-[#146eb4] transition-transform ${showBreakdown ? 'rotate-180' : ''}`} aria-hidden="true"></i>
           </span>
           {showMoney ? (
             <dl className={`space-y-1.5 ${animatePrice ? 'animate-price-bump' : ''}`}>
@@ -87,7 +87,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
             <p className="text-lg font-black text-slate-400">Your quote appears as you go</p>
           )}
           {isTruck && !breakdown.isFixedTrip && showMoney && (
-            <p className="text-[11px] font-bold text-indigo-700 mt-2">Hourly truck — final total depends on time on the day</p>
+            <p className="text-[11px] font-bold text-[#0f5a94] mt-2">Hourly truck — final total depends on time on the day</p>
           )}
         </button>
 
@@ -101,21 +101,11 @@ const SummaryFooter: React.FC<FooterProps> = ({
         )}
 
         {isBookStep ? (
-          <button
-            type="button"
-            onClick={onBook}
-            className="mt-3 w-full min-h-16 font-black rounded-2xl shadow-lg bg-emerald-600 text-white shadow-emerald-600/20 active:scale-[0.98] text-lg"
-          >
+          <button type="button" onClick={onBook} className="btn-primary mt-3 w-full text-lg">
             Pay 10% deposit
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={onNext}
-            className={`mt-3 w-full min-h-16 font-black rounded-2xl shadow-lg text-white active:scale-[0.98] text-lg ${
-              isTruck ? 'bg-indigo-600 shadow-indigo-600/20' : 'bg-blue-600 shadow-blue-600/20'
-            }`}
-          >
+          <button type="button" onClick={onNext} className="btn-primary mt-3 w-full text-lg">
             Continue
           </button>
         )}
@@ -130,7 +120,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
             </div>
 
             {isTruck && !breakdown.isFixedTrip && (
-              <p className="mb-5 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-sm text-indigo-900">
+              <p className="mb-5 p-4 bg-[#e7f2fa] border border-[#c5dff0] rounded-2xl text-sm text-[#0f5a94]">
                 Truck jobs are {formatMoney(breakdown.hourlyRate)} per hour. We’ll confirm the final time with you on the day.
               </p>
             )}
@@ -162,7 +152,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 <li className="flex justify-between gap-3">
                   <span className={isTruck ? 'text-slate-400 line-through' : 'text-slate-600'}>Stairs and access</span>
                   {isTruck ? (
-                    <span className="text-emerald-700 font-bold">Included</span>
+                    <span className="text-[#146eb4] font-bold">Included</span>
                   ) : (
                     <span className="font-bold">{formatMoney(breakdown.access)}</span>
                   )}
@@ -185,7 +175,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
             <div className="pt-5 mt-4 border-t border-slate-100 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="font-black text-slate-900">Estimated total</span>
-                <span className={`text-2xl font-black ${isTruck ? 'text-indigo-700' : 'text-blue-700'}`}>{formatMoney(breakdown.total)}</span>
+                <span className="text-2xl font-black text-[#146eb4]">{formatMoney(breakdown.total)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Pay today (10%)</span>

@@ -42,7 +42,7 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
   if (status === 'loading') {
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center p-6 bg-white max-w-lg mx-auto text-center">
-        <div className="loading-spinner mb-6" style={{ borderTopColor: '#2563eb', borderColor: '#dbeafe' }}></div>
+        <div className="loading-spinner mb-6" style={{ borderTopColor: '#146eb4', borderColor: '#c5dff0' }}></div>
         <h1 className="text-2xl font-black text-slate-900">Just checking your payment…</h1>
         <p className="text-slate-600 mt-2 text-sm">Hang tight — this page on its own isn’t proof the deposit went through.</p>
       </div>
@@ -69,8 +69,8 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
           The remaining 90% is due on the day of the move. We don’t charge the full quote up front.
         </p>
         <ConfiguredContact className="text-sm text-slate-500 mt-6" />
-        <button type="button" onClick={onReset} className="mt-8 w-full min-h-14 rounded-2xl bg-slate-900 text-white font-black">
-          Back to the quote
+        <button type="button" onClick={onReset} className="btn-primary mt-8 w-full">
+          Back to home
         </button>
       </div>
     );
@@ -96,8 +96,8 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
         If money left your account, keep your receipt and get in touch — we’ll sort it.
       </p>
       <ConfiguredContact className="text-sm text-slate-500 mt-3" />
-      <button type="button" onClick={onReset} className="mt-8 w-full min-h-14 rounded-2xl bg-slate-900 text-white font-black">
-        Back to the quote
+      <button type="button" onClick={onReset} className="btn-primary mt-8 w-full">
+        Back to home
       </button>
     </div>
   );
