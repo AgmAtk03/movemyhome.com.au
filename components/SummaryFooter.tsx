@@ -67,8 +67,8 @@ const SummaryFooter: React.FC<FooterProps> = ({
               Live quote
               <i className={`ph-bold ph-caret-up text-[10px] text-blue-600 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} aria-hidden="true"></i>
             </span>
-            <span className={`font-black tracking-tight text-slate-900 ${animatePrice ? 'animate-price-bump' : ''}`} style={{ fontSize: 'clamp(1.6rem, 6vw, 2.1rem)' }} aria-live="polite">
-              {formatMoney(breakdown.total)}
+            <span className={`font-black tracking-tight text-slate-900 ${animatePrice ? 'animate-price-bump' : ''}`} style={{ fontSize: 'clamp(1.5rem, 6vw, 2.1rem)' }} aria-live="polite">
+              {step === 1 || !vehicle ? 'As you go' : formatMoney(breakdown.total)}
             </span>
             {isTruck && !breakdown.isFixedTrip && (
               <span className="text-[11px] font-bold text-indigo-700">Estimate · billed on time</span>

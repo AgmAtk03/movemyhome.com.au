@@ -66,7 +66,6 @@ const App: React.FC = () => {
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
-
   useEffect(() => {
     setState((prev) => {
       const updates: Partial<QuoteState> = {};
@@ -88,6 +87,13 @@ const App: React.FC = () => {
 
   const contactErrors = useMemo(() => validateContact(state.details), [state.details]);
   const contactOk = useMemo(() => isContactValid(state.details), [state.details]);
+
+  useEffect(() => {
+    if (state.step === 2 && state.vehicle) setNextHint('');
+    if (state.step === 3 && addressesReady(state.pickups, state.dropoffs)) setNextHint('');
+    if (state.step === 5 && scheduleReady(state.details)) setNextHint('');
+    if (state.step === 6 && contactOk) setNextHint('');
+  }, [state.step, state.vehicle, state.pickups, state.dropoffs, state.details, contactOk]);
 
   const priceBreakdown = useMemo(() => {
     if (!state.vehicle || state.step === 1) return EMPTY_BREAKDOWN;
@@ -414,7 +420,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 px-5 pt-8 pb-44 overflow-y-auto no-scrollbar bg-white">
+      <main className="flex-1 px-5 pt-8 pb-64 overflow-y-auto no-scrollbar bg-white">
         <div className="max-w-md mx-auto">
           {state.step === 1 && (
             <Step1ServiceType

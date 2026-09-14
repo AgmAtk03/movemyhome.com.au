@@ -32,7 +32,7 @@ const BookingExtras: React.FC<BookingExtrasProps> = ({ whatsappUrl, heading = 'P
       ) : (
         <p className="text-sm text-slate-500 bg-slate-50 border border-slate-100 rounded-2xl p-4">
           WhatsApp will appear here once a business number is added. You can still call{' '}
-          <a className="font-bold text-blue-700 underline" href={`tel:${CONFIG.COMPANY_PHONE.replace(/\s/g, '')}`}>
+          <a className="font-bold text-blue-700 underline whitespace-nowrap" href={`tel:${CONFIG.COMPANY_PHONE.replace(/\s/g, '')}`}>
             {CONFIG.COMPANY_PHONE}
           </a>
           .

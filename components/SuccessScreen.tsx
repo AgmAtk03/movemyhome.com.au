@@ -49,7 +49,7 @@ const SuccessScreen: React.FC<SuccessProps> = ({
           <li>3. After that we can send a Stripe payment link for a deposit, if you’d like to lock it in.</li>
         </ol>
         <p className="text-sm text-blue-800 mt-3">
-          Questions? {CONFIG.COMPANY_EMAIL} or {CONFIG.COMPANY_PHONE}.
+          Questions? {CONFIG.COMPANY_EMAIL} or <span className="whitespace-nowrap">{CONFIG.COMPANY_PHONE}</span>.
         </p>
       </div>
 

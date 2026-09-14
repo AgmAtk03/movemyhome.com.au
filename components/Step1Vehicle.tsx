@@ -22,8 +22,6 @@ const Step1Vehicle: React.FC<Step1Props> = ({
 }) => {
   const isLongDistance = distanceKm > RATES.LONG_DISTANCE_THRESHOLD;
   const currentRate = crewSize === 1 ? RATES.TRUCK_HOURLY_SOLO : RATES.TRUCK_HOURLY_TEAM;
-  const hideDescription = serviceType === 'item_delivery';
-
   const handleAdjustHours = (delta: number) => {
     onTruckHoursChange(Math.max(2, truckHours + delta));
   };
@@ -67,9 +65,7 @@ const Step1Vehicle: React.FC<Step1Props> = ({
               </div>
               <div className="flex-1">
                 <span className="font-black text-lg text-slate-900 leading-none">{opt.name}</span>
-                {!hideDescription && (
-                  <span className="text-sm text-slate-500 font-medium block mt-1">{opt.desc}</span>
-                )}
+                <span className="text-sm text-slate-500 font-medium block mt-1">{opt.desc}</span>
                 <span className="text-xs font-semibold text-slate-400 mt-1 block">{rateDisplay}</span>
               </div>
 

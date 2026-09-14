@@ -217,11 +217,11 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
           <div className="bg-slate-900 rounded-[2.5rem] p-8 relative overflow-hidden">
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex items-center gap-4 mb-8">
-                <button type="button" onClick={() => setTimeMode('hour')} className={`text-4xl font-black ${timeMode === 'hour' ? 'text-white' : 'text-slate-500'}`}>
+                <button type="button" onClick={() => setTimeMode('hour')} aria-label="Edit hour" className={`text-4xl font-black ${timeMode === 'hour' ? 'text-white' : 'text-slate-500'}`}>
                   {currentHour.toString().padStart(2, '0')}
                 </button>
-                <span className="text-4xl font-black text-slate-600">:</span>
-                <button type="button" onClick={() => setTimeMode('minute')} className={`text-4xl font-black ${timeMode === 'minute' ? 'text-white' : 'text-slate-500'}`}>
+                <span className="text-4xl font-black text-slate-600" aria-hidden="true">:</span>
+                <button type="button" onClick={() => setTimeMode('minute')} aria-label="Edit minutes" className={`text-4xl font-black ${timeMode === 'minute' ? 'text-white' : 'text-slate-500'}`}>
                   {currentMinute.toString().padStart(2, '0')}
                 </button>
                 <div className="flex flex-col gap-2 ml-4">
@@ -245,6 +245,7 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
                       key={val}
                       type="button"
                       onClick={() => setClockTime(val, timeMode)}
+                      aria-label={timeMode === 'hour' ? `${val} o'clock` : `${val} minutes`}
                       className={`absolute w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold ${isActive ? 'text-white bg-blue-600' : 'text-slate-400'}`}
                       style={{ left: `calc(50% + ${x}px - 22px)`, top: `calc(50% + ${y}px - 22px)` }}
                     >

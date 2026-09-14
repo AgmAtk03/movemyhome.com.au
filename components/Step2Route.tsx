@@ -242,7 +242,7 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
   };
 
   return (
-    <div className="space-y-6 animate-premium-in pb-10">
+    <div className="space-y-6 animate-premium-in pb-24">
       <div className="space-y-2">
         <h2 tabIndex={-1} className="text-2xl font-black text-slate-900 tracking-tight outline-none">
           Where are we heading?
