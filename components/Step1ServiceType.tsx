@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { ServiceType } from '../types';
 import { RATES } from '../constants';
+import { formatMoney } from '../lib/quote';
 
 interface Step1ServiceTypeProps {
   selected: ServiceType | null;
@@ -12,88 +12,88 @@ const Step1ServiceType: React.FC<Step1ServiceTypeProps> = ({ selected, onSelect 
   return (
     <div className="space-y-8 animate-premium-in">
       <div className="space-y-2">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">How can we help?</h2>
-        <p className="text-slate-500 text-sm font-medium">Select the type of service you require today.</p>
+        <h2 tabIndex={-1} className="text-2xl font-black text-slate-900 tracking-tight outline-none">
+          What are you moving?
+        </h2>
+        <p className="text-slate-500 text-base font-medium leading-relaxed">
+          Pick the closest match — we can always adjust when we chat.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {/* Home Move Option */}
+      <div className="grid grid-cols-1 gap-3" role="list">
         <button
+          type="button"
           onClick={() => onSelect('home_move')}
-          className={`group flex items-center gap-6 p-7 rounded-[2.5rem] border-2 transition-all duration-300 text-left relative overflow-hidden ${
+          aria-pressed={selected === 'home_move'}
+          className={`group flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 transition-all duration-300 text-left ${
             selected === 'home_move'
-              ? 'border-blue-600 bg-blue-50/50 shadow-xl shadow-blue-500/10'
-              : 'border-slate-100 bg-white hover:border-slate-200 active:scale-[0.98]'
+              ? 'border-blue-600 bg-blue-50/70 shadow-lg shadow-blue-500/10'
+              : 'border-slate-200 bg-white hover:border-slate-300 active:scale-[0.99]'
           }`}
         >
-          <div className={`w-16 h-16 flex items-center justify-center text-4xl rounded-2xl transition-all duration-500 ${
-            selected === 'home_move' ? 'bg-blue-600 text-white scale-110' : 'bg-slate-50 group-hover:scale-105'
+          <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
+            selected === 'home_move' ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-700'
           }`}>
-            <i className="ph-fill ph-house-line"></i>
+            <i className="ph-fill ph-house-line" aria-hidden="true"></i>
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <h3 className="font-black text-lg text-slate-900 tracking-tight leading-none">Home Move</h3>
-              <span className="bg-blue-100 text-blue-600 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">Best Value</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-black text-lg text-slate-900 tracking-tight">Whole home</h3>
+              <span className="bg-blue-100 text-blue-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Most popular</span>
             </div>
-            <p className="text-sm text-slate-500 font-medium leading-tight mb-2">Full House/Unit relocations.</p>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Starting from ${RATES.TRUCK_HOURLY_TEAM * 2}</span>
+            <p className="text-sm text-slate-500 font-medium mt-1">House, unit, or a full apartment move.</p>
+            <p className="text-xs font-semibold text-slate-400 mt-1">From {formatMoney(RATES.TRUCK_HOURLY_TEAM * 2)} · 2-hour truck minimum</p>
           </div>
-          {selected === 'home_move' && <i className="ph-fill ph-check-circle text-blue-600 text-2xl"></i>}
         </button>
 
-        {/* Room Move Option */}
         <button
+          type="button"
           onClick={() => onSelect('room_move')}
-          className={`group flex items-center gap-6 p-7 rounded-[2.5rem] border-2 transition-all duration-300 text-left relative overflow-hidden ${
+          aria-pressed={selected === 'room_move'}
+          className={`group flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 transition-all duration-300 text-left ${
             selected === 'room_move'
-              ? 'border-violet-600 bg-violet-50/50 shadow-xl shadow-violet-500/10'
-              : 'border-slate-100 bg-white hover:border-slate-200 active:scale-[0.98]'
+              ? 'border-violet-600 bg-violet-50/70 shadow-lg shadow-violet-500/10'
+              : 'border-slate-200 bg-white hover:border-slate-300 active:scale-[0.99]'
           }`}
         >
-          <div className={`w-16 h-16 flex items-center justify-center text-4xl rounded-2xl transition-all duration-500 ${
-            selected === 'room_move' ? 'bg-violet-600 text-white scale-110' : 'bg-slate-50 group-hover:scale-105'
+          <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
+            selected === 'room_move' ? 'bg-violet-600 text-white' : 'bg-slate-50 text-slate-700'
           }`}>
-            <i className="ph-fill ph-door-open"></i>
+            <i className="ph-fill ph-door-open" aria-hidden="true"></i>
           </div>
           <div className="flex-1">
-            <h3 className="font-black text-lg text-slate-900 tracking-tight leading-none mb-0.5">Room Move</h3>
-            <p className="text-sm text-slate-500 font-medium leading-tight mb-2">Single room or studio items.</p>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Starting from ${RATES.VAN_BASE}</span>
+            <h3 className="font-black text-lg text-slate-900 tracking-tight">A room or studio</h3>
+            <p className="text-sm text-slate-500 font-medium mt-1">One room, share-house bits, or a small load.</p>
+            <p className="text-xs font-semibold text-slate-400 mt-1">From {formatMoney(RATES.VAN_BASE)}</p>
           </div>
-          {selected === 'room_move' && <i className="ph-fill ph-check-circle text-violet-600 text-2xl"></i>}
         </button>
 
-        {/* Item Delivery Option */}
         <button
+          type="button"
           onClick={() => onSelect('item_delivery')}
-          className={`group flex items-center gap-6 p-7 rounded-[2.5rem] border-2 transition-all duration-300 text-left relative overflow-hidden ${
+          aria-pressed={selected === 'item_delivery'}
+          className={`group flex items-center gap-5 p-5 min-h-[5.5rem] rounded-[1.75rem] border-2 transition-all duration-300 text-left ${
             selected === 'item_delivery'
-              ? 'border-indigo-600 bg-indigo-50/50 shadow-xl shadow-indigo-500/10'
-              : 'border-slate-100 bg-white hover:border-slate-200 active:scale-[0.98]'
+              ? 'border-indigo-600 bg-indigo-50/70 shadow-lg shadow-indigo-500/10'
+              : 'border-slate-200 bg-white hover:border-slate-300 active:scale-[0.99]'
           }`}
         >
-          <div className={`w-16 h-16 flex items-center justify-center text-4xl rounded-2xl transition-all duration-500 ${
-            selected === 'item_delivery' ? 'bg-indigo-600 text-white scale-110' : 'bg-slate-50 group-hover:scale-105'
+          <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
+            selected === 'item_delivery' ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-700'
           }`}>
-            <i className="ph-fill ph-package"></i>
+            <i className="ph-fill ph-package" aria-hidden="true"></i>
           </div>
           <div className="flex-1">
-            <h3 className="font-black text-lg text-slate-900 tracking-tight leading-none mb-0.5">Delivery</h3>
-            <p className="text-sm text-slate-500 font-medium leading-tight mb-2">Furniture or Marketplace items.</p>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Starting from ${RATES.VAN_BASE}</span>
+            <h3 className="font-black text-lg text-slate-900 tracking-tight">A few items</h3>
+            <p className="text-sm text-slate-500 font-medium mt-1">Marketplace finds, furniture, or a single bulky piece.</p>
+            <p className="text-xs font-semibold text-slate-400 mt-1">From {formatMoney(RATES.VAN_BASE)}</p>
           </div>
-          {selected === 'item_delivery' && <i className="ph-fill ph-check-circle text-indigo-600 text-2xl"></i>}
         </button>
       </div>
 
-      <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
-        <div className="flex items-center gap-3 text-slate-400 mb-2">
-          <i className="ph-fill ph-lightning text-lg"></i>
-          <span className="text-[10px] font-black uppercase tracking-widest">Instant Quotes</span>
-        </div>
-        <p className="text-[11px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight">
-          Prices adjust automatically based on your inventory, distance, and chosen vehicle. No hidden surprises.
+      <div className="p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100">
+        <p className="text-sm font-medium text-slate-600 leading-relaxed">
+          Your quote updates as you go. No hidden extras — if something changes, we’ll talk it through before moving day.
         </p>
       </div>
     </div>
