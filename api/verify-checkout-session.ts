@@ -1,10 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { applyCors } from './_lib/cors.js';
 import { isStripeConfigured } from './_lib/env.js';
 import { getStripe } from './_lib/stripeClient.js';
 import { formatMoney } from '../shared/money.js';
 import { PAYMENT_NOT_FOUND, PAYMENTS_OFF_SHORT } from '../lib/customerCopy.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (applyCors(req, res)) return;
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
