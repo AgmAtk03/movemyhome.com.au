@@ -1,4 +1,4 @@
-import { BRAND_NAME } from '../../shared/rates';
+import { BRAND_NAME } from '../../shared/rates.js';
 
 function read(name: string): string {
   return String(process.env[name] ?? '').trim();

@@ -29,7 +29,9 @@ That origin is used for Stripe Checkout `success_url` / `cancel_url` (`/success?
 
 Do not send webhooks through the Netlify proxy. Stripe signs the raw body; an extra reverse-proxy hop can change bytes or headers and fail signature verification. Keep one endpoint (this Vercel URL) in the Stripe Dashboard.
 
-`@vercel/node` must stay in `package.json` **dependencies** (not `devDependencies`). Production serverless installs omit devDependencies; without that package the TypeScript `/api/*.ts` functions crash on boot with `FUNCTION_INVOCATION_FAILED` even when `STRIPE_SECRET_KEY` is set.
+Vercel compiles `/api/*.ts` to ESM `.js` on Node.js 24. Relative imports in that graph must use explicit **`.js` extensions** (TypeScript resolves `./env.js` to `./env.ts`). Extensionless paths such as `./_lib/env` become `Cannot find module '/var/task/api/_lib/env'` at runtime.
+
+`@vercel/node` stays in `package.json` **dependencies** (not `devDependencies`) so production installs still have the Node helper types.
 
 ## Run locally
 

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isStripeConfigured } from './_lib/env';
-import { getStripe } from './_lib/stripeClient';
-import { formatMoney } from '../shared/money';
-import { PAYMENT_NOT_FOUND, PAYMENTS_OFF_SHORT } from '../lib/customerCopy';
+import { isStripeConfigured } from './_lib/env.js';
+import { getStripe } from './_lib/stripeClient.js';
+import { formatMoney } from '../shared/money.js';
+import { PAYMENT_NOT_FOUND, PAYMENTS_OFF_SHORT } from '../lib/customerCopy.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {

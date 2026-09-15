@@ -1,6 +1,6 @@
-import { PriceBreakdown, QuoteSnapshot, QuoteState } from '../types';
-import { SERVICE_LABELS, BRAND_NAME } from './rates';
-import { formatMoney } from './money';
+import type { PriceBreakdown, QuoteSnapshot, QuoteState } from '../types.js';
+import { SERVICE_LABELS, BRAND_NAME } from './rates.js';
+import { formatMoney } from './money.js';
 import {
   crewLabel,
   formatDateAu,
@@ -9,8 +9,8 @@ import {
   formatTimeAu,
   moveTypeLabel,
   vehicleLabel,
-} from './format';
-import { sanitizeMultiline, sanitizePlainText } from '../lib/sanitize';
+} from './format.js';
+import { sanitizeMultiline, sanitizePlainText } from '../lib/sanitize.js';
 
 export function buildQuoteSnapshot(state: QuoteState, breakdown: PriceBreakdown): QuoteSnapshot {
   const included = [

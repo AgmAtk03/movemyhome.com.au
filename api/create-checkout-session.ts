@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { parseCheckoutPayload } from './_lib/parseQuote';
-import { calculateFullQuote } from '../shared/quoteCalc';
-import { formatMoney } from '../shared/money';
-import { buildQuoteSnapshot } from '../shared/snapshot';
-import { companyConfig, isStripeConfigured, publicSiteUrl } from './_lib/env';
-import { getStripe, meta } from './_lib/stripeClient';
-import { BRAND_NAME } from '../shared/rates';
-import { sanitizePlainText } from '../lib/sanitize';
-import { PAYMENT_OPEN_ERROR, PAYMENTS_OFF_SHORT, QUOTE_TOO_SMALL } from '../lib/customerCopy';
+import { parseCheckoutPayload } from './_lib/parseQuote.js';
+import { calculateFullQuote } from '../shared/quoteCalc.js';
+import { formatMoney } from '../shared/money.js';
+import { buildQuoteSnapshot } from '../shared/snapshot.js';
+import { companyConfig, isStripeConfigured, publicSiteUrl } from './_lib/env.js';
+import { getStripe, meta } from './_lib/stripeClient.js';
+import { BRAND_NAME } from '../shared/rates.js';
+import { sanitizePlainText } from '../lib/sanitize.js';
+import { PAYMENT_OPEN_ERROR, PAYMENTS_OFF_SHORT, QUOTE_TOO_SMALL } from '../lib/customerCopy.js';
 
 function originFrom(req: VercelRequest): { host: string | null; proto: string | null } {
   const forwarded = String(req.headers['x-forwarded-host'] || req.headers.host || '');

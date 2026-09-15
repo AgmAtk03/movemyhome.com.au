@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
-import { isStripeWebhookConfigured, stripeWebhookSecret } from './_lib/env';
-import { getStripe } from './_lib/stripeClient';
-import { sendPaidBookingEmails } from './_lib/emailjs';
-import { QuoteState } from '../types';
-import { calculateFullQuote } from '../shared/quoteCalc';
-import { buildQuoteSnapshot } from '../shared/snapshot';
-import { formatMoney } from '../shared/money';
+import { isStripeWebhookConfigured, stripeWebhookSecret } from './_lib/env.js';
+import { getStripe } from './_lib/stripeClient.js';
+import { sendPaidBookingEmails } from './_lib/emailjs.js';
+import type { QuoteState } from '../types.js';
+import { calculateFullQuote } from '../shared/quoteCalc.js';
+import { buildQuoteSnapshot } from '../shared/snapshot.js';
+import { formatMoney } from '../shared/money.js';
 
 export const config = {
   api: {

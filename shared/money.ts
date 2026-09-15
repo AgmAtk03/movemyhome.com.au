@@ -1,4 +1,4 @@
-import { DEPOSIT_RATE } from './rates';
+import { DEPOSIT_RATE } from './rates.js';
 
 /** Round a dollar amount to 2 decimal places (half-up for positive values). */
 export function roundMoney(amount: number): number {

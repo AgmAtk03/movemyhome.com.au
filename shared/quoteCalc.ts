@@ -1,6 +1,6 @@
-import { Inventory, LocationEntry, PriceBreakdown, VehicleType } from '../types';
-import { FLOOR_RATES, INVENTORY_COSTS, RATES } from './rates';
-import { depositFromQuoteTotal, roundMoney } from './money';
+import type { Inventory, LocationEntry, PriceBreakdown, VehicleType } from '../types.js';
+import { FLOOR_RATES, INVENTORY_COSTS, RATES } from './rates.js';
+import { depositFromQuoteTotal, roundMoney } from './money.js';
 
 export const EMPTY_BREAKDOWN: PriceBreakdown = {
   total: 0,

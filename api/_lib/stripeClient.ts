@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { stripeSecretKey } from './env';
+import { stripeSecretKey } from './env.js';
 
 let client: Stripe | null = null;
 

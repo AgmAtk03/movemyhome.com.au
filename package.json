@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "tsx --test shared/quoteCalc.test.ts"
+    "test": "tsx --test shared/quoteCalc.test.ts shared/apiEsmImports.test.ts"
   },
   "dependencies": {
     "@vercel/node": "^5.10.2",
