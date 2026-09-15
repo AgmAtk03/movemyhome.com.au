@@ -90,6 +90,7 @@ Contact submit
   → Stripe Checkout Session for Math.round(deposit * 100) cents (AUD)
   → redirect to Stripe-hosted Checkout (no card form on this site)
   → success_url /success?session_id={CHECKOUT_SESSION_ID}
+  → cancel_url /cancel
   → GET /api/verify-checkout-session  (Stripe retrieve; if paid, send EmailJS unless metadata says already sent)
   → webhook POST /api/stripe-webhook  (checkout.session.completed, signature verified; same send, idempotent)
   → EmailJS customer confirmation + business job sheet
