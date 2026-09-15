@@ -39,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({ step, totalSteps, onBack, onHome }) => 
         )}
 
         <a href="/" onClick={goHome} className="flex items-center gap-2 min-h-11 min-w-0 flex-1">
-          <BrandMark className="h-8 w-8" />
+          <BrandMark className="h-8 w-12" />
           <span className="font-black tracking-tight text-slate-900 truncate">{CONFIG.COMPANY_NAME}</span>
         </a>
 

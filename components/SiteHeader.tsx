@@ -28,7 +28,7 @@ const SiteHeader: React.FC<SiteHeaderProps> = ({ current = 'home' }) => {
           className="flex items-center gap-2 min-h-11 min-w-0"
           aria-current={current === 'home' ? 'page' : undefined}
         >
-          <BrandMark className="h-9 w-9" />
+          <BrandMark className="h-9 w-14" />
           <span className="font-black text-slate-900 tracking-tight truncate">
             {CONFIG.COMPANY_NAME}
           </span>

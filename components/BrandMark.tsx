@@ -4,17 +4,20 @@ interface BrandMarkProps {
   className?: string;
 }
 
-/** Three-peak mountain range — the mark on the My Home truck. */
-const BrandMark: React.FC<BrandMarkProps> = ({ className = 'h-9 w-9' }) => (
+/** Three-peak mountain range with orange accent — My Home brand mark. */
+const BrandMark: React.FC<BrandMarkProps> = ({ className = 'h-9 w-14' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 64 64"
+    viewBox="0 0 160 96"
     className={`${className} flex-shrink-0`}
     aria-hidden="true"
     focusable="false"
   >
-    <circle cx="50" cy="18" r="8" fill="#ff9900" />
-    <path fill="#146eb4" d="M4 54 L18 30 L26 42 L34 14 L44 38 L50 26 L60 54 Z" />
+    <polygon fill="#146eb4" points="38,86 80,10 122,86" />
+    <polygon fill="#146eb4" points="14,86 46,36 82,86" />
+    <polygon fill="#146eb4" points="78,86 114,36 146,86" />
+    <polygon fill="#ffffff" points="50,86 80,38 110,86" />
+    <polygon fill="#ff9900" points="56,86 80,48 104,86" />
   </svg>
 );
 

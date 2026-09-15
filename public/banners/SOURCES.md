@@ -9,4 +9,4 @@ All four slides are full-resolution exports from the owner’s **Canva Myhome** 
 | banner-3 | Packing with My Home boxes and uniform | `MAHVMPJxOH0` | Owner Canva library — My Home Removals |
 | banner-4 | Couple packing boxes in a new place | `MAHVMBb-a68` | Owner Canva library — My Home Removals |
 
-Site mark: `public/logo.svg` is a three-peak mountain range (the mark on the My Home truck), in brand blue `#146eb4` with an orange `#ff9900` sun. PNG / favicon / apple-touch-icon are rasterised from that SVG.
+Site mark: `public/logo.svg` is the three-peak mountain range from the Canva Myhome lockup (blue peaks `#146eb4`, orange accent peak `#ff9900`, white gap). Decorative border cropped. PNG / favicon / apple-touch-icon are rasterised from that SVG on a white background.
