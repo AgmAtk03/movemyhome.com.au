@@ -58,68 +58,56 @@ const SummaryFooter: React.FC<FooterProps> = ({
     }
   }, [breakdown.total]);
 
+  useEffect(() => {
+    const closeOnFormFocus = (event: FocusEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('footer')) return;
+      if (target.matches('input, textarea, select')) {
+        setShowBreakdown(false);
+      }
+    };
+    document.addEventListener('focusin', closeOnFormFocus);
+    return () => document.removeEventListener('focusin', closeOnFormFocus);
+  }, []);
+
   return (
     <>
-      {showBreakdown && (
-        <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[45]"
-          onClick={() => setShowBreakdown(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-2xl border-t border-slate-100 px-5 pt-4 pb-safe z-50 rounded-t-[2rem] shadow-[0_-12px_40px_rgba(0,0,0,0.08)]">
-        <button
-          type="button"
-          className="w-full text-left"
-          onClick={() => setShowBreakdown(!showBreakdown)}
-          aria-expanded={showBreakdown}
-          aria-controls="quote-breakdown"
-        >
-          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mb-2">
-            Tap for a breakdown
-            <Icon name="caret-up" className={`text-[10px] text-[#146eb4] transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
-          </span>
+      <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-2xl border-t border-slate-100 px-5 pt-3 pb-safe z-50 rounded-t-[2rem] shadow-[0_-12px_40px_rgba(0,0,0,0.08)]">
+        <div className={animatePrice ? 'animate-price-bump' : undefined}>
           {showMoney ? (
-            <dl className={`space-y-1.5 ${animatePrice ? 'animate-price-bump' : ''}`}>
+            <dl className="space-y-1">
               <div className="flex justify-between items-baseline gap-3">
                 <dt className="text-sm font-bold text-slate-600">Estimated total</dt>
                 <dd className="text-2xl font-black text-slate-900 tracking-tight" aria-live="polite">{formatMoney(breakdown.total)}</dd>
               </div>
               {isBookStep && (
-                <>
-                  <div className="flex justify-between gap-3 text-sm">
-                    <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
-                    <dd className="font-black text-slate-800">{formatMoney(breakdown.deposit)}</dd>
-                  </div>
-                  <div className="flex justify-between gap-3 text-sm">
-                    <dt className="font-semibold text-slate-500">Due on the day (90%)</dt>
-                    <dd className="font-black text-slate-800">{formatMoney(breakdown.balance)}</dd>
-                  </div>
-                </>
+                <div className="flex justify-between gap-3 text-sm">
+                  <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
+                  <dd className="font-black text-slate-800">{formatMoney(breakdown.deposit)}</dd>
+                </div>
               )}
             </dl>
           ) : (
             <p className="text-lg font-black text-slate-400">Your quote appears as you go</p>
           )}
           {isTruck && !breakdown.isFixedTrip && showMoney && (
-            <p className="text-[11px] font-bold text-[#0f5a94] mt-2">Hourly truck — final total depends on time on the day</p>
+            <p className="text-[11px] font-bold text-[#0f5a94] mt-1">Hourly truck — final total depends on time on the day</p>
           )}
+        </div>
+        <button
+          type="button"
+          className="mt-1 min-h-11 text-left text-[11px] font-bold text-slate-400 flex items-center gap-1"
+          onClick={() => setShowBreakdown((open) => !open)}
+          aria-expanded={showBreakdown}
+          aria-controls="quote-breakdown"
+        >
+          {showBreakdown ? 'Hide quote details' : 'Quote details'}
+          <Icon name="caret-up" className={`text-[10px] text-[#146eb4] transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
         </button>
 
         {nextHint && (
-          <p className="text-sm text-rose-700 mt-3 font-medium" role="status">{nextHint}</p>
-        )}
-        {isBookStep && fuelLine && fuelLine.status !== 'none' && (
-          <p className="text-xs font-semibold text-slate-600 mt-3 leading-relaxed">
-            Fuel: <span className="font-black text-slate-900">{fuelLine.amount}</span>
-            {fuelLine.note ? ` — ${fuelLine.note}` : ''}
-          </p>
-        )}
-        {isBookStep && (
-          <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-            Pay <strong>10% of the total today</strong> to book and hold your slot. Fully refundable if you cancel at least 12 hours before your move date and time. The rest is due on the day.
-          </p>
+          <p className="text-sm text-rose-700 mt-2 font-medium" role="status">{nextHint}</p>
         )}
 
         {isBookStep ? (

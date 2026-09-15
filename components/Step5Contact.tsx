@@ -21,7 +21,7 @@ const fieldClass = (invalid: boolean) =>
 
 const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, errors, showErrors }) => {
   return (
-    <div className="space-y-8 animate-premium-in pb-10">
+    <div className="space-y-8 pb-10">
       <div className="space-y-2">
         <h2 tabIndex={-1} className="text-2xl font-black text-slate-900 tracking-tight outline-none">
           How can we reach you?
@@ -30,8 +30,6 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           We’ll use this to confirm your booking. We never share your details.
         </p>
       </div>
-
-      <QuoteRecap snapshot={snapshot} />
 
       <div className="space-y-5">
         <div className="space-y-1.5">
@@ -45,6 +43,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             </span>
             <input
               id="customer-name"
+              name="name"
               type="text"
               autoComplete="name"
               placeholder="e.g. Sam Nguyen"
@@ -69,9 +68,12 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             </span>
             <input
               id="customer-email"
+              name="email"
               type="email"
               autoComplete="email"
               inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
               placeholder="e.g. sam@email.com"
               className={fieldClass(showErrors && Boolean(errors.email))}
               value={details.email}
@@ -94,6 +96,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             </span>
             <input
               id="customer-phone"
+              name="tel"
               type="tel"
               autoComplete="tel"
               inputMode="tel"
@@ -112,6 +115,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           <label htmlFor="customer-notes" className="text-sm font-bold text-slate-700">Anything we should know? (optional)</label>
           <textarea
             id="customer-notes"
+            name="instructions"
             placeholder="Parking, stairs we missed, heavy pieces, gate codes…"
             rows={4}
             className="w-full p-4 bg-white border border-slate-200 rounded-3xl text-base font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#146eb4]/15 focus:border-[#146eb4] resize-none"
@@ -120,6 +124,8 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           />
         </div>
       </div>
+
+      <QuoteRecap snapshot={snapshot} />
 
       <BookingExtras whatsappUrl={whatsappUrl} />
     </div>

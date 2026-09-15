@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { apiUrl } from '../lib/api';
+import { fetchApi } from '../lib/api';
 import { PAYMENTS_OFF_BODY, PAYMENTS_OFF_HEADING, PAYMENT_NOT_FOUND, customerFacingError } from '../lib/customerCopy';
 import ConfiguredContact from './ConfiguredContact';
 import ContactActions from './ContactActions';
@@ -31,7 +31,7 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
       return;
     }
 
-    fetch(apiUrl(`/api/verify-checkout-session?session_id=${encodeURIComponent(sessionId)}`))
+    fetchApi(`/api/verify-checkout-session?session_id=${encodeURIComponent(sessionId)}`)
       .then(async (res) => {
         const json = (await res.json()) as VerifyResponse;
         setData(json);

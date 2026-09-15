@@ -1,5 +1,5 @@
 import { QuoteState } from '../types';
-import { apiUrl } from './api';
+import { fetchApi } from './api';
 import { sanitizePlainText } from './sanitize';
 import { PAYMENTS_OFF_SHORT, PAYMENT_OPEN_ERROR, PAYMENT_START_ERROR, customerFacingError } from './customerCopy';
 
@@ -52,65 +52,61 @@ export function checkoutPayload(state: QuoteState) {
   };
 }
 
+function isStripeCheckoutUrl(url: unknown): url is string {
+  if (typeof url !== 'string' || !url.startsWith('https://')) return false;
+  return url.startsWith('https://checkout.stripe.com/') || url.includes('stripe.com');
+}
+
+/** Map a JSON checkout API body to a result. Network/HTML/404 must not become demoMode. */
+export function checkoutResultFromJson(status: number, data: unknown): CheckoutResult {
+  const row = (data && typeof data === 'object' ? data : {}) as {
+    demoMode?: boolean;
+    message?: string;
+    error?: string;
+    url?: string;
+    quoted?: CheckoutQuoted;
+  };
+
+  if (status < 200 || status >= 300) {
+    return {
+      ok: false,
+      demoMode: false,
+      error: customerFacingError(row.error, PAYMENT_START_ERROR),
+    };
+  }
+
+  if (row.demoMode === true) {
+    return {
+      ok: true,
+      demoMode: true,
+      quoted: row.quoted,
+      message: typeof row.message === 'string' && row.message.trim() ? row.message : PAYMENTS_OFF_SHORT,
+    };
+  }
+
+  if (isStripeCheckoutUrl(row.url)) {
+    return { ok: true, demoMode: false, url: row.url, quoted: row.quoted };
+  }
+
+  return { ok: false, demoMode: false, error: PAYMENT_OPEN_ERROR };
+}
+
 export async function createCheckoutSession(state: QuoteState): Promise<CheckoutResult> {
   let response: Response;
   try {
-    response = await fetch(apiUrl('/api/create-checkout-session'), {
+    response = await fetchApi('/api/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(checkoutPayload(state)),
     });
   } catch {
     return {
-      ok: true,
-      demoMode: true,
-      message: PAYMENTS_OFF_SHORT,
-    };
-  }
-
-  if (response.status === 404) {
-    return {
-      ok: true,
-      demoMode: true,
-      message: PAYMENTS_OFF_SHORT,
-    };
-  }
-
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    return {
-      ok: true,
-      demoMode: true,
-      message: PAYMENTS_OFF_SHORT,
-    };
-  }
-
-  const data = await response.json().catch(() => ({})) as Partial<CheckoutResponse> & { error?: string };
-
-  if (!response.ok) {
-    return {
       ok: false,
       demoMode: false,
-      error: customerFacingError(data.error, PAYMENT_START_ERROR),
+      error: PAYMENT_START_ERROR,
     };
   }
 
-  if ('demoMode' in data && data.demoMode) {
-    return {
-      ok: true,
-      demoMode: true,
-      quoted: data.quoted,
-      message: PAYMENTS_OFF_SHORT,
-    };
-  }
-
-  if ('url' in data && data.url && data.url.startsWith('https://checkout.stripe.com/')) {
-    return { ok: true, demoMode: false, url: data.url, quoted: data.quoted };
-  }
-
-  if ('url' in data && typeof data.url === 'string' && data.url.startsWith('https://') && data.url.includes('stripe.com')) {
-    return { ok: true, demoMode: false, url: data.url, quoted: data.quoted };
-  }
-
-  return { ok: false, demoMode: false, error: PAYMENT_OPEN_ERROR };
+  const data = await response.json().catch(() => ({}));
+  return checkoutResultFromJson(response.status, data);
 }
