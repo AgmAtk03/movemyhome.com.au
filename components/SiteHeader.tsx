@@ -28,7 +28,7 @@ const SiteHeader: React.FC<SiteHeaderProps> = ({ current = 'home' }) => {
           className="flex items-center gap-2 min-h-11 min-w-0"
           aria-current={current === 'home' ? 'page' : undefined}
         >
-          <BrandMark className="h-10 w-10" />
+          <BrandMark className="h-9 w-9" />
           <span className="font-black text-slate-900 tracking-tight truncate">
             {CONFIG.COMPANY_NAME}
           </span>
@@ -38,7 +38,7 @@ const SiteHeader: React.FC<SiteHeaderProps> = ({ current = 'home' }) => {
           <a href="/" onClick={(e) => go(e, '/')} className={linkClass(current === 'home')} aria-current={current === 'home' ? 'page' : undefined}>
             Home
           </a>
-          <a href="/quote" onClick={(e) => go(e, '/quote')} className={`${linkClass(current === 'quote')} max-[380px]:hidden`}>
+          <a href="/quote" onClick={(e) => go(e, '/quote')} className={`${linkClass(current === 'quote')} max-[430px]:hidden`}>
             Get a quote
           </a>
           <a href="/privacy" onClick={(e) => go(e, '/privacy')} className={linkClass(current === 'privacy')}>
