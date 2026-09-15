@@ -3,6 +3,7 @@ import { VehicleType } from '../types';
 import { formatMoney } from '../lib/quote';
 import Icon from './Icon';
 import FuelCallout from './FuelCallout';
+import ContactActions from './ContactActions';
 
 interface FooterProps {
   breakdown: {
@@ -120,6 +121,10 @@ const SummaryFooter: React.FC<FooterProps> = ({
             Pay <strong>10% of the total today</strong> to book and hold your slot. Fully refundable if you cancel at least 12 hours before your move date and time. The rest is due on the day.
           </p>
         )}
+
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <ContactActions variant="dock" />
+        </div>
 
         {isBookStep ? (
           <button type="button" onClick={onBook} className="btn-primary mt-3 w-full text-lg">

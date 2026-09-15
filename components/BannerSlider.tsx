@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { CONFIG } from '../constants';
 import { HOME_BANNERS } from './banners';
 import Icon from './Icon';
 
@@ -40,6 +41,8 @@ const BannerSlider: React.FC = () => {
     if (delta > 40) go(index - 1);
   };
 
+  const activeSlide = HOME_BANNERS[index];
+
   return (
     <section
       className="relative w-full overflow-hidden bg-slate-900"
@@ -54,7 +57,7 @@ const BannerSlider: React.FC = () => {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="relative h-[10.5rem] sm:h-[min(44vw,28rem)] lg:h-[32rem]">
+      <div className="relative h-[14.5rem] sm:h-[min(44vw,28rem)] lg:h-[32rem]">
         {HOME_BANNERS.map((slide, i) => {
           const active = i === index;
           return (
@@ -82,16 +85,30 @@ const BannerSlider: React.FC = () => {
                   decoding={i === 0 ? 'sync' : 'async'}
                 />
               </picture>
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-transparent to-transparent sm:from-slate-950/55" />
+              <div
+                className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(15,23,42,0.55)_0%,rgba(15,23,42,0.28)_52%,rgba(15,23,42,0.42)_100%)]"
+                aria-hidden="true"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-transparent to-slate-950/25" aria-hidden="true" />
             </div>
           );
         })}
 
-        <p className="absolute left-3 right-14 bottom-11 z-20 sm:left-6 sm:right-auto sm:bottom-16 text-white text-xs font-semibold tracking-wide drop-shadow pointer-events-none">
-          {HOME_BANNERS[index].kicker}
-        </p>
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none px-16 sm:px-24 pb-9 pt-2">
+          <div className="text-center max-w-lg">
+            <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em] text-[#ff9900] [text-shadow:0_1px_8px_rgba(0,0,0,0.55)]">
+              {CONFIG.COMPANY_NAME}
+            </p>
+            <p
+              className="mt-1.5 text-white text-[1.15rem] sm:text-3xl lg:text-4xl font-black tracking-tight leading-snug [text-shadow:0_2px_18px_rgba(0,0,0,0.65)]"
+              aria-live="polite"
+            >
+              {activeSlide.kicker}
+            </p>
+          </div>
+        </div>
 
-        <div className="absolute inset-y-0 left-0 right-0 z-20 flex items-center justify-between px-1.5 sm:px-4 pointer-events-none">
+        <div className="absolute inset-y-0 left-0 right-0 z-30 flex items-center justify-between px-1.5 sm:px-4 pointer-events-none">
           <button
             type="button"
             className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/85 text-slate-800 shadow-sm inline-flex items-center justify-center"
@@ -110,7 +127,7 @@ const BannerSlider: React.FC = () => {
           </button>
         </div>
 
-        <div className="absolute bottom-1.5 left-0 right-0 z-20 flex justify-center gap-1" role="tablist" aria-label="Banner slides">
+        <div className="absolute bottom-1.5 left-0 right-0 z-30 flex justify-center gap-1" role="tablist" aria-label="Banner slides">
           {HOME_BANNERS.map((slide, i) => (
             <button
               key={slide.id}
