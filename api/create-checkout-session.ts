@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { applyCors } from './_lib/cors.js';
 import { parseCheckoutPayload } from './_lib/parseQuote.js';
 import { calculateFullQuote } from '../shared/quoteCalc.js';
 import { formatMoney } from '../shared/money.js';
@@ -18,10 +19,7 @@ function originFrom(req: VercelRequest): { host: string | null; proto: string | 
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+  if (applyCors(req, res)) return;
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

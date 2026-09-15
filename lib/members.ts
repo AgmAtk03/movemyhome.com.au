@@ -1,3 +1,4 @@
+import { fetchApi } from './api';
 import { isValidEmail, isValidPersonName } from './validation';
 import { sanitizePlainText } from './sanitize';
 
@@ -62,7 +63,7 @@ export async function submitMemberSignup(input: { name: string; email: string })
     'We’ve saved your name and email on this device. Membership emails aren’t switched on yet — once they are, we’ll use this for your 5% off.';
 
   try {
-    const response = await fetch('/api/member-signup', {
+    const response = await fetchApi('/api/member-signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: record.name, email: record.email }),

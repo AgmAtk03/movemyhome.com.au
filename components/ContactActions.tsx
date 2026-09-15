@@ -3,7 +3,7 @@ import { CONFIG } from '../constants';
 import { getPublicContact } from '../lib/contact';
 import Icon from './Icon';
 
-type ContactVariant = 'bar' | 'header' | 'hero' | 'stack' | 'inline';
+type ContactVariant = 'bar' | 'header' | 'hero' | 'stack' | 'inline' | 'dock';
 
 interface ContactActionsProps {
   variant?: ContactVariant;
@@ -43,6 +43,37 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
           </a>
         )}
       </p>
+    );
+  }
+
+  if (variant === 'dock') {
+    const dockBtn =
+      'flex-1 min-h-11 px-2 sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-xl font-semibold text-sm whitespace-nowrap';
+    return (
+      <nav aria-label="Call or WhatsApp" className={`flex gap-2 ${className}`}>
+        {contact.telHref && (
+          <a
+            href={contact.telHref}
+            className={`${dockBtn} bg-slate-50 border border-slate-200 text-slate-600`}
+            aria-label={callLabel}
+          >
+            <Icon name="phone" className="text-base" />
+            <span className="whitespace-nowrap">{contact.display}</span>
+          </a>
+        )}
+        {contact.whatsAppHref && (
+          <a
+            href={contact.whatsAppHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${dockBtn} bg-white border border-[#128C7E]/35 text-[#128C7E]`}
+            aria-label={waLabel}
+          >
+            <Icon name="whatsapp-logo" className="text-base" />
+            <span>WhatsApp</span>
+          </a>
+        )}
+      </nav>
     );
   }
 

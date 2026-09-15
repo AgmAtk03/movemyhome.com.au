@@ -2,8 +2,8 @@ import React from 'react';
 import { MoveDetails, QuoteSnapshot } from '../types';
 import { ContactErrors } from '../lib/validation';
 import QuoteRecap from './QuoteRecap';
-import BookingExtras from './BookingExtras';
 import Icon from './Icon';
+import { isSafeWhatsAppUrl } from '../lib/sanitize';
 
 interface Step5Props {
   details: MoveDetails;
@@ -12,6 +12,8 @@ interface Step5Props {
   whatsappUrl: string | null;
   errors: ContactErrors;
   showErrors: boolean;
+  phase: 'details' | 'review';
+  onEditDetails: () => void;
 }
 
 const fieldClass = (invalid: boolean) =>
@@ -19,9 +21,94 @@ const fieldClass = (invalid: boolean) =>
     invalid ? 'border-rose-400' : 'border-slate-200 focus:border-[#146eb4]'
   }`;
 
-const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, errors, showErrors }) => {
+const ContactSummary: React.FC<{ details: MoveDetails; onEdit?: () => void }> = ({ details, onEdit }) => {
+  const notes = details.instructions.trim();
   return (
-    <div className="space-y-8 animate-premium-in pb-10">
+    <section
+      className="rounded-[1.75rem] border border-slate-100 bg-white p-5"
+      aria-labelledby="contact-summary-heading"
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <h3 id="contact-summary-heading" className="text-base font-black text-slate-900 tracking-tight">
+          Your details
+        </h3>
+        {onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="min-h-11 px-3 text-sm font-bold text-[#146eb4]"
+          >
+            Edit
+          </button>
+        ) : null}
+      </div>
+      <dl className="space-y-2.5">
+        {details.name.trim() ? (
+          <div>
+            <dt className="text-xs font-semibold text-slate-400">Name</dt>
+            <dd className="text-base font-semibold text-slate-900">{details.name.trim()}</dd>
+          </div>
+        ) : null}
+        {details.phone.trim() ? (
+          <div>
+            <dt className="text-xs font-semibold text-slate-400">Mobile</dt>
+            <dd className="text-base font-semibold text-slate-900">{details.phone.trim()}</dd>
+          </div>
+        ) : null}
+        {details.email.trim() ? (
+          <div>
+            <dt className="text-xs font-semibold text-slate-400">Email</dt>
+            <dd className="text-base font-semibold text-slate-900 break-all">{details.email.trim()}</dd>
+          </div>
+        ) : null}
+        {notes ? (
+          <div>
+            <dt className="text-xs font-semibold text-slate-400">Notes</dt>
+            <dd className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-line">{notes}</dd>
+          </div>
+        ) : null}
+      </dl>
+    </section>
+  );
+};
+
+const Step5Contact: React.FC<Step5Props> = ({
+  details, onUpdateDetails, snapshot, whatsappUrl, errors, showErrors, phase, onEditDetails,
+}) => {
+  const filled = Boolean(details.name.trim() || details.email.trim() || details.phone.trim());
+  const quoteWhatsApp = Boolean(whatsappUrl) && isSafeWhatsAppUrl(whatsappUrl || '');
+
+  if (phase === 'review') {
+    return (
+      <div className="space-y-6 animate-premium-in pb-10">
+        <div className="space-y-2">
+          <h2 tabIndex={-1} className="text-2xl font-black text-slate-900 tracking-tight outline-none">
+            Check your booking
+          </h2>
+          <p className="text-slate-500 text-base font-medium leading-relaxed">
+            A quiet look over the plan before you pay the 10% deposit.
+          </p>
+        </div>
+
+        <ContactSummary details={details} onEdit={onEditDetails} />
+        <QuoteRecap snapshot={snapshot} />
+
+        {quoteWhatsApp && whatsappUrl ? (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center text-sm font-bold text-[#128C7E]"
+          >
+            Send this quote on WhatsApp
+          </a>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-7 animate-premium-in pb-10">
       <div className="space-y-2">
         <h2 tabIndex={-1} className="text-2xl font-black text-slate-900 tracking-tight outline-none">
           How can we reach you?
@@ -30,8 +117,6 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           We’ll use this to confirm your booking. We never share your details.
         </p>
       </div>
-
-      <QuoteRecap snapshot={snapshot} />
 
       <div className="space-y-5">
         <div className="space-y-1.5">
@@ -45,6 +130,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             </span>
             <input
               id="customer-name"
+              name="name"
               type="text"
               autoComplete="name"
               placeholder="e.g. Sam Nguyen"
@@ -69,9 +155,12 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             </span>
             <input
               id="customer-email"
+              name="email"
               type="email"
               autoComplete="email"
               inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
               placeholder="e.g. sam@email.com"
               className={fieldClass(showErrors && Boolean(errors.email))}
               value={details.email}
@@ -94,6 +183,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             </span>
             <input
               id="customer-phone"
+              name="tel"
               type="tel"
               autoComplete="tel"
               inputMode="tel"
@@ -112,8 +202,9 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           <label htmlFor="customer-notes" className="text-sm font-bold text-slate-700">Anything we should know? (optional)</label>
           <textarea
             id="customer-notes"
+            name="instructions"
             placeholder="Parking, stairs we missed, heavy pieces, gate codes…"
-            rows={4}
+            rows={3}
             className="w-full p-4 bg-white border border-slate-200 rounded-3xl text-base font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#146eb4]/15 focus:border-[#146eb4] resize-none"
             value={details.instructions}
             onChange={(e) => onUpdateDetails({ instructions: e.target.value })}
@@ -121,7 +212,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
         </div>
       </div>
 
-      <BookingExtras whatsappUrl={whatsappUrl} />
+      {filled ? <ContactSummary details={details} /> : null}
     </div>
   );
 };

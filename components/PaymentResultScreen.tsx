@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fetchApi } from '../lib/api';
 import { PAYMENTS_OFF_BODY, PAYMENTS_OFF_HEADING, PAYMENT_NOT_FOUND, customerFacingError, paidDepositEmailCopy } from '../lib/customerCopy';
 import { sendPaidEmailsFromBrowser } from '../lib/emailjsBrowser';
 import ConfiguredContact from './ConfiguredContact';
@@ -44,7 +45,7 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
 
     (async () => {
       try {
-        const verifyRes = await fetch(`/api/verify-checkout-session?session_id=${encodeURIComponent(sessionId)}`);
+        const verifyRes = await fetchApi(`/api/verify-checkout-session?session_id=${encodeURIComponent(sessionId)}`);
         const json = (await verifyRes.json()) as VerifyResponse;
         if (cancelled) return;
         setData(json);
@@ -59,7 +60,7 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
         if (!needsMail) return;
 
         try {
-          const notifyRes = await fetch('/api/notify-paid-booking', {
+          const notifyRes = await fetchApi('/api/notify-paid-booking', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId }),

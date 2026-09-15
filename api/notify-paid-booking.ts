@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { applyCors } from './_lib/cors.js';
 import { isStripeConfigured } from './_lib/env.js';
 import { getStripe } from './_lib/stripeClient.js';
 import { fulfillPaidBookingEmails } from './_lib/fulfillPaidBooking.js';
@@ -14,10 +15,7 @@ function sessionIdFrom(req: VercelRequest): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+  if (applyCors(req, res)) return;
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
