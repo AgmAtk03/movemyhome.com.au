@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { calculateFuelSurcharge, FUEL_FREE_UNDER_KM, FUEL_KM_PER_LITRE } from './fuel';
 import { calculateFullQuote } from './quoteCalc';
+import { buildQuoteSnapshot } from './snapshot';
 import { depositFromQuoteTotal, roundMoney } from './money';
-import type { Inventory, LocationEntry } from '../types';
+import type { Inventory, LocationEntry, QuoteState } from '../types';
 
 const emptyInventory: Inventory = {
   boxes: 0, sofa: 0, mattress: 0, bed: 0, fridge: 0, tv: 0, washer: 0,
@@ -84,4 +85,50 @@ test('TBC fuel is omitted from the total so the deposit is not guessed', () => {
   assert.equal(quote.fuelStatus, 'tbc');
   assert.equal(quote.fuel, 0);
   assert.equal(quote.total, roundMoney(55 + 20 * 0.42));
+});
+
+test('booking snapshot shows waived fuel copy before the deposit', () => {
+  const state: QuoteState = {
+    step: 6,
+    serviceType: 'room_move',
+    vehicle: 'van',
+    isManualTruckSelection: false,
+    truckHours: 2,
+    crewSize: 2,
+    pickups: [ground],
+    dropoffs: [drop],
+    inventory: emptyInventory,
+    details: {
+      date: '2026-09-20',
+      time: '09:00',
+      name: 'Alex Test',
+      email: 'alex@example.com',
+      phone: '0412345678',
+      instructions: '',
+      bedDisassembly: false,
+      bedIsAssembled: true,
+    },
+    distanceKm: 8,
+    travelTimeHrs: 0.3,
+    isCBD: false,
+    isInterstate: false,
+  };
+  const quote = calculateFullQuote({
+    vehicle: state.vehicle,
+    truckHours: state.truckHours,
+    crewSize: state.crewSize,
+    pickups: state.pickups,
+    dropoffs: state.dropoffs,
+    inventory: state.inventory,
+    bedDisassembly: false,
+    bedIsAssembled: true,
+    distanceKm: state.distanceKm,
+    travelTimeHrs: state.travelTimeHrs,
+    isInterstate: false,
+    dieselAudPerLitre: 2.5,
+  });
+  const snapshot = buildQuoteSnapshot(state, quote);
+  assert.equal(snapshot.fuelLine.status, 'waived');
+  assert.equal(snapshot.fuelLine.note, 'No fuel charge under 12 km');
+  assert.equal(snapshot.lines[snapshot.lines.length - 1]?.label, 'Fuel');
 });

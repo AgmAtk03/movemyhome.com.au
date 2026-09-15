@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { VehicleType, QuoteState, Inventory, MoveDetails, LocationEntry, ServiceType } from './types';
 import { RATES, WIZARD_STEPS } from './constants';
 import Header from './components/Header';
@@ -210,13 +210,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRouteUpdate = (km: number, isCBD: boolean, isInterstate: boolean, hrs: number) => {
+  const handleRouteUpdate = useCallback((km: number, isCBD: boolean, isInterstate: boolean, hrs: number) => {
     setState((prev) => {
       const vehicle = isInterstate ? 'truck' : prev.vehicle;
       return { ...prev, distanceKm: km, travelTimeHrs: hrs, isCBD, isInterstate, vehicle };
     });
     setDuplicateConfirmed(false);
-  };
+  }, []);
 
   const handleInventoryUpdate = (newInv: Inventory) => {
     setState((prev) => {

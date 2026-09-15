@@ -25,6 +25,16 @@ const Step2Route: React.FC<Step2Props> = ({
 }) => {
   const acRefs = useRef<Record<string, any>>({});
   const inputEls = useRef<Record<string, HTMLInputElement | null>>({});
+  const pickupsRef = useRef(pickups);
+  const dropoffsRef = useRef(dropoffs);
+  const onUpdatePickupsRef = useRef(onUpdatePickups);
+  const onUpdateDropoffsRef = useRef(onUpdateDropoffs);
+  const onUpdateRouteInfoRef = useRef(onUpdateRouteInfo);
+  pickupsRef.current = pickups;
+  dropoffsRef.current = dropoffs;
+  onUpdatePickupsRef.current = onUpdatePickups;
+  onUpdateDropoffsRef.current = onUpdateDropoffs;
+  onUpdateRouteInfoRef.current = onUpdateRouteInfo;
   const [routeError, setRouteError] = useState<string | null>(null);
   const [mapsStatus, setMapsStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>(() => {
     if (!isGoogleMapsConfigured()) return 'missing';
@@ -53,6 +63,8 @@ const Step2Route: React.FC<Step2Props> = ({
   const calculateRoute = useCallback(() => {
     if (typeof google === 'undefined' || !google.maps || !google.maps.DirectionsService) return;
 
+    const pickups = pickupsRef.current;
+    const dropoffs = dropoffsRef.current;
     const validAddresses = [...pickups, ...dropoffs]
       .map((l) => l.address.trim())
       .filter((a) => a.length > 10);
@@ -98,20 +110,20 @@ const Step2Route: React.FC<Step2Props> = ({
           }
         });
 
-        onUpdateRouteInfo(totalDistance / 1000, containsCBD, movingInterstate, travelHrs);
+        onUpdateRouteInfoRef.current(totalDistance / 1000, containsCBD, movingInterstate, travelHrs);
       } else {
         if (status === 'NOT_FOUND') {
           setRouteError('We couldn’t find one of those addresses. Check the spelling, or pick a suggestion.');
-          onUpdateRouteInfo(0, false, false, 0);
+          onUpdateRouteInfoRef.current(0, false, false, 0);
         } else if (status === 'ZERO_RESULTS') {
           setRouteError('We couldn’t find a driving route between those spots. Try a nearby street.');
-          onUpdateRouteInfo(0, false, false, 0);
+          onUpdateRouteInfoRef.current(0, false, false, 0);
         } else {
           setRouteError('We couldn’t map that route just now. You can still continue — we’ll confirm the distance with you.');
         }
       }
     });
-  }, [pickups, dropoffs, onUpdateRouteInfo]);
+  }, []);
 
   useEffect(() => {
     if (mapsStatus !== 'ready') return;
@@ -130,10 +142,10 @@ const Step2Route: React.FC<Step2Props> = ({
       ac.addListener('place_changed', () => {
         const place = ac.getPlace();
         const addr = place.formatted_address || el.value;
-        if (pickups.find((p) => p.id === id)) {
-          onUpdatePickups(pickups.map((p) => p.id === id ? { ...p, address: addr } : p));
+        if (pickupsRef.current.find((p) => p.id === id)) {
+          onUpdatePickupsRef.current(pickupsRef.current.map((p) => p.id === id ? { ...p, address: addr } : p));
         } else {
-          onUpdateDropoffs(dropoffs.map((d) => d.id === id ? { ...d, address: addr } : d));
+          onUpdateDropoffsRef.current(dropoffsRef.current.map((d) => d.id === id ? { ...d, address: addr } : d));
         }
       });
       acRefs.current[id] = ac;

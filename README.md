@@ -39,7 +39,7 @@ Vercel compiles `/api/*.ts` to ESM `.js` on Node.js 24. Relative imports in that
 
 1. `npm install`
 2. Copy `.env.example` to `.env.local`. Leave secrets blank to try the UI in **demo mode**.
-3. `npm run dev` — UI on [http://localhost:3000](http://localhost:3000). Without API functions this is demo-only (no charge / no email).
+3. `npm run dev` — UI on [http://localhost:3000](http://localhost:3000). Vite also serves `GET /api/diesel-price` so the fuel line can use a live 7-Eleven price. Stripe Checkout still needs `npx vercel dev`.
 4. `npm run build` — `tsc` + Vite production build.
 5. `npx vercel dev` — UI **and** `/api/*` serverless functions (needed for real Stripe Checkout and webhooks). Set `PUBLIC_SITE_URL=http://localhost:3000` for test-mode redirects.
 

@@ -67,6 +67,7 @@ export function loadGoogleMaps(): Promise<void> {
       region: 'AU',
       language: 'en-AU',
       v: 'weekly',
+      loading: 'async',
     });
     script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     script.onload = () => {
@@ -77,5 +78,8 @@ export function loadGoogleMaps(): Promise<void> {
     document.head.appendChild(script);
   });
 
-  return loadPromise;
+  return loadPromise.catch((error) => {
+    loadPromise = null;
+    throw error;
+  });
 }
