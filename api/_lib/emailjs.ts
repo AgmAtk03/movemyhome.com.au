@@ -11,6 +11,39 @@ export interface EmailSendResult {
   error?: string;
 }
 
+export class EmailJsSendError extends Error {
+  status: number;
+  body: string;
+  templateId: string;
+  hint: string;
+
+  constructor(status: number, body: string, templateId: string) {
+    const hint = sanitizeEmailJsHint(status, body);
+    super(hint);
+    this.name = 'EmailJsSendError';
+    this.status = status;
+    this.body = String(body || '').slice(0, 500);
+    this.templateId = templateId;
+    this.hint = hint;
+  }
+}
+
+/** Safe diagnostic line for logs / temporary member-signup JSON. Never includes keys. */
+export function sanitizeEmailJsHint(status: number, body: string): string {
+  let text = String(body || '')
+    .replace(/(?:accessToken|privateKey|publicKey|user_id|EMAILJS_[A-Z_]+)\s*[:=]\s*["']?[^"'}\s,]+/gi, '[redacted]')
+    .replace(/\b(?:sk_|rk_|whsec_)[A-Za-z0-9_-]+/gi, '[redacted]')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 180);
+  if (/non-browser/i.test(text)) {
+    text = `${text} Enable Account → Security → Allow EmailJS API for non-browser applications.`;
+  } else if (/private key|access.?token/i.test(text)) {
+    text = `${text} Set EMAILJS_PRIVATE_KEY on Vercel (REST field accessToken).`;
+  }
+  return text ? `EmailJS ${status}: ${text}` : `EmailJS ${status}`;
+}
+
 const DEFAULT_GAP_MS = 1100;
 
 function wait(ms: number): Promise<void> {
@@ -22,6 +55,7 @@ export interface MemberEmailSendResult {
   customerSent: boolean;
   businessSent: boolean;
   skipped: boolean;
+  error?: string;
 }
 
 /** Paid booking confirmation + job sheet. Do not drop any of these fields. */
@@ -71,6 +105,7 @@ async function sendTemplate(templateId: string, params: Record<string, string>):
     user_id: cfg.publicKey,
     template_params: params,
   };
+  // EmailJS REST: private key MUST be `accessToken` (not privateKey / Authorization).
   if (cfg.privateKey) {
     payload.accessToken = cfg.privateKey;
   }
@@ -80,8 +115,19 @@ async function sendTemplate(templateId: string, params: Record<string, string>):
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+  const text = await response.text().catch(() => '');
   if (!response.ok) {
-    throw new Error(`EmailJS ${response.status}`);
+    const err = new EmailJsSendError(response.status, text, templateId);
+    console.error('EmailJS send failed', {
+      status: response.status,
+      body: text.slice(0, 300),
+      hint: err.hint,
+      service_id: cfg.serviceId || '(empty)',
+      template_id: templateId,
+      has_user_id: Boolean(cfg.publicKey),
+      has_accessToken: Boolean(cfg.privateKey),
+    });
+    throw err;
   }
 }
 
@@ -106,6 +152,11 @@ export async function sendPaidBookingEmails(
   }
 
   const cfg = emailJsConfig();
+  if (!cfg.privateKey) {
+    console.error('EMAILJS_PRIVATE_KEY is missing on the API host; REST sends need accessToken if Account → Security uses a Private Key', {
+      sessionId: payment.sessionId,
+    });
+  }
   const params = templateParams(state, snapshot, {
     stripe_session_id: sanitizePlainText(payment.sessionId, 80),
     stripe_payment_intent: sanitizePlainText(payment.paymentIntentId, 80),
@@ -230,12 +281,20 @@ export async function sendMemberDiscountEmails(input: {
   name: string;
   email: string;
   discountCode: string;
+  gapMs?: number;
 }): Promise<MemberEmailSendResult> {
   if (!isMemberEmailConfigured()) {
-    return { customerSent: false, businessSent: false, skipped: true };
+    const missing = emailJsMissingVars().join(', ');
+    const error = `EmailJS is not configured on the API host (missing ${missing || 'keys'}).`;
+    console.error(error);
+    return { customerSent: false, businessSent: false, skipped: true, error };
   }
 
   const cfg = emailJsConfig();
+  if (!cfg.privateKey) {
+    console.error('EMAILJS_PRIVATE_KEY is missing on the API host; REST sends need accessToken if Account → Security uses a Private Key');
+  }
+  const gapMs = input.gapMs ?? DEFAULT_GAP_MS;
   const company = companyConfig();
   const name = sanitizePlainText(input.name, 80);
   const email = sanitizePlainText(input.email, 120);
@@ -258,6 +317,7 @@ export async function sendMemberDiscountEmails(input: {
 
   let customerSent = false;
   let businessSent = false;
+  const errors: string[] = [];
 
   try {
     await sendTemplate(cfg.clientTemplateId, memberDiscountTemplateParams({
@@ -270,13 +330,24 @@ export async function sendMemberDiscountEmails(input: {
       specialInstructions: `Not a booking. Your 5% off code is ${code}. Enter it on the book step.`,
     }));
     customerSent = true;
-  } catch {
-    console.error('Member customer email failed');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'member customer email failed';
+    errors.push(message);
+    console.error('Member customer email failed', { error: message });
   }
 
   if (office.toLowerCase() === email.toLowerCase()) {
     businessSent = customerSent;
-    return { customerSent, businessSent, skipped: false };
+    return {
+      customerSent,
+      businessSent,
+      skipped: false,
+      error: errors.length ? errors.join(' | ') : undefined,
+    };
+  }
+
+  if (customerSent) {
+    await wait(gapMs);
   }
 
   try {
@@ -290,9 +361,16 @@ export async function sendMemberDiscountEmails(input: {
       specialInstructions: `Not a booking. ${name} <${email}> code ${code}`,
     }));
     businessSent = true;
-  } catch {
-    console.error('Member business email failed');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'member business email failed';
+    errors.push(message);
+    console.error('Member business email failed', { error: message });
   }
 
-  return { customerSent, businessSent, skipped: false };
+  return {
+    customerSent,
+    businessSent,
+    skipped: false,
+    error: errors.length ? errors.join(' | ') : undefined,
+  };
 }

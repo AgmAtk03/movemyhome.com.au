@@ -98,16 +98,32 @@ test('member signup reuses client then business templates, not a third member te
         name: 'Sam Nguyen',
         email: 'sam@student.edu.au',
         discountCode: 'STUDENT5-ABCDEFGH',
+        gapMs: 0,
       });
       assert.equal(result.skipped, false);
       assert.equal(result.customerSent, true);
       assert.equal(result.businessSent, true);
       assert.equal(calls.length, 2);
-      const first = calls[0] as { template_id: string; accessToken?: string; template_params: Record<string, string> };
-      const second = calls[1] as { template_id: string; template_params: Record<string, string> };
+      const first = calls[0] as {
+        service_id?: string;
+        user_id?: string;
+        template_id: string;
+        accessToken?: string;
+        template_params: Record<string, string>;
+      };
+      const second = calls[1] as {
+        service_id?: string;
+        template_id: string;
+        accessToken?: string;
+        template_params: Record<string, string>;
+      };
       assert.equal(first.template_id, 'template_client');
       assert.equal(second.template_id, 'template_business');
+      assert.equal(first.service_id, 'service_live');
+      assert.equal(second.service_id, 'service_live');
+      assert.equal(first.user_id, 'public_live');
       assert.equal(first.accessToken, 'private_live');
+      assert.equal(second.accessToken, 'private_live');
       assert.equal(first.template_params.to_email, 'sam@student.edu.au');
       assert.equal(first.template_params.email_kind, 'member');
       assert.equal(first.template_params.payment_status, '');
@@ -141,6 +157,7 @@ test('member emails fill booking {{}} fields without inventing fake job data', a
         name: 'Sam Nguyen',
         email: 'sam@student.edu.au',
         discountCode: 'STUDENT5-ABCDEFGH',
+        gapMs: 0,
       });
       for (const row of calls) {
         const params = (row as { template_params: Record<string, string> }).template_params;
@@ -180,9 +197,11 @@ test('member signup reports partial send when the office email fails', async () 
         name: 'Sam Nguyen',
         email: 'sam@student.edu.au',
         discountCode: 'STUDENT5-ABCDEFGH',
+        gapMs: 0,
       });
       assert.equal(result.customerSent, true);
       assert.equal(result.businessSent, false);
+      assert.match(String(result.error || ''), /EmailJS 500/);
     } finally {
       globalThis.fetch = orig;
     }
@@ -226,6 +245,9 @@ test('sendPaidBookingEmails still sends complete client + business booking email
       const client = calls[1] as { template_id: string; template_params: Record<string, string> };
       assert.equal(business.template_id, 'template_business');
       assert.equal(client.template_id, 'template_client');
+      assert.equal((business as { service_id?: string }).service_id, 'service_live');
+      assert.equal((business as { accessToken?: string }).accessToken, 'private_live');
+      assert.equal((client as { accessToken?: string }).accessToken, 'private_live');
       assert.equal(business.template_params.to_email, 'removalsmyhome@gmail.com');
       assert.equal(client.template_params.to_email, 'jane@example.com');
       assertCompletePaidBookingParams(business.template_params, 'business');
@@ -270,6 +292,36 @@ test('sendPaidBookingEmails skip flags do not resend a side already marked sent'
       assert.equal(result.clientSent, true);
       assert.equal(calls.length, 1);
       assert.equal((calls[0] as { template_id: string }).template_id, 'template_client');
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+});
+
+test('EmailJS failure hint includes status and body without secrets', async () => {
+  await withEnv(EMAIL_ENV, async () => {
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(
+      'API calls are disabled for non-browser applications',
+      { status: 403 },
+    )) as typeof fetch;
+    try {
+      const { sendMemberDiscountEmails, sanitizeEmailJsHint } = await import('./emailjs');
+      const result = await sendMemberDiscountEmails({
+        name: 'Sam Nguyen',
+        email: 'sam@student.edu.au',
+        discountCode: 'STUDENT5-ABCDEFGH',
+        gapMs: 0,
+      });
+      assert.equal(result.customerSent, false);
+      assert.equal(result.businessSent, false);
+      assert.match(String(result.error || ''), /403/);
+      assert.match(String(result.error || ''), /non-browser/i);
+      assert.match(String(result.error || ''), /Allow EmailJS API/i);
+      assert.equal(String(result.error || '').includes('private_live'), false);
+      const redacted = sanitizeEmailJsHint(400, 'accessToken=supersecretvalue123 The user_id parameter is required');
+      assert.match(redacted, /400/);
+      assert.equal(redacted.includes('supersecretvalue123'), false);
     } finally {
       globalThis.fetch = orig;
     }

@@ -80,5 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     discountCode: code,
     alreadyRedeemed: false,
     message: memberSignupMessage({ code, customerEmailed, businessEmailed }),
+    // Temporary diagnostic (no secrets) while Vercel REST send is investigated.
+    mailErrorHint: mailed.error || undefined,
   });
 }

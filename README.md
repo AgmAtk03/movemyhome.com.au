@@ -181,6 +181,8 @@ Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{use
 
 Paid booking behaviour is unchanged: webhook / `fulfillPaidBookingEmails` still send the **same** client confirmation + business job sheet with addresses, inventory, date/time, contact, quote, and deposit. Member signup never mutates those param objects.
 
+Vercel REST send uses `service_id` + `user_id` (public key) + `accessToken` (private key). Dashboard Gmail tests can succeed while `/api` fails if **Account → Security → Allow EmailJS API for non-browser applications** is off, or `EMAILJS_PRIVATE_KEY` is missing on Vercel Production. `POST /api/member-signup` temporarily returns `mailErrorHint` (status + EmailJS body, no secrets) when send fails.
+
 **Live backup:** Stripe webhooks often miss this project. `GET /api/verify-checkout-session` (called from `/success?session_id=`) also runs `fulfillPaidBookingEmails` when the session is paid. Sends are idempotent via Checkout Session metadata `mail_client` / `mail_biz` = `sent`. Webhook GET `https://aama-removals.vercel.app/api/stripe-webhook` is a health check. Incomplete webhook sends return **500** so Stripe retries.
 
 ### Member / student 5% off
@@ -211,7 +213,7 @@ If `STRIPE_SECRET_KEY` is missing, or you run `npm run dev` without `vercel dev`
 2. Create a Maps key, restrict referrers, set `VITE_GOOGLE_MAPS_API_KEY`.
 3. Stripe test keys + webhook (`https://aama-removals.vercel.app/api/stripe-webhook`) + `PUBLIC_SITE_URL=https://movemyhome.com.au`. Charge a test deposit with `4242…`. Confirm webhook emails.
 4. Switch to `sk_live_` / live webhook secret only when ready. Deploy on **HTTPS**.
-5. Restrict EmailJS keys. Prefer `EMAILJS_PRIVATE_KEY` on the server. Member 5% signup reuses the existing client + business templates (Hobby is limited to two) — do not add a third template.
+5. Restrict EmailJS keys. Prefer `EMAILJS_PRIVATE_KEY` on the server (sent as REST `accessToken`). Enable **Allow EmailJS API for non-browser applications** on the EmailJS Security tab — dashboard Gmail tests can work while Vercel `/api` fails if that box is off. Member 5% signup reuses the existing client + business templates (Hobby is limited to two) — do not add a third template.
 6. Confirm Vercel env vars are set for Production and Preview. Confirm Deployment Protection is off if the public API must be reachable from Netlify.
 7. Delete any unused Google Maps keys that were previously hardcoded.
 
