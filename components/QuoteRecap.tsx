@@ -1,5 +1,6 @@
 import React from 'react';
 import { QuoteSnapshot } from '../types';
+import FuelCallout from './FuelCallout';
 
 interface QuoteRecapProps {
   snapshot: QuoteSnapshot;
@@ -45,13 +46,15 @@ const QuoteRecap: React.FC<QuoteRecapProps> = ({ snapshot, compact = false }) =>
       </dl>
 
       <ul className="mt-4 space-y-1.5 border-t border-slate-200 pt-4">
-        {snapshot.lines.map((line) => (
+        {snapshot.lines.filter((line) => line.label !== 'Fuel').map((line) => (
           <li key={line.label} className="flex justify-between gap-3 text-sm">
             <span className="text-slate-600">{line.label}</span>
             <span className="font-bold text-slate-900">{line.note || line.amount}</span>
           </li>
         ))}
       </ul>
+
+      <FuelCallout fuelLine={snapshot.fuelLine} />
 
       <div className="mt-4 space-y-1.5 border-t border-slate-200 pt-4 text-sm">
         <div className="flex justify-between gap-3">

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { VehicleType, QuoteState, Inventory, MoveDetails, LocationEntry, ServiceType } from './types';
 import { RATES, WIZARD_STEPS } from './constants';
 import Header from './components/Header';
@@ -22,6 +22,7 @@ import { saveDemoJob } from './lib/jobsStore';
 import { sanitizePlainText } from './lib/sanitize';
 import { calculateQuote, EMPTY_BREAKDOWN } from './shared/quoteCalc';
 import { createCheckoutSession } from './lib/checkout';
+import { fetchDieselPrice } from './lib/dieselPrice';
 import { PAYMENTS_OFF_BODY, PAYMENT_START_ERROR, customerFacingError } from './lib/customerCopy';
 import { currentPath, isQuoteRoute, navigateTo } from './lib/nav';
 
@@ -45,6 +46,7 @@ const App: React.FC = () => {
   const [nextHint, setNextHint] = useState('');
   const [bookingNotice, setBookingNotice] = useState('');
   const [demoCheckout, setDemoCheckout] = useState(false);
+  const [dieselAudPerLitre, setDieselAudPerLitre] = useState<number | null>(null);
 
   const [state, setState] = useState<QuoteState>({
     step: 1,
@@ -73,6 +75,16 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('hashchange', onNav);
       window.removeEventListener('popstate', onNav);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchDieselPrice().then((row) => {
+      if (!cancelled) setDieselAudPerLitre(row.audPerLitre);
+    });
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -118,9 +130,10 @@ const App: React.FC = () => {
       distanceKm: state.distanceKm,
       travelTimeHrs: state.travelTimeHrs,
       isInterstate: state.isInterstate,
+      dieselAudPerLitre,
       step: state.step,
     }),
-    [state]
+    [state, dieselAudPerLitre]
   );
 
   const snapshot = useMemo(() => buildQuoteSnapshot(state, priceBreakdown), [state, priceBreakdown]);
@@ -197,13 +210,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRouteUpdate = (km: number, isCBD: boolean, isInterstate: boolean, hrs: number) => {
+  const handleRouteUpdate = useCallback((km: number, isCBD: boolean, isInterstate: boolean, hrs: number) => {
     setState((prev) => {
       const vehicle = isInterstate ? 'truck' : prev.vehicle;
       return { ...prev, distanceKm: km, travelTimeHrs: hrs, isCBD, isInterstate, vehicle };
     });
     setDuplicateConfirmed(false);
-  };
+  }, []);
 
   const handleInventoryUpdate = (newInv: Inventory) => {
     setState((prev) => {
@@ -410,6 +423,8 @@ const App: React.FC = () => {
               vehicle={state.vehicle}
               isCBD={state.isCBD}
               isInterstate={state.isInterstate}
+              distanceKm={state.distanceKm}
+              travelTimeHrs={state.travelTimeHrs}
               onUpdatePickups={(p: LocationEntry[]) => {
                 setState((s) => ({ ...s, pickups: p }));
                 setDuplicateConfirmed(false);
@@ -456,6 +471,7 @@ const App: React.FC = () => {
 
       <SummaryFooter
         breakdown={priceBreakdown.total === 0 && state.step === 1 ? EMPTY_BREAKDOWN : priceBreakdown}
+        fuelLine={snapshot.fuelLine}
         vehicle={state.vehicle}
         isInterstate={state.isInterstate}
         step={state.step}

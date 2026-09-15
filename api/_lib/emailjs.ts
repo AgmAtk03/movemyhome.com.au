@@ -1,7 +1,7 @@
-import { QuoteSnapshot, QuoteState } from '../../types';
-import { htmlSafeMultiline, htmlSafePlainText, sanitizeMultiline, sanitizePlainText } from '../../lib/sanitize';
-import { buildJobDetailsBody } from '../../shared/snapshot';
-import { companyConfig, emailJsConfig, isEmailJsServerConfigured } from './env';
+import type { QuoteSnapshot, QuoteState } from '../../types.js';
+import { htmlSafeMultiline, htmlSafePlainText, sanitizeMultiline, sanitizePlainText } from '../../lib/sanitize.js';
+import { buildJobDetailsBody } from '../../shared/snapshot.js';
+import { companyConfig, emailJsConfig, isEmailJsServerConfigured } from './env.js';
 
 export interface EmailSendResult {
   clientSent: boolean;

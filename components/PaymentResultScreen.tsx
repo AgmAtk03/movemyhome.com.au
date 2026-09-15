@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PAYMENTS_OFF_BODY, PAYMENTS_OFF_HEADING, PAYMENT_NOT_FOUND, customerFacingError } from '../lib/customerCopy';
 import ConfiguredContact from './ConfiguredContact';
+import ContactActions from './ContactActions';
 import Icon from './Icon';
 
 interface VerifyResponse {
@@ -69,7 +70,10 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
         <p className="text-xs text-slate-500 mt-4 leading-relaxed">
           The remaining 90% is due on the day of the move. We don’t charge the full quote up front.
         </p>
-        <ConfiguredContact className="text-sm text-slate-500 mt-6" />
+        <ConfiguredContact className="text-sm text-slate-500 mt-6" includePhone={false} />
+        <div className="mt-4 w-full">
+          <ContactActions variant="stack" />
+        </div>
         <button type="button" onClick={onReset} className="btn-primary mt-8 w-full">
           Back to home
         </button>
@@ -96,7 +100,10 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
       <p className="text-sm text-slate-500 mt-6 leading-relaxed max-w-sm">
         If money left your account, keep your receipt and get in touch — we’ll sort it.
       </p>
-      <ConfiguredContact className="text-sm text-slate-500 mt-3" />
+      <ConfiguredContact className="text-sm text-slate-500 mt-3" includePhone={false} />
+      <div className="mt-4 w-full">
+        <ContactActions variant="stack" />
+      </div>
       <button type="button" onClick={onReset} className="btn-primary mt-8 w-full">
         Back to home
       </button>

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isValidEmail, isValidPersonName } from '../lib/validation';
-import { sanitizePlainText } from '../lib/sanitize';
-import { emailJsConfig } from './_lib/env';
+import { isValidEmail, isValidPersonName } from '../lib/validation.js';
+import { sanitizePlainText } from '../lib/sanitize.js';
+import { emailJsConfig } from './_lib/env.js';
 
 function read(name: string): string {
   return String(process.env[name] ?? '').trim();

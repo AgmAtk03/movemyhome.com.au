@@ -1,6 +1,6 @@
-import { Inventory, LocationEntry, QuoteState, VehicleType } from '../types';
-import { ACCESS_LABELS, INVENTORY_LABELS } from './rates';
-import { sanitizeMultiline, sanitizePlainText } from '../lib/sanitize';
+import type { Inventory, LocationEntry, QuoteState, VehicleType } from '../types.js';
+import { ACCESS_LABELS, INVENTORY_LABELS } from './rates.js';
+import { sanitizeMultiline, sanitizePlainText } from '../lib/sanitize.js';
 
 export function formatDateAu(isoDate: string): string {
   if (!isoDate) return '';

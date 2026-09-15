@@ -4,6 +4,7 @@ import BannerSlider from './BannerSlider';
 import Icon, { type IconName } from './Icon';
 import MemberSignup from './MemberSignup';
 import SiteHeader from './SiteHeader';
+import ContactActions from './ContactActions';
 import { navigateTo } from '../lib/nav';
 
 interface LandingProps {
@@ -55,6 +56,9 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
             Get an Instant Quote
           </a>
           <p className="mt-3 text-sm font-medium text-slate-500">Takes about two minutes · No account needed</p>
+          <div className="mt-5 max-w-sm mx-auto w-full">
+            <ContactActions variant="hero" />
+          </div>
         </div>
       </section>
 
@@ -144,9 +148,12 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
           <MemberSignup />
         </div>
         <div className="border-t border-white/15">
-          <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between text-xs text-white/70">
-            <p>My Home Removals · Sydney and NSW</p>
-            <a href="/privacy" className="min-h-11 inline-flex items-center underline decoration-white/40">Privacy</a>
+          <div className="max-w-6xl mx-auto px-4 py-5 space-y-3">
+            <ContactActions variant="hero" />
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between text-xs text-white/70">
+              <p>My Home Removals · Sydney and NSW</p>
+              <a href="/privacy" className="min-h-11 inline-flex items-center underline decoration-white/40">Privacy</a>
+            </div>
           </div>
         </div>
       </footer>

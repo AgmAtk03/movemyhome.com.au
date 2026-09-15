@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { VehicleType } from '../types';
 import { formatMoney } from '../lib/quote';
 import Icon from './Icon';
+import FuelCallout from './FuelCallout';
 
 interface FooterProps {
   breakdown: {
@@ -15,10 +16,19 @@ interface FooterProps {
     bedService: number;
     hours: number;
     fuel: number;
+    fuelLitres: number;
+    fuelStatus: 'none' | 'waived' | 'priced' | 'tbc';
+    dieselAudPerLitre: number | null;
     isFixedTrip: boolean;
     hourlyRate: number;
     deposit: number;
     balance: number;
+  };
+  fuelLine?: {
+    label: string;
+    amount: string;
+    note?: string;
+    status: 'none' | 'waived' | 'priced' | 'tbc';
   };
   vehicle: VehicleType | null;
   isInterstate: boolean;
@@ -29,7 +39,7 @@ interface FooterProps {
 }
 
 const SummaryFooter: React.FC<FooterProps> = ({
-  breakdown, vehicle, step, nextHint, onNext, onBook,
+  breakdown, fuelLine, vehicle, step, nextHint, onNext, onBook,
 }) => {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [animatePrice, setAnimatePrice] = useState(false);
@@ -99,6 +109,12 @@ const SummaryFooter: React.FC<FooterProps> = ({
         {nextHint && (
           <p className="text-sm text-rose-700 mt-3 font-medium" role="status">{nextHint}</p>
         )}
+        {isBookStep && fuelLine && fuelLine.status !== 'none' && (
+          <p className="text-xs font-semibold text-slate-600 mt-3 leading-relaxed">
+            Fuel: <span className="font-black text-slate-900">{fuelLine.amount}</span>
+            {fuelLine.note ? ` — ${fuelLine.note}` : ''}
+          </p>
+        )}
         {isBookStep && (
           <p className="text-xs text-slate-600 mt-3 leading-relaxed">
             Pay <strong>10% of the total today</strong> to book and hold your slot. Fully refundable if you cancel at least 12 hours before your move date and time. The rest is due on the day.
@@ -141,12 +157,6 @@ const SummaryFooter: React.FC<FooterProps> = ({
                   <span className="font-bold">{formatMoney(breakdown.distance)}</span>
                 </li>
               )}
-              {breakdown.fuel > 0 && (
-                <li className="flex justify-between gap-3">
-                  <span className="text-slate-600">Fuel estimate</span>
-                  <span className="font-bold">{formatMoney(breakdown.fuel)}</span>
-                </li>
-              )}
               {breakdown.inventory > 0 && (
                 <li className="flex justify-between gap-3">
                   <span className="text-slate-600">Items</span>
@@ -176,6 +186,10 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 </li>
               )}
             </ul>
+
+            {fuelLine && fuelLine.status !== 'none' && (
+              <FuelCallout fuelLine={fuelLine} />
+            )}
 
             <div className="pt-5 mt-4 border-t border-slate-100 space-y-2">
               <div className="flex justify-between items-center">

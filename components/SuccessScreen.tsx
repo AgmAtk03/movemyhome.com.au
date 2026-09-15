@@ -3,7 +3,6 @@ import { PriceBreakdown } from '../types';
 import { formatMoney } from '../lib/quote';
 import { PAYMENTS_OFF_HEADING } from '../lib/customerCopy';
 import BookingExtras from './BookingExtras';
-import ConfiguredContact from './ConfiguredContact';
 import Icon from './Icon';
 
 interface SuccessProps {
@@ -52,8 +51,6 @@ const SuccessScreen: React.FC<SuccessProps> = ({
       <div className="w-full text-left mb-6">
         <BookingExtras variant="success" whatsappUrl={whatsappUrl} />
       </div>
-
-      <ConfiguredContact className="text-sm text-slate-500 mb-6" />
 
       <button
         type="button"

@@ -2,6 +2,7 @@ import React from 'react';
 import { CONFIG } from '../constants';
 import { navigateTo } from '../lib/nav';
 import BrandMark from './BrandMark';
+import ContactActions from './ContactActions';
 
 interface SiteHeaderProps {
   current?: 'home' | 'quote' | 'privacy';
@@ -45,6 +46,11 @@ const SiteHeader: React.FC<SiteHeaderProps> = ({ current = 'home' }) => {
             Privacy
           </a>
         </nav>
+      </div>
+      <div className="bg-[#e7f2fa] border-t border-[#c5dff0]">
+        <div className="max-w-6xl mx-auto px-4 py-2">
+          <ContactActions variant="bar" />
+        </div>
       </div>
       <div className="h-1 bg-gradient-to-r from-[#ff9900] via-[#ff9900] to-[#146eb4]" aria-hidden="true" />
     </header>

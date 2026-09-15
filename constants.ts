@@ -4,7 +4,8 @@ export { RATES, FLOOR_RATES, INVENTORY_COSTS };
 export { ACCESS_LABELS, INVENTORY_LABELS, SERVICE_LABELS, BRAND_NAME } from './shared/rates';
 
 function envText(key: keyof ImportMetaEnv, fallback: string): string {
-  const value = String(import.meta.env[key] ?? '').trim();
+  const env = (import.meta as ImportMeta).env;
+  const value = String(env?.[key] ?? '').trim();
   return value || fallback;
 }
 
@@ -16,8 +17,8 @@ function isUnset(value: string, placeholders: string[]): boolean {
 
 /**
  * Visible brand is My Home Removals.
- * Legal/trading name, phone, email, WhatsApp, and website are CONFIG / env
- * placeholders for the owner to fill — do not invent real credentials or licences.
+ * Legal/trading name, email, website, and ABN stay env placeholders until filled.
+ * Phone and WhatsApp read VITE_COMPANY_PHONE / VITE_WHATSAPP_NUMBER (public booking line).
  */
 export const CONFIG = {
   COMPANY_NAME: envText('VITE_COMPANY_NAME', 'My Home Removals'),
@@ -25,10 +26,10 @@ export const CONFIG = {
   LEGAL_TRADING_NAME: envText('VITE_LEGAL_TRADING_NAME', 'YOUR_LEGAL_TRADING_NAME'),
   COMPANY_EMAIL: envText('VITE_COMPANY_EMAIL', 'YOUR_BOOKINGS_EMAIL'),
   COMPANY_WEBSITE: envText('VITE_COMPANY_WEBSITE', 'https://YOUR_WEBSITE'),
-  COMPANY_PHONE: envText('VITE_COMPANY_PHONE', 'YOUR_PHONE_NUMBER'),
+  COMPANY_PHONE: envText('VITE_COMPANY_PHONE', '0410 721 370'),
   COMPANY_ABN: envText('VITE_ABN', 'YOUR_ABN'),
   COMPANY_TAGLINE: 'Sydney moving, made simple.',
-  WHATSAPP_NUMBER: envText('VITE_WHATSAPP_NUMBER', 'YOUR_WHATSAPP_NUMBER'),
+  WHATSAPP_NUMBER: envText('VITE_WHATSAPP_NUMBER', '61410721370'),
   EMAILJS_SERVICE_ID: envText('VITE_EMAILJS_SERVICE_ID', 'service_YOUR_ID'),
   EMAILJS_CLIENT_TEMPLATE_ID: envText('VITE_EMAILJS_CLIENT_TEMPLATE_ID', 'template_CLIENT_ID'),
   EMAILJS_BUSINESS_TEMPLATE_ID: envText('VITE_EMAILJS_BUSINESS_TEMPLATE_ID', 'template_BUSINESS_ID'),
