@@ -79,7 +79,7 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
     variant === 'bar'
       ? 'flex-1 min-h-11 px-3 inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-[#c5dff0] text-[#0f5a94] font-bold text-sm'
       : variant === 'dock'
-        ? 'flex-1 min-h-12 px-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-sm'
+        ? 'flex-1 min-h-12 px-2 sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-sm whitespace-nowrap'
         : variant === 'hero'
           ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-base shadow-sm'
           : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] font-black text-base';
@@ -88,7 +88,7 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
     variant === 'bar'
       ? 'flex-1 min-h-11 px-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] text-white font-bold text-sm'
       : variant === 'dock'
-        ? 'flex-1 min-h-12 px-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-sm'
+        ? 'flex-1 min-h-12 px-2 sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-2xl bg-[#25D366] text-white font-black text-sm whitespace-nowrap'
         : variant === 'hero'
           ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20'
           : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20';
@@ -103,9 +103,15 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
       {contact.telHref && (
         <a href={contact.telHref} className={callClass} aria-label={callLabel}>
           <Icon name="phone" className="text-lg" />
-          <span>
-            <span className="max-[380px]:sr-only">Call </span>
-            {contact.display}
+          <span className={variant === 'dock' ? 'whitespace-nowrap' : undefined}>
+            {variant === 'dock' ? (
+              contact.display
+            ) : (
+              <>
+                <span className="max-[380px]:sr-only">Call </span>
+                {contact.display}
+              </>
+            )}
           </span>
         </a>
       )}
