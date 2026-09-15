@@ -63,6 +63,10 @@ function assertCompletePaidBookingParams(params: Record<string, string>, kind: '
   assert.equal(params.customer_name, 'Jane Client');
   assert.equal(params.user_email, 'jane@example.com');
   assert.equal(params.user_phone, '0412 345 678');
+  assert.equal(params.phone, '0412 345 678');
+  assert.equal(params.customer_phone, '0412 345 678');
+  assert.match(params.pickup_address, /12 Illawarra Rd, Marrickville NSW 2204/);
+  assert.match(params.dropoff_address, /88 Queen St, Newtown NSW 2042/);
   assert.match(params.move_date, /2 Oct 2026/);
   assert.match(params.move_time, /9:00 am/);
   assert.match(params.route, /12 Illawarra Rd, Marrickville NSW 2204/);
@@ -74,14 +78,27 @@ function assertCompletePaidBookingParams(params: Record<string, string>, kind: '
   assert.match(params.deposit_amount, /^\$/);
   assert.match(params.balance_amount, /^\$/);
   assert.match(params.job_details, /NEW BOOKING/);
+  assert.match(params.job_details, /Payment status: 10% deposit paid/);
   assert.match(params.job_details, /Jane Client/);
   assert.match(params.job_details, /jane@example.com/);
   assert.match(params.job_details, /0412 345 678/);
+  assert.match(params.job_details, /Pickup:/);
   assert.match(params.job_details, /Marrickville/);
+  assert.match(params.job_details, /Dropoff:/);
   assert.match(params.job_details, /Newtown/);
+  assert.match(params.job_details, /Fuel:/);
+  assert.match(params.job_details, /Quote total:/);
+  assert.match(params.job_details, /Deposit paid \/ due:/);
+  assert.match(params.job_details, /Balance on the day:/);
   assert.match(params.job_details, /Ring the bell/);
   assert.notEqual(params.vehicle, '');
   assert.notEqual(params.service_type, '');
+  if (kind === 'client') {
+    assert.match(params.email_subject, /^Booking confirmed — My Home Removals/);
+    assert.match(params.email_subject, /2 Oct 2026/);
+  } else {
+    assert.equal(params.email_subject, 'New booking — 10% deposit paid');
+  }
 }
 
 test('member signup reuses client then business templates, not a third member template', async () => {
@@ -129,13 +146,21 @@ test('member signup reuses client then business templates, not a third member te
       assert.equal(first.template_params.payment_status, '');
       assert.equal(first.template_params.discount_code, 'STUDENT5-ABCDEFGH');
       assert.equal(first.template_params.customer_name, 'Sam Nguyen');
+      assert.equal(first.template_params.email_subject, 'Your 5% student discount code');
+      assert.match(first.template_params.job_details, /MEMBER 5% OFF/);
       assert.match(first.template_params.job_details, /STUDENT5-ABCDEFGH/);
       assert.match(first.template_params.job_details, /not a booking/i);
       assert.equal(second.template_params.to_email, 'removalsmyhome@gmail.com');
       assert.equal(second.template_params.email_kind, 'member');
+      assert.equal(second.template_params.email_subject, 'New member 5% signup');
       assert.equal(second.template_params.reply_to, 'sam@student.edu.au');
       assert.equal(second.template_params.user_email, 'sam@student.edu.au');
+      assert.match(second.template_params.job_details, /NEW MEMBER 5% SIGNUP/);
       assert.match(second.template_params.job_details, /STUDENT5-ABCDEFGH/);
+      assert.doesNotMatch(first.template_params.email_subject, /booking confirmed/i);
+      assert.doesNotMatch(second.template_params.email_subject, /booking confirmed/i);
+      assert.doesNotMatch(first.template_params.email_subject, /deposit paid/i);
+      assert.doesNotMatch(second.template_params.email_subject, /deposit paid/i);
       assert.equal(calls.some((row) => String((row as { template_id?: string }).template_id || '').includes('member')), false);
     } finally {
       globalThis.fetch = orig;
@@ -172,6 +197,13 @@ test('member emails fill booking {{}} fields without inventing fake job data', a
         assert.equal(params.deposit_amount, '');
         assert.equal(params.balance_amount, '');
         assert.equal(params.service_type, '');
+        assert.equal(params.pickup_address, '');
+        assert.equal(params.dropoff_address, '');
+        assert.equal(params.phone, '');
+        assert.equal(params.customer_phone, '');
+        assert.equal(params.user_phone, '');
+        assert.doesNotMatch(params.email_subject, /booking confirmed/i);
+        assert.doesNotMatch(params.job_details, /NEW BOOKING/);
         assert.notEqual(params.move_date, 'First move');
         assert.notEqual(params.vehicle, 'Member offer');
         assert.notEqual(params.inventory, 'Code STUDENT5-ABCDEFGH');

@@ -141,9 +141,15 @@ test('create-checkout-session + fulfillPaidBookingEmails still produce complete 
         assert.equal(params.customer_name, 'Jane Client');
         assert.equal(params.user_email, 'jane@example.com');
         assert.equal(params.user_phone, '0412 345 678');
+        assert.equal(params.phone, '0412 345 678');
+        assert.match(params.pickup_address, /12 Illawarra Rd, Marrickville NSW 2204/);
+        assert.match(params.dropoff_address, /88 Queen St, Newtown NSW 2042/);
+        assert.match(params.email_subject, /Booking confirmed|New booking/);
         assert.match(params.move_date, /2 Oct 2026/);
         assert.match(params.route, /12 Illawarra Rd, Marrickville NSW 2204/);
         assert.match(params.route, /88 Queen St, Newtown NSW 2042/);
+        assert.match(params.job_details, /Payment status: 10% deposit paid/);
+        assert.match(params.job_details, /Fuel:/);
         assert.match(params.inventory, /12× Boxes \/ bags/);
         assert.match(params.inventory, /Sofa/);
         assert.match(params.total_quote, /^\$/);
@@ -155,6 +161,8 @@ test('create-checkout-session + fulfillPaidBookingEmails still produce complete 
       }
       assert.equal(business.template_params.email_kind, 'business');
       assert.equal(client.template_params.email_kind, 'client');
+      assert.equal(business.template_params.email_subject, 'New booking — 10% deposit paid');
+      assert.match(client.template_params.email_subject, /^Booking confirmed — My Home Removals/);
       assert.equal(business.template_params.to_email, 'removalsmyhome@gmail.com');
       assert.equal(client.template_params.to_email, 'jane@example.com');
     } finally {
