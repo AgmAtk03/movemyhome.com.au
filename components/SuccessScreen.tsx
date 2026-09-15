@@ -13,10 +13,11 @@ interface SuccessProps {
   whatsappUrl: string | null;
   quoted: PriceBreakdown;
   onReset: () => void;
+  onEditDetails?: () => void;
 }
 
 const SuccessScreen: React.FC<SuccessProps> = ({
-  name, email, demoMode, whatsappUrl, quoted, onReset,
+  name, email, demoMode, whatsappUrl, quoted, onReset, onEditDetails,
 }) => {
   const firstName = name.split(' ')[0] || name;
 
@@ -25,7 +26,12 @@ const SuccessScreen: React.FC<SuccessProps> = ({
       <div className="min-h-[100dvh] flex flex-col items-center p-6 text-center bg-white max-w-lg mx-auto pt-12">
         <h2 className="text-2xl font-black text-slate-900">Taking you to pay the deposit…</h2>
         <p className="text-slate-600 mt-3">If nothing happens, go back and tap Pay 10% deposit again.</p>
-        <button type="button" onClick={onReset} className="mt-8 min-h-11 text-slate-500 font-bold text-sm">Start another quote</button>
+        {onEditDetails && (
+          <button type="button" onClick={onEditDetails} className="btn-primary mt-8 w-full">
+            Back to booking details
+          </button>
+        )}
+        <button type="button" onClick={onReset} className="mt-3 min-h-11 text-slate-500 font-bold text-sm">Start another quote</button>
       </div>
     );
   }
@@ -39,7 +45,7 @@ const SuccessScreen: React.FC<SuccessProps> = ({
       <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">{PAYMENTS_OFF_HEADING}</h2>
       <p className="text-slate-600 mb-6 max-w-sm mx-auto text-base leading-relaxed">
         {firstName ? `${firstName}, nothing` : 'Nothing'} was charged and this move isn’t booked
-        {email ? ` — we haven’t emailed ${email}` : ''}. You can still look over the quote. We’ll take the 10% deposit once payments are on.
+        {email ? ` — we haven’t emailed ${email}` : ''}. You can still look over the quote and edit your details.
       </p>
 
       <dl className="w-full text-left bg-slate-50 rounded-2xl p-5 mb-6 space-y-2 text-sm">
@@ -48,6 +54,12 @@ const SuccessScreen: React.FC<SuccessProps> = ({
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Due on the day (90%)</dt><dd className="font-bold">{formatMoney(quoted.balance)}</dd></div>
       </dl>
 
+      {onEditDetails && (
+        <button type="button" onClick={onEditDetails} className="btn-primary w-full mb-3">
+          Back to booking details
+        </button>
+      )}
+
       <div className="w-full text-left mb-6">
         <BookingExtras variant="success" whatsappUrl={whatsappUrl} />
       </div>
@@ -55,7 +67,7 @@ const SuccessScreen: React.FC<SuccessProps> = ({
       <button
         type="button"
         onClick={onReset}
-        className="btn-primary w-full mb-4"
+        className="btn-quiet w-full mb-4"
       >
         Start another quote
       </button>

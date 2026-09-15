@@ -23,7 +23,7 @@ import { sanitizePlainText } from './lib/sanitize';
 import { calculateQuote, EMPTY_BREAKDOWN } from './shared/quoteCalc';
 import { createCheckoutSession } from './lib/checkout';
 import { fetchDieselPrice } from './lib/dieselPrice';
-import { PAYMENTS_OFF_BODY, PAYMENT_START_ERROR, customerFacingError } from './lib/customerCopy';
+import { PAYMENTS_OFF_BODY, PAYMENTS_OFF_SHORT, PAYMENT_START_ERROR, customerFacingError } from './lib/customerCopy';
 import { currentPath, isQuoteRoute, navigateTo } from './lib/nav';
 
 const INITIAL_INVENTORY: Inventory = {
@@ -198,7 +198,7 @@ const App: React.FC = () => {
         });
         setDemoCheckout(true);
         setBookingNotice(PAYMENTS_OFF_BODY);
-        setIsSuccess(true);
+        setNextHint(result.message || PAYMENTS_OFF_SHORT);
         return;
       }
 
@@ -354,7 +354,16 @@ const App: React.FC = () => {
         notice={bookingNotice}
         whatsappUrl={whatsappUrl}
         quoted={priceBreakdown}
-        onReset={() => window.location.reload()}
+        onEditDetails={() => {
+          setIsSuccess(false);
+          setDemoCheckout(false);
+          setNextHint('');
+        }}
+        onReset={() => {
+          setIsSuccess(false);
+          setDemoCheckout(false);
+          goHome();
+        }}
       />
     );
   }
