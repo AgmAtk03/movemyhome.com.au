@@ -1,4 +1,5 @@
 import React from 'react';
+import ContactActions from './ContactActions';
 
 interface CancelScreenProps {
   onRetry: () => void;
@@ -18,6 +19,10 @@ const CancelScreen: React.FC<CancelScreenProps> = ({ onRetry, onHome }) => {
       <button type="button" onClick={onHome} className="btn-quiet mt-3 w-full">
         Back to home
       </button>
+      <div className="mt-8 w-full text-left">
+        <p className="text-sm font-bold text-slate-700 mb-3 text-center">Need a hand? Call or WhatsApp</p>
+        <ContactActions variant="stack" />
+      </div>
     </div>
   );
 };

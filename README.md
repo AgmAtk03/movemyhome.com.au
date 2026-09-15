@@ -58,6 +58,15 @@ Enable **Maps JavaScript API**, **Places API**, and **Directions API**. Restrict
 
 Pickup and drop-off fields use Places autocomplete (Australia). Driving distance comes from Directions. If the key is missing, customers can still type addresses and fuel/distance is confirmed later.
 
+## Call and WhatsApp
+
+Public booking mobile is **0410 721 370** (from `VITE_COMPANY_PHONE` / `VITE_WHATSAPP_NUMBER`):
+
+- Call: `tel:+61410721370`
+- WhatsApp: `https://wa.me/61410721370`
+
+Links sit in the sticky site header, the landing hero and footer, the quote-wizard header, booking help (“Prefer a chat?”), privacy, cancel, and payment result screens. They are real `<a>` links with `min-h-11` tap targets and aria-labels.
+
 ## Fuel (7-Eleven diesel)
 
 On the **booking / final summary** (not the homepage):
@@ -104,12 +113,12 @@ Set these in `.env.local` and in the Vercel project. Do not commit values.
 | `VITE_EMAILJS_BUSINESS_TEMPLATE_ID` | Client + webhook | Business job sheet |
 | `VITE_EMAILJS_PUBLIC_KEY` | Client + webhook | EmailJS public key |
 | `EMAILJS_PRIVATE_KEY` | Server optional | Recommended for webhook sends |
-| `VITE_WHATSAPP_NUMBER` | Client | Digits with country code, e.g. `61412345678` |
+| `VITE_WHATSAPP_NUMBER` | Client (Netlify build) | `61410721370` — WhatsApp `https://wa.me/61410721370` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Client (Netlify build) | Places + Directions; HTTP-referrer restricted. Never commit the key. |
 | `SEVEN_ELEVEN_DIESEL_AUD_PER_L` | Server optional | Pin diesel AUD/L (e.g. `1.95`). If unset, `GET /api/diesel-price` uses the 11-Seven NSW 7-Eleven feed. |
 | `VITE_LEGAL_TRADING_NAME` | Client | e.g. your registered trading name |
 | `VITE_COMPANY_EMAIL` | Client + webhook | Bookings inbox |
-| `VITE_COMPANY_PHONE` | Client | Display / call |
+| `VITE_COMPANY_PHONE` | Client (Netlify build) | Display as `0410 721 370`. Call link `tel:+61410721370`. |
 | `VITE_COMPANY_WEBSITE` | Client | Public site |
 | `VITE_ABN` | Client | ABN placeholder until you fill it |
 
@@ -172,7 +181,7 @@ If `STRIPE_SECRET_KEY` is missing, or you run `npm run dev` without `vercel dev`
 
 ## Owner checklist
 
-1. Fill `VITE_LEGAL_TRADING_NAME`, `VITE_COMPANY_EMAIL`, `VITE_COMPANY_PHONE`, `VITE_COMPANY_WEBSITE`, `VITE_ABN` (and WhatsApp if you use it). Do not invent licences.
+1. Confirm `VITE_COMPANY_PHONE=0410 721 370` and `VITE_WHATSAPP_NUMBER=61410721370` on Netlify (also in `.env.example`). Fill `VITE_LEGAL_TRADING_NAME`, `VITE_COMPANY_EMAIL`, `VITE_COMPANY_WEBSITE`, `VITE_ABN`. Do not invent licences.
 2. Create a Maps key, restrict referrers, set `VITE_GOOGLE_MAPS_API_KEY`.
 3. Stripe test keys + webhook (`https://aama-removals.vercel.app/api/stripe-webhook`) + `PUBLIC_SITE_URL=https://movemyhome.com.au`. Charge a test deposit with `4242…`. Confirm webhook emails.
 4. Switch to `sk_live_` / live webhook secret only when ready. Deploy on **HTTPS**.

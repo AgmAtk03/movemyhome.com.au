@@ -1,6 +1,7 @@
 import React from 'react';
 import { CONFIG, isAbnConfigured, isLegalNameConfigured } from '../constants';
 import ConfiguredContact from './ConfiguredContact';
+import ContactActions from './ContactActions';
 import SiteHeader from './SiteHeader';
 
 interface PrivacyPageProps {
@@ -41,9 +42,12 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack, onQuote }) => {
             If street suggestions appear while you type an address, that’s only to help you fill the form.
           </p>
           <p>
-            To ask what we hold, or to have it deleted, get in touch using the details below — or through the quote form if we haven’t listed a number yet.
+            To ask what we hold, or to have it deleted, call or WhatsApp using the details below.
           </p>
-          <ConfiguredContact className="text-sm font-semibold text-slate-800" />
+          <ConfiguredContact className="mt-2 text-sm font-semibold text-slate-800" includePhone={false} />
+          <div className="mt-3">
+            <ContactActions variant="stack" />
+          </div>
         </div>
 
         <button type="button" onClick={onQuote} className="btn-primary mt-10 w-full">

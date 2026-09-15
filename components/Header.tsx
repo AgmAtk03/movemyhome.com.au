@@ -2,6 +2,7 @@ import React from 'react';
 import { CONFIG, WIZARD_STEPS } from '../constants';
 import { navigateTo } from '../lib/nav';
 import BrandMark from './BrandMark';
+import ContactActions from './ContactActions';
 import Icon from './Icon';
 
 interface HeaderProps {
@@ -77,6 +78,9 @@ const Header: React.FC<HeaderProps> = ({ step, totalSteps, onBack, onHome }) => 
             );
           })}
         </ol>
+      </div>
+      <div className="px-3 pb-3">
+        <ContactActions variant="bar" />
       </div>
     </header>
   );

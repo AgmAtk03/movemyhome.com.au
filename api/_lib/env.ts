@@ -49,7 +49,7 @@ export function companyConfig() {
     name: read('VITE_COMPANY_NAME') || BRAND_NAME,
     legalName: read('VITE_LEGAL_TRADING_NAME') || 'YOUR_LEGAL_TRADING_NAME',
     email: read('VITE_COMPANY_EMAIL') || 'YOUR_BOOKINGS_EMAIL',
-    phone: read('VITE_COMPANY_PHONE') || 'YOUR_PHONE_NUMBER',
+    phone: read('VITE_COMPANY_PHONE') || '0410 721 370',
     website: read('VITE_COMPANY_WEBSITE') || 'https://YOUR_WEBSITE',
   };
 }
