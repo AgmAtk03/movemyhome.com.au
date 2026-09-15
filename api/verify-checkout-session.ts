@@ -4,6 +4,8 @@ import { isStripeConfigured } from './_lib/env.js';
 import { getStripe } from './_lib/stripeClient.js';
 import { formatMoney } from '../shared/money.js';
 import { PAYMENT_NOT_FOUND, PAYMENTS_OFF_SHORT } from '../lib/customerCopy.js';
+import { redeemMemberCode } from './_lib/memberCodes.js';
+import { fulfillPaidBookingEmails, MAIL_BIZ_META, MAIL_CLIENT_META, MAIL_SENT_VALUE } from './_lib/paidBooking.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (applyCors(req, res)) return;
@@ -22,6 +24,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json({
       paid: false,
       demoMode: true,
+      clientSent: false,
+      businessSent: false,
       message: PAYMENTS_OFF_SHORT,
     });
     return;
@@ -35,8 +39,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const quoteTotal = Number(meta.quote_total || 0);
     const deposit = Number(meta.deposit || (depositCents / 100));
     const balance = Number(meta.balance || 0);
+    const discountCode = String(meta.discount_code || '').trim();
+    const customerEmail = session.customer_email || meta.customer_email || '';
 
-    res.status(200).json({
+    const body: Record<string, unknown> = {
       paid: confirmed,
       demoMode: false,
       status: session.status,
@@ -45,15 +51,65 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || '',
       currency: (session.currency || 'aud').toUpperCase(),
       customerName: meta.customer_name || '',
-      customerEmail: session.customer_email || meta.customer_email || '',
+      customerEmail,
       quoteTotal,
       deposit,
       balance,
       depositCents,
+      discountCode,
+      memberDiscount: Number(meta.discount_amount || 0) || 0,
       quoteTotalLabel: quoteTotal ? formatMoney(quoteTotal) : '',
       depositLabel: deposit ? formatMoney(deposit) : formatMoney(depositCents / 100),
       balanceLabel: balance ? formatMoney(balance) : '',
-    });
+      mailClient: meta[MAIL_CLIENT_META] === MAIL_SENT_VALUE,
+      mailBusiness: meta[MAIL_BIZ_META] === MAIL_SENT_VALUE,
+      clientSent: meta[MAIL_CLIENT_META] === MAIL_SENT_VALUE,
+      businessSent: meta[MAIL_BIZ_META] === MAIL_SENT_VALUE,
+    };
+
+    if (!confirmed) {
+      res.status(200).json(body);
+      return;
+    }
+
+    if (discountCode && customerEmail) {
+      try {
+        await redeemMemberCode({
+          email: customerEmail,
+          code: discountCode,
+          sessionId: session.id,
+          name: meta.customer_name || '',
+        });
+      } catch {
+        console.error('Member code redeem on verify failed', { sessionId: session.id });
+      }
+    }
+
+    try {
+      const result = await fulfillPaidBookingEmails(session);
+      body.clientSent = result.clientSent;
+      body.businessSent = result.businessSent;
+      body.mailClient = result.clientSent;
+      body.mailBusiness = result.businessSent;
+      body.alreadySent = result.alreadySent;
+      body.skipped = result.skipped;
+      if (result.error) {
+        console.error('verify-checkout-session paid, but email send incomplete', {
+          sessionId: session.id,
+          clientSent: result.clientSent,
+          businessSent: result.businessSent,
+          skipped: result.skipped,
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('verify-checkout-session email backup failed after paid session', {
+        sessionId: session.id,
+        error: error instanceof Error ? error.message : 'send failed',
+      });
+    }
+
+    res.status(200).json(body);
   } catch {
     res.status(404).json({ paid: false, error: PAYMENT_NOT_FOUND });
   }

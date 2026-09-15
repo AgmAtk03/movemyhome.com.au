@@ -1,30 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { VehicleType } from '../types';
+import { PriceBreakdown, VehicleType } from '../types';
 import { formatMoney } from '../lib/quote';
 import Icon from './Icon';
 import FuelCallout from './FuelCallout';
 import ContactActions from './ContactActions';
 
 interface FooterProps {
-  breakdown: {
-    total: number;
-    base: number;
-    distance: number;
-    inventory: number;
-    access: number;
-    potentialAccess: number;
-    cbd: number;
-    bedService: number;
-    hours: number;
-    fuel: number;
-    fuelLitres: number;
-    fuelStatus: 'none' | 'waived' | 'priced' | 'tbc';
-    dieselAudPerLitre: number | null;
-    isFixedTrip: boolean;
-    hourlyRate: number;
-    deposit: number;
-    balance: number;
-  };
+  breakdown: PriceBreakdown;
   fuelLine?: {
     label: string;
     amount: string;
@@ -81,6 +63,17 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 <dt className="text-sm font-bold text-slate-600">Estimated total</dt>
                 <dd className="text-2xl font-black text-slate-900 tracking-tight" aria-live="polite">{formatMoney(breakdown.total)}</dd>
               </div>
+              {breakdown.memberDiscount > 0 && (
+                <div className="flex justify-between gap-3 text-sm">
+                  <dt className="font-semibold text-[#0f5a94]">
+                    Member 5% off{breakdown.memberDiscountCode ? ` (${breakdown.memberDiscountCode})` : ''}
+                  </dt>
+                  <dd className="font-black text-[#0f5a94]">
+                    <span className="sr-only">Was {formatMoney(breakdown.subtotal)}, now </span>
+                    −{formatMoney(breakdown.memberDiscount)}
+                  </dd>
+                </div>
+              )}
               {isBookStep && (
                 <div className="flex justify-between gap-3 text-sm">
                   <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
@@ -186,6 +179,20 @@ const SummaryFooter: React.FC<FooterProps> = ({
             )}
 
             <div className="pt-5 mt-4 border-t border-slate-100 space-y-2">
+              {breakdown.memberDiscount > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Before member discount</span>
+                    <span className="font-bold line-through text-slate-400">{formatMoney(breakdown.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#0f5a94]">
+                      Member 5% off{breakdown.memberDiscountCode ? ` (${breakdown.memberDiscountCode})` : ''}
+                    </span>
+                    <span className="font-bold text-[#0f5a94]">−{formatMoney(breakdown.memberDiscount)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between items-center">
                 <span className="font-black text-slate-900">Estimated total</span>
                 <span className="text-2xl font-black text-[#146eb4]">{formatMoney(breakdown.total)}</span>

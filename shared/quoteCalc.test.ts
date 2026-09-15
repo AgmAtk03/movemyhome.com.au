@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { depositFromQuoteTotal, roundMoney } from './money';
-import { calculateFullQuote } from './quoteCalc';
+import { calculateFullQuote, applyMemberDiscount } from './quoteCalc';
 import { Inventory, LocationEntry } from '../types';
 
 const emptyInventory: Inventory = {
@@ -92,4 +92,31 @@ test('server ignores a client-supplied total by recalculating', () => {
   assert.equal(quote.base, 180);
   assert.ok(quote.depositCents > 0);
   assert.ok(quote.depositCents < Math.round(quote.total * 100));
+});
+
+test('member 5% off is taken off the quote, then 10% deposit is of the discounted total', () => {
+  const quote = calculateFullQuote({
+    vehicle: 'van',
+    truckHours: 2,
+    crewSize: 2,
+    pickups: [ground],
+    dropoffs: [drop],
+    inventory: emptyInventory,
+    bedDisassembly: false,
+    bedIsAssembled: true,
+    distanceKm: 10,
+    travelTimeHrs: 0.4,
+    isInterstate: false,
+  });
+  const discounted = applyMemberDiscount(quote, 'STUDENT5-ABCDEFGH');
+  const expectedTotal = roundMoney(quote.total * 0.95);
+  assert.equal(discounted.subtotal, quote.total);
+  assert.equal(discounted.memberDiscount, roundMoney(quote.total * 0.05));
+  assert.equal(discounted.total, expectedTotal);
+  assert.equal(discounted.deposit, roundMoney(expectedTotal * 0.1));
+  assert.equal(discounted.balance, roundMoney(expectedTotal - discounted.deposit));
+  assert.equal(discounted.depositCents, Math.round(discounted.deposit * 100));
+  assert.equal(discounted.memberDiscountCode, 'STUDENT5-ABCDEFGH');
+  const again = applyMemberDiscount(discounted, 'STUDENT5-ABCDEFGH');
+  assert.equal(again.total, discounted.total);
 });

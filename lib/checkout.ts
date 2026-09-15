@@ -5,11 +5,16 @@ import { PAYMENTS_OFF_SHORT, PAYMENT_OPEN_ERROR, PAYMENT_START_ERROR, customerFa
 
 export interface CheckoutQuoted {
   quoteTotal: number;
+  subtotal?: number;
+  memberDiscount?: number;
+  memberDiscountCode?: string;
   deposit: number;
   balance: number;
   depositCents: number;
   currency: string;
   quoteTotalLabel: string;
+  subtotalLabel?: string;
+  memberDiscountLabel?: string;
   depositLabel: string;
   balanceLabel: string;
 }
@@ -49,6 +54,7 @@ export function checkoutPayload(state: QuoteState) {
     distanceKm: state.distanceKm,
     travelTimeHrs: state.travelTimeHrs,
     isInterstate: state.isInterstate,
+    discountCode: sanitizePlainText(state.discountCode || '', 24),
   };
 }
 

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "tsx --test shared/quoteCalc.test.ts shared/fuel.test.ts shared/apiEsmImports.test.ts api/_lib/dieselPrice.test.ts api/_lib/cors.test.ts lib/contact.test.ts lib/api.test.ts lib/checkout.test.ts mapsLoader.test.ts netlifyRedirects.test.ts"
+    "test": "tsx --test shared/quoteCalc.test.ts shared/fuel.test.ts shared/memberCode.test.ts shared/apiEsmImports.test.ts api/_lib/dieselPrice.test.ts api/_lib/cors.test.ts api/_lib/memberCodes.test.ts api/_lib/emailjs.test.ts api/_lib/paidBooking.test.ts lib/contact.test.ts lib/api.test.ts lib/checkout.test.ts lib/members.test.ts mapsLoader.test.ts netlifyRedirects.test.ts"
   },
   "dependencies": {
     "@vercel/node": "^5.10.2",

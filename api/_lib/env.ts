@@ -1,11 +1,18 @@
 import { BRAND_NAME } from '../../shared/rates.js';
 
+/** Production bookings inbox. Server mail uses this if VITE_COMPANY_EMAIL is unset. */
+export const BOOKINGS_INBOX = 'removalsmyhome@gmail.com';
+
 function read(name: string): string {
   return String(process.env[name] ?? '').trim();
 }
 
 function isSecretLike(value: string): boolean {
   return /^(sk_|rk_|whsec_)/.test(value);
+}
+
+function isPlaceholderEmail(value: string): boolean {
+  return !value || !value.includes('@') || value.includes('YOUR_');
 }
 
 export function stripeSecretKey(): string {
@@ -44,11 +51,17 @@ export function publicSiteUrl(reqHost?: string | null, proto?: string | null): s
   return 'http://localhost:3000';
 }
 
+export function bookingsInbox(): string {
+  const fromEnv = read('VITE_COMPANY_EMAIL') || read('BOOKINGS_INBOX');
+  if (!isPlaceholderEmail(fromEnv)) return fromEnv;
+  return BOOKINGS_INBOX;
+}
+
 export function companyConfig() {
   return {
     name: read('VITE_COMPANY_NAME') || BRAND_NAME,
     legalName: read('VITE_LEGAL_TRADING_NAME') || 'YOUR_LEGAL_TRADING_NAME',
-    email: read('VITE_COMPANY_EMAIL') || 'YOUR_BOOKINGS_EMAIL',
+    email: bookingsInbox(),
     phone: read('VITE_COMPANY_PHONE') || '0410 721 370',
     website: read('VITE_COMPANY_WEBSITE') || 'https://YOUR_WEBSITE',
   };
@@ -64,12 +77,30 @@ export function emailJsConfig() {
   };
 }
 
-export function isEmailJsServerConfigured(): boolean {
+export function memberCodeSecret(): string {
+  return read('MEMBER_CODE_SECRET') || read('EMAILJS_PRIVATE_KEY');
+}
+
+export function emailJsMissingVars(): string[] {
   const cfg = emailJsConfig();
-  if (!cfg.serviceId || cfg.serviceId.includes('YOUR_ID')) return false;
-  if (!cfg.publicKey || cfg.publicKey.includes('YOUR_PUBLIC_KEY')) return false;
-  if (!cfg.clientTemplateId || cfg.clientTemplateId.includes('CLIENT_ID') || cfg.clientTemplateId.includes('YOUR_ID')) return false;
-  if (!cfg.businessTemplateId || cfg.businessTemplateId.includes('BUSINESS_ID') || cfg.businessTemplateId.includes('YOUR_ID')) return false;
-  if (isSecretLike(cfg.publicKey)) return false;
-  return true;
+  const missing: string[] = [];
+  if (!cfg.serviceId || cfg.serviceId.includes('YOUR_ID')) missing.push('EMAILJS_SERVICE_ID');
+  if (!cfg.publicKey || cfg.publicKey.includes('YOUR_PUBLIC_KEY')) missing.push('EMAILJS_PUBLIC_KEY');
+  if (!cfg.clientTemplateId || cfg.clientTemplateId.includes('CLIENT_ID') || cfg.clientTemplateId.includes('YOUR_ID')) {
+    missing.push('EMAILJS_CLIENT_TEMPLATE_ID');
+  }
+  if (!cfg.businessTemplateId || cfg.businessTemplateId.includes('BUSINESS_ID') || cfg.businessTemplateId.includes('YOUR_ID')) {
+    missing.push('EMAILJS_BUSINESS_TEMPLATE_ID');
+  }
+  if (cfg.publicKey && isSecretLike(cfg.publicKey)) missing.push('EMAILJS_PUBLIC_KEY (must not be sk_/rk_/whsec_)');
+  return missing;
+}
+
+export function isEmailJsServerConfigured(): boolean {
+  return emailJsMissingVars().length === 0;
+}
+
+/** Member 5% mail reuses the two paid templates (EmailJS Hobby allows only two). */
+export function isMemberEmailConfigured(): boolean {
+  return isEmailJsServerConfigured();
 }

@@ -2,24 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { applyCors } from './_lib/cors.js';
 import { isValidEmail, isValidPersonName } from '../lib/validation.js';
 import { sanitizePlainText } from '../lib/sanitize.js';
-import { emailJsConfig } from './_lib/env.js';
-
-function read(name: string): string {
-  return String(process.env[name] ?? '').trim();
-}
-
-function memberTemplateId(): string {
-  return read('EMAILJS_MEMBER_TEMPLATE_ID') || read('VITE_EMAILJS_MEMBER_TEMPLATE_ID');
-}
-
-function isMemberEmailConfigured(): boolean {
-  const cfg = emailJsConfig();
-  const template = memberTemplateId();
-  if (!template || template.includes('YOUR') || template.includes('MEMBER_ID')) return false;
-  if (!cfg.serviceId || cfg.serviceId.includes('YOUR_ID')) return false;
-  if (!cfg.publicKey || cfg.publicKey.includes('YOUR_PUBLIC_KEY')) return false;
-  return true;
-}
+import { memberSignupMessage, MEMBER_EMAILS_OFF } from '../lib/customerCopy.js';
+import { sendMemberDiscountEmails } from './_lib/emailjs.js';
+import { canIssueMemberCode, issueMemberCode } from './_lib/memberCodes.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (applyCors(req, res)) return;
@@ -36,62 +21,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(400).json({
       ok: false,
       emailed: false,
+      customerEmailed: false,
+      businessEmailed: false,
+      discountCode: '',
       message: 'Please add a name and a valid email so we can hold your 5% off.',
     });
     return;
   }
 
-  if (!isMemberEmailConfigured()) {
+  let code = '';
+  let alreadyRedeemed = false;
+  if (canIssueMemberCode()) {
+    try {
+      const issued = await issueMemberCode({ name, email });
+      if (issued.ok) {
+        code = issued.code;
+        alreadyRedeemed = issued.alreadyRedeemed;
+      }
+    } catch {
+      console.error('member-signup code issue failed');
+    }
+  }
+
+  if (!code) {
     res.status(200).json({
       ok: true,
       emailed: false,
-      message:
-        'We’ve saved your name and email on this device. Membership emails aren’t switched on yet — once they are, we’ll use this for your 5% off.',
+      customerEmailed: false,
+      businessEmailed: false,
+      discountCode: '',
+      message: MEMBER_EMAILS_OFF,
     });
     return;
   }
 
-  const cfg = emailJsConfig();
-  const payload: Record<string, unknown> = {
-    service_id: cfg.serviceId,
-    template_id: memberTemplateId(),
-    user_id: cfg.publicKey,
-    template_params: {
-      customer_name: name,
-      user_email: email,
-      to_email: email,
-      email_kind: 'member',
-      company_name: 'My Home Removals',
-    },
-  };
-  if (cfg.privateKey) payload.accessToken = cfg.privateKey;
-
-  try {
-    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      res.status(200).json({
-        ok: true,
-        emailed: false,
-        message:
-          'We’ve saved your details on this device. We couldn’t send the membership email just now — nothing else was charged or booked.',
-      });
-      return;
-    }
-    res.status(200).json({
-      ok: true,
-      emailed: true,
-      message: 'You’re on the list — we’ll be in touch about your 5% off.',
-    });
-  } catch {
+  if (alreadyRedeemed) {
     res.status(200).json({
       ok: true,
       emailed: false,
-      message:
-        'We’ve saved your details on this device. We couldn’t reach the mail service just now.',
+      customerEmailed: false,
+      businessEmailed: false,
+      discountCode: code,
+      alreadyRedeemed: true,
+      message: memberSignupMessage({ code, customerEmailed: false, businessEmailed: false, alreadyRedeemed: true }),
     });
+    return;
   }
+
+  const mailed = await sendMemberDiscountEmails({ name, email, discountCode: code });
+  const customerEmailed = mailed.customerSent;
+  const businessEmailed = mailed.businessSent;
+
+  res.status(200).json({
+    ok: true,
+    emailed: customerEmailed && businessEmailed,
+    customerEmailed,
+    businessEmailed,
+    discountCode: code,
+    alreadyRedeemed: false,
+    message: memberSignupMessage({ code, customerEmailed, businessEmailed }),
+    // Temporary diagnostic (no secrets) while Vercel REST send is investigated.
+    mailErrorHint: mailed.error || undefined,
+  });
 }

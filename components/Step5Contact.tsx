@@ -7,7 +7,13 @@ import Icon from './Icon';
 
 interface Step5Props {
   details: MoveDetails;
+  discountCode: string;
+  discountApplied: boolean;
+  discountHint: string;
+  discountBusy: boolean;
   onUpdateDetails: (d: Partial<MoveDetails>) => void;
+  onDiscountCodeChange: (code: string) => void;
+  onApplyDiscount: () => void;
   snapshot: QuoteSnapshot;
   whatsappUrl: string | null;
   errors: ContactErrors;
@@ -19,7 +25,20 @@ const fieldClass = (invalid: boolean) =>
     invalid ? 'border-rose-400' : 'border-slate-200 focus:border-[#146eb4]'
   }`;
 
-const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, errors, showErrors }) => {
+const Step5Contact: React.FC<Step5Props> = ({
+  details,
+  discountCode,
+  discountApplied,
+  discountHint,
+  discountBusy,
+  onUpdateDetails,
+  onDiscountCodeChange,
+  onApplyDiscount,
+  snapshot,
+  whatsappUrl,
+  errors,
+  showErrors,
+}) => {
   return (
     <div className="space-y-8 pb-10">
       <div className="space-y-2">
@@ -122,6 +141,52 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             value={details.instructions}
             onChange={(e) => onUpdateDetails({ instructions: e.target.value })}
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="discount-code" className="text-sm font-bold text-slate-700">Discount code (optional)</label>
+          <div className="flex gap-2">
+            <input
+              id="discount-code"
+              name="discount-code"
+              type="text"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="e.g. STUDENT5-XXXX"
+              className={`flex-1 min-h-12 px-4 bg-white border rounded-2xl text-base font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#146eb4]/15 ${
+                discountHint && !discountApplied ? 'border-rose-400' : 'border-slate-200 focus:border-[#146eb4]'
+              }`}
+              value={discountCode}
+              onChange={(e) => onDiscountCodeChange(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  onApplyDiscount();
+                }
+              }}
+              aria-invalid={Boolean(discountHint) && !discountApplied}
+              aria-describedby={discountHint ? 'discount-code-status' : undefined}
+            />
+            <button
+              type="button"
+              className="btn-quiet min-h-12 px-4 shrink-0"
+              onClick={onApplyDiscount}
+              disabled={discountBusy || !discountCode.trim()}
+              aria-busy={discountBusy}
+            >
+              {discountBusy ? 'Checking…' : discountApplied ? 'Applied' : 'Apply'}
+            </button>
+          </div>
+          {discountHint && (
+            <p
+              id="discount-code-status"
+              className={`text-sm ${discountApplied ? 'text-[#0f5a94]' : 'text-rose-700'}`}
+              role="status"
+            >
+              {discountHint}
+            </p>
+          )}
         </div>
       </div>
 

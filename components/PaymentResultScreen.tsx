@@ -15,6 +15,7 @@ interface VerifyResponse {
   quoteTotalLabel?: string;
   depositLabel?: string;
   balanceLabel?: string;
+  discountCode?: string;
   sessionId?: string;
   paymentIntentId?: string;
   currency?: string;
@@ -61,10 +62,13 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
         <h1 className="text-3xl font-black text-slate-900">Deposit received</h1>
         <p className="text-slate-600 mt-3 max-w-sm leading-relaxed">
           Thanks{data.customerName ? ` ${data.customerName.split(' ')[0]}` : ''}. We’ve got your 10% deposit
-          {data.customerEmail ? ` — we’ll email ${data.customerEmail}` : ''}. We’ll confirm the plan before moving day.
+          {data.customerEmail ? ` — check ${data.customerEmail} (and spam/promotions) for the booking confirmation` : ''}. We’ll confirm the plan before moving day.
         </p>
         <dl className="w-full text-left bg-slate-50 rounded-2xl p-5 mt-6 space-y-2 text-sm">
           <div className="flex justify-between gap-3"><dt className="text-slate-500">Estimated total</dt><dd className="font-bold">{data.quoteTotalLabel}</dd></div>
+          {data.discountCode ? (
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">Member 5% off</dt><dd className="font-bold">{data.discountCode}</dd></div>
+          ) : null}
           <div className="flex justify-between gap-3"><dt className="text-slate-500">Pay today (10%)</dt><dd className="font-bold">{data.depositLabel}</dd></div>
           <div className="flex justify-between gap-3"><dt className="text-slate-500">Due on the day (90%)</dt><dd className="font-bold">{data.balanceLabel}</dd></div>
         </dl>

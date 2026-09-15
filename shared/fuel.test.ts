@@ -112,6 +112,7 @@ test('booking snapshot shows waived fuel copy before the deposit', () => {
     travelTimeHrs: 0.3,
     isCBD: false,
     isInterstate: false,
+    discountCode: '',
   };
   const quote = calculateFullQuote({
     vehicle: state.vehicle,
