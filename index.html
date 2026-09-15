@@ -183,6 +183,21 @@
             z-index: 10000;
             font-family: Inter, sans-serif;
         }
+        /* Google paints these when the key/API is denied; they must not cover or disable the form. */
+        .gm-err-container,
+        .gm-err-autocomplete {
+            display: none !important;
+            pointer-events: none !important;
+        }
+        input.address-field:disabled,
+        input.address-field[readonly] {
+            opacity: 1;
+            background-color: #fff;
+            color: #0f172a;
+            pointer-events: auto;
+            cursor: text;
+            -webkit-text-fill-color: #0f172a;
+        }
     </style>
 </head>
 <body class="overflow-x-hidden antialiased">

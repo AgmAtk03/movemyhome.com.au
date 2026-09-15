@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { LocationEntry, AccessType, VehicleType } from '../types';
 import { ACCESS_LABELS, RATES } from '../constants';
-import { isGoogleMapsConfigured, isGoogleMapsReady, loadGoogleMaps } from '../mapsLoader';
+import {
+  isGoogleMapsConfigured,
+  isGoogleMapsUsable,
+  loadGoogleMaps,
+  subscribeMapsFailure,
+} from '../mapsLoader';
 import { formatMoney } from '../lib/quote';
 import AddressField from './AddressField';
 
@@ -37,9 +42,11 @@ const Step2Route: React.FC<Step2Props> = ({
   const [routeError, setRouteError] = useState<string | null>(null);
   const [mapsStatus, setMapsStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>(() => {
     if (!isGoogleMapsConfigured()) return 'missing';
-    return isGoogleMapsReady() ? 'ready' : 'loading';
+    return isGoogleMapsUsable() ? 'ready' : 'loading';
   });
   const mapsMissing = mapsStatus === 'missing' || mapsStatus === 'error';
+
+  useEffect(() => subscribeMapsFailure(() => setMapsStatus('error')), []);
 
   useEffect(() => {
     if (!isGoogleMapsConfigured()) {
@@ -49,7 +56,7 @@ const Step2Route: React.FC<Step2Props> = ({
     let cancelled = false;
     loadGoogleMaps()
       .then(() => {
-        if (!cancelled) setMapsStatus('ready');
+        if (!cancelled) setMapsStatus(isGoogleMapsUsable() ? 'ready' : 'error');
       })
       .catch(() => {
         if (!cancelled) setMapsStatus('error');
