@@ -163,11 +163,20 @@ export function buildCustomerMessage(state: QuoteState, snapshot: QuoteSnapshot)
   );
 }
 
+function fuelDetailsLine(snapshot: QuoteSnapshot): string {
+  if (snapshot.fuelLine.status === 'none') return 'Fuel: TBC';
+  const note = snapshot.fuelLine.note ? ` — ${snapshot.fuelLine.note}` : '';
+  return `Fuel: ${snapshot.fuelLine.amount}${note}`;
+}
+
 export function buildJobDetailsBody(state: QuoteState, snapshot: QuoteSnapshot): string {
   const instructions = sanitizeMultiline(state.details.instructions, 800) || 'None';
+  const pickup = snapshot.pickupAddresses.filter(Boolean).join(' | ') || 'To confirm';
+  const dropoff = snapshot.dropoffAddresses.filter(Boolean).join(' | ') || 'To confirm';
   return sanitizeMultiline(
     [
       'NEW BOOKING — 10% DEPOSIT',
+      'Payment status: 10% deposit paid',
       `Customer: ${sanitizePlainText(state.details.name, 80)}`,
       `Email: ${sanitizePlainText(state.details.email, 120)}`,
       `Phone: ${sanitizePlainText(state.details.phone, 24)}`,
@@ -177,6 +186,8 @@ export function buildJobDetailsBody(state: QuoteState, snapshot: QuoteSnapshot):
       `Crew: ${snapshot.crewLabel}`,
       `Move type: ${snapshot.moveType}`,
       `Distance: ${snapshot.distanceLabel} · Drive time: ${snapshot.travelTimeLabel}`,
+      `Pickup: ${pickup}`,
+      `Dropoff: ${dropoff}`,
       snapshot.routeSummary,
       `Items: ${snapshot.inventorySummary}`,
       `Quote total: ${snapshot.totalLabel}`,
@@ -185,9 +196,10 @@ export function buildJobDetailsBody(state: QuoteState, snapshot: QuoteSnapshot):
         : '',
       `Deposit paid / due: ${snapshot.depositLabel}`,
       `Balance on the day: ${snapshot.balanceLabel}`,
+      fuelDetailsLine(snapshot),
       snapshot.lines.map((line) => `- ${line.label}: ${line.note || line.amount}`).join('\n'),
       `Notes: ${instructions}`,
-    ].join('\n'),
+    ].filter(Boolean).join('\n'),
     2500
   );
 }
