@@ -31,8 +31,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { state } = parsed;
-  const diesel = await getDieselPrice();
-  const dieselAudPerLitre = dieselAudFromResult(diesel);
+  let dieselAudPerLitre: number | null = null;
+  try {
+    dieselAudPerLitre = dieselAudFromResult(await getDieselPrice());
+  } catch {
+    dieselAudPerLitre = null;
+  }
   const breakdown = calculateFullQuote({
     vehicle: state.vehicle,
     truckHours: state.truckHours,
