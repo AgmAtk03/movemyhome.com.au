@@ -12,6 +12,50 @@ import {
 } from './format.js';
 import { sanitizeMultiline, sanitizePlainText } from '../lib/sanitize.js';
 
+function fuelLineFrom(state: QuoteState, breakdown: PriceBreakdown): QuoteSnapshot['fuelLine'] {
+  const kmLabel = `${state.distanceKm.toFixed(1)} km`;
+  if (
+    breakdown.fuelStatus === 'none'
+    && state.step >= 6
+    && state.distanceKm <= 0
+    && addressesReady(state.pickups, state.dropoffs)
+  ) {
+    return {
+      label: 'Fuel',
+      amount: 'TBC',
+      note: 'Driving distance still to confirm — we won’t guess fuel',
+      status: 'tbc',
+    };
+  }
+  if (breakdown.fuelStatus === 'waived') {
+    return {
+      label: 'Fuel',
+      amount: formatMoney(0),
+      note: 'No fuel charge under 12 km',
+      status: 'waived',
+    };
+  }
+  if (breakdown.fuelStatus === 'tbc') {
+    return {
+      label: 'Fuel',
+      amount: 'TBC',
+      note: '7-Eleven diesel price unavailable — we’ll confirm fuel with you',
+      status: 'tbc',
+    };
+  }
+  if (breakdown.fuelStatus === 'priced') {
+    const litres = breakdown.fuelLitres.toFixed(1);
+    const perLitre = breakdown.dieselAudPerLitre != null ? formatMoney(breakdown.dieselAudPerLitre) : '';
+    return {
+      label: 'Fuel',
+      amount: formatMoney(breakdown.fuel),
+      note: `${kmLabel} ÷ 10 km per litre = ${litres} L × ${perLitre}/L 7-Eleven diesel`,
+      status: 'priced',
+    };
+  }
+  return { label: 'Fuel', amount: formatMoney(0), status: 'none' };
+}
+
 export function buildQuoteSnapshot(state: QuoteState, breakdown: PriceBreakdown): QuoteSnapshot {
   const included = [
     'We’ll confirm the plan before moving day',
@@ -34,9 +78,6 @@ export function buildQuoteSnapshot(state: QuoteState, breakdown: PriceBreakdown)
   if (breakdown.distance > 0) {
     lines.push({ label: 'Distance', amount: formatMoney(breakdown.distance) });
   }
-  if (breakdown.fuel > 0) {
-    lines.push({ label: 'Fuel estimate', amount: formatMoney(breakdown.fuel) });
-  }
   if (breakdown.inventory > 0) {
     lines.push({ label: 'Items', amount: formatMoney(breakdown.inventory) });
   }
@@ -52,6 +93,15 @@ export function buildQuoteSnapshot(state: QuoteState, breakdown: PriceBreakdown)
   }
   if (breakdown.bedService > 0) {
     lines.push({ label: 'Bed take-down', amount: formatMoney(breakdown.bedService) });
+  }
+
+  const fuelLine = fuelLineFrom(state, breakdown);
+  if (fuelLine.status !== 'none') {
+    lines.push({
+      label: fuelLine.label,
+      amount: fuelLine.amount,
+      note: fuelLine.status === 'priced' ? undefined : fuelLine.note,
+    });
   }
 
   const schedule = [formatDateAu(state.details.date), formatTimeAu(state.details.time)]
@@ -75,6 +125,7 @@ export function buildQuoteSnapshot(state: QuoteState, breakdown: PriceBreakdown)
     balanceLabel: formatMoney(breakdown.balance),
     included,
     lines,
+    fuelLine,
   };
 }
 

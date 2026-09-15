@@ -60,6 +60,9 @@ export interface PriceBreakdown {
   bedService: number;
   hours: number;
   fuel: number;
+  fuelLitres: number;
+  fuelStatus: 'none' | 'waived' | 'priced' | 'tbc';
+  dieselAudPerLitre: number | null;
   isFixedTrip: boolean;
   hourlyRate: number;
   deposit: number;
@@ -84,6 +87,7 @@ export interface QuoteSnapshot {
   balanceLabel: string;
   included: string[];
   lines: { label: string; amount: string; note?: string }[];
+  fuelLine: { label: string; amount: string; note?: string; status: 'none' | 'waived' | 'priced' | 'tbc' };
 }
 
 export type JobWorkflowStatus = 'new' | 'confirmed' | 'in_progress' | 'done' | 'cancelled';

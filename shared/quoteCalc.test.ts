@@ -43,6 +43,8 @@ test('van local quote uses existing base + per-km rates', () => {
   });
   assert.equal(quote.base, 55);
   assert.equal(quote.distance, roundMoney(10 * 0.42));
+  assert.equal(quote.fuel, 0);
+  assert.equal(quote.fuelStatus, 'waived');
   assert.equal(quote.total, roundMoney(55 + 4.2));
   assert.equal(quote.deposit, roundMoney(quote.total * 0.1));
   assert.equal(quote.balance, roundMoney(quote.total - quote.deposit));

@@ -111,6 +111,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       distanceKm: state.distanceKm,
       travelTimeHrs: state.travelTimeHrs,
       isInterstate: state.isInterstate,
+      dieselAudPerLitre: (() => {
+        const n = Number(meta.diesel_aud_per_l || 0);
+        return Number.isFinite(n) && n > 0 ? n : null;
+      })(),
     })),
     serviceLabel: String(meta.service || 'Moving help'),
     vehicleLabel: String(meta.vehicle || ''),

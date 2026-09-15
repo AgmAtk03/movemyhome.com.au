@@ -23,6 +23,7 @@ test('API ESM graph uses .js specifiers on relative imports', () => {
   const files = [
     ...walkTs(join(ROOT, 'api')),
     join(ROOT, 'shared/quoteCalc.ts'),
+    join(ROOT, 'shared/fuel.ts'),
     join(ROOT, 'shared/money.ts'),
     join(ROOT, 'shared/snapshot.ts'),
     join(ROOT, 'shared/format.ts'),

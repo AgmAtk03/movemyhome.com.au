@@ -1,6 +1,7 @@
 import type { Inventory, LocationEntry, PriceBreakdown, VehicleType } from '../types.js';
 import { FLOOR_RATES, INVENTORY_COSTS, RATES } from './rates.js';
 import { depositFromQuoteTotal, roundMoney } from './money.js';
+import { calculateFuelSurcharge } from './fuel.js';
 
 export const EMPTY_BREAKDOWN: PriceBreakdown = {
   total: 0,
@@ -13,6 +14,9 @@ export const EMPTY_BREAKDOWN: PriceBreakdown = {
   bedService: 0,
   hours: 0,
   fuel: 0,
+  fuelLitres: 0,
+  fuelStatus: 'none',
+  dieselAudPerLitre: null,
   isFixedTrip: false,
   hourlyRate: 0,
   deposit: 0,
@@ -32,6 +36,8 @@ export interface QuoteCalcInput {
   distanceKm: number;
   travelTimeHrs: number;
   isInterstate: boolean;
+  /** Live 7-Eleven diesel AUD/L. Null → fuel TBC (not guessed). */
+  dieselAudPerLitre?: number | null;
   /** Wizard step. Server checkout always uses 6 (full quote). */
   step: number;
 }
@@ -60,7 +66,6 @@ export function calculateQuote(input: QuoteCalcInput): PriceBreakdown {
   let access = 0;
   let potentialAccess = 0;
   let bedService = 0;
-  let fuel = 0;
   let hours = 0;
   let isFixedTrip = false;
   let hourlyRate = 0;
@@ -80,19 +85,15 @@ export function calculateQuote(input: QuoteCalcInput): PriceBreakdown {
 
     if (isLongDistance) {
       isFixedTrip = true;
-      const fuelCostPerKm = (RATES.TRUCK_L_PER_100KM / 100) * RATES.DIESEL_PRICE_PER_L;
-      const rawCostPerKmTotal = fuelCostPerKm + RATES.TRUCK_WEAR_PER_KM;
       const totalDistanceDiscountedReturn = input.distanceKm * 1.8;
-      const rawCost = totalDistanceDiscountedReturn * rawCostPerKmTotal;
+      const rawCost = totalDistanceDiscountedReturn * RATES.TRUCK_WEAR_PER_KM;
       const marginPerKm = input.crewSize === 1 ? RATES.MARGIN_SOLO_PER_KM : RATES.MARGIN_TEAM_PER_KM;
       const laborMargin = input.distanceKm * marginPerKm;
       base = rawCost + laborMargin;
-      fuel = 0;
       hours = input.travelTimeHrs;
     } else {
       hours = input.isInterstate ? input.travelTimeHrs : Math.max(RATES.TRUCK_MIN_HOURS, input.truckHours);
       base = hours * hourlyRate;
-      fuel = (input.distanceKm / 100) * RATES.TRUCK_L_PER_100KM * RATES.DIESEL_PRICE_PER_L;
     }
   } else {
     base = RATES.VAN_BASE;
@@ -110,11 +111,14 @@ export function calculateQuote(input: QuoteCalcInput): PriceBreakdown {
 
   const showInventoryCosts = input.step >= 4;
   const showRouteCosts = input.step >= 3;
+  const fuelCharge = calculateFuelSurcharge(input.distanceKm, input.dieselAudPerLitre, {
+    include: showRouteCosts,
+  });
 
   const filteredInventory = showInventoryCosts ? inventory : 0;
   const filteredBedService = showInventoryCosts ? bedService : 0;
   const filteredDistance = showRouteCosts ? distance : 0;
-  const filteredFuel = showRouteCosts ? fuel : 0;
+  const filteredFuel = fuelCharge.fuel;
   const filteredCBD = showRouteCosts ? cbdFee : 0;
   const filteredAccess = showRouteCosts ? access : 0;
 
@@ -133,6 +137,9 @@ export function calculateQuote(input: QuoteCalcInput): PriceBreakdown {
     bedService: roundMoney(filteredBedService),
     hours,
     fuel: roundMoney(filteredFuel),
+    fuelLitres: fuelCharge.litres,
+    fuelStatus: fuelCharge.status,
+    dieselAudPerLitre: fuelCharge.dieselAudPerLitre,
     isFixedTrip,
     hourlyRate,
   });

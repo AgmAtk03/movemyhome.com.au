@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { LocationEntry, AccessType, VehicleType } from '../types';
 import { ACCESS_LABELS, RATES } from '../constants';
@@ -13,12 +12,17 @@ interface Step2Props {
   vehicle: VehicleType | null;
   isCBD: boolean;
   isInterstate: boolean;
+  distanceKm: number;
+  travelTimeHrs: number;
   onUpdatePickups: (p: LocationEntry[]) => void;
   onUpdateDropoffs: (d: LocationEntry[]) => void;
   onUpdateRouteInfo: (km: number, isCBD: boolean, isInterstate: boolean, hrs: number) => void;
 }
 
-const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, isInterstate, onUpdatePickups, onUpdateDropoffs, onUpdateRouteInfo }) => {
+const Step2Route: React.FC<Step2Props> = ({
+  pickups, dropoffs, vehicle, isCBD, isInterstate, distanceKm, travelTimeHrs,
+  onUpdatePickups, onUpdateDropoffs, onUpdateRouteInfo,
+}) => {
   const acRefs = useRef<Record<string, any>>({});
   const inputEls = useRef<Record<string, HTMLInputElement | null>>({});
   const [routeError, setRouteError] = useState<string | null>(null);
@@ -98,12 +102,13 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
       } else {
         if (status === 'NOT_FOUND') {
           setRouteError('We couldn’t find one of those addresses. Check the spelling, or pick a suggestion.');
+          onUpdateRouteInfo(0, false, false, 0);
         } else if (status === 'ZERO_RESULTS') {
           setRouteError('We couldn’t find a driving route between those spots. Try a nearby street.');
+          onUpdateRouteInfo(0, false, false, 0);
         } else {
           setRouteError('We couldn’t map that route just now. You can still continue — we’ll confirm the distance with you.');
         }
-        onUpdateRouteInfo(0, false, false, 0);
       }
     });
   }, [pickups, dropoffs, onUpdateRouteInfo]);
@@ -120,6 +125,7 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
       const ac = new google.maps.places.Autocomplete(el, {
         componentRestrictions: { country: 'au' },
         fields: ['formatted_address', 'address_components', 'geometry'],
+        types: ['address'],
       });
       ac.addListener('place_changed', () => {
         const place = ac.getPlace();
@@ -253,9 +259,30 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
       </div>
 
       <div className="space-y-3">
+        {mapsStatus === 'loading' && (
+          <div className="bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] p-4 rounded-2xl text-sm font-medium" role="status">
+            Loading Google Maps address suggestions…
+          </div>
+        )}
+
+        {mapsStatus === 'ready' && (
+          <p className="text-sm font-medium text-slate-500">
+            Start typing and pick a Google suggestion so we can use the driving distance.
+          </p>
+        )}
+
         {mapsMissing && (
           <div className="bg-amber-50 border border-amber-200 text-amber-950 p-4 rounded-2xl text-sm font-medium leading-relaxed" role="status">
-            Address suggestions aren’t available right now. Type the full street and suburb — we’ll confirm the exact distance when we call.
+            Address suggestions aren’t available right now. Type the full street and suburb — we’ll confirm the exact driving distance when we call.
+          </div>
+        )}
+
+        {distanceKm > 0 && !routeError && (
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl text-sm font-medium text-slate-800" role="status">
+            <p className="font-black text-slate-900">Driving distance: {distanceKm.toFixed(1)} km</p>
+            {travelTimeHrs > 0 && (
+              <p className="text-slate-500 mt-1">About {Math.max(1, Math.round(travelTimeHrs * 60))} minutes in current traffic.</p>
+            )}
           </div>
         )}
 

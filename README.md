@@ -45,12 +45,35 @@ Vercel compiles `/api/*.ts` to ESM `.js` on Node.js 24. Relative imports in that
 
 Never commit `.env.local`. Placeholders such as `YOUR_PUBLIC_KEY` and `YOUR_PHONE_NUMBER` are intentional.
 
+## Google Maps (live distance)
+
+Set `VITE_GOOGLE_MAPS_API_KEY` on **Netlify** (build-time; Vite bakes `VITE_*` into the SPA). Do not commit the key.
+
+Enable **Maps JavaScript API**, **Places API**, and **Directions API**. Restrict the key to HTTP referrers:
+
+- `http://localhost:3000/*`
+- `https://movemyhome.com.au/*`
+- `https://www.movemyhome.com.au/*`
+- `https://*.netlify.app/*`
+
+Pickup and drop-off fields use Places autocomplete (Australia). Driving distance comes from Directions. If the key is missing, customers can still type addresses and fuel/distance is confirmed later.
+
+## Fuel (7-Eleven diesel)
+
+On the **booking / final summary** (not the homepage):
+
+- Maps driving distance under **12 km** → fuel **$0**.
+- **12 km or more** → litres = `distanceKm / 10` (10 km per litre) × live 7-Eleven diesel AUD/L.
+- That fuel line is added to the quote total; the 10% deposit follows `quoteCalc` as usual.
+
+**Price source:** `GET /api/diesel-price` (Vercel, cached 30 minutes). 7-Eleven Australia does not publish a public unauthenticated diesel API (the My 7-Eleven app endpoints need device attestation). This route reads the public [11-Seven](https://projectzerothree.info/api.html) JSON feed (`https://projectzerothree.info/api.php?format=json`) — live **7-Eleven pump prices** — and uses the **NSW Diesel** row (cents/L ÷ 100). Optional override on Vercel: `SEVEN_ELEVEN_DIESEL_AUD_PER_L` (e.g. `1.95`) to pin a board price. If the feed is down and no override is set, the UI shows **Fuel TBC** and **does not invent a dollar amount**.
+
 ## Architecture
 
 ```
 Contact submit
   → POST /api/create-checkout-session
-  → server recalculates quote from shared/rates.ts (ignores browser totals)
+  → server fetches 7-Eleven diesel (cached) and recalculates quote from shared/quoteCalc.ts (ignores browser totals)
   → deposit = round(quoteTotal * 0.10, 2)
   → balance = quoteTotal - deposit
   → Stripe Checkout Session for Math.round(deposit * 100) cents (AUD)
@@ -82,7 +105,8 @@ Set these in `.env.local` and in the Vercel project. Do not commit values.
 | `VITE_EMAILJS_PUBLIC_KEY` | Client + webhook | EmailJS public key |
 | `EMAILJS_PRIVATE_KEY` | Server optional | Recommended for webhook sends |
 | `VITE_WHATSAPP_NUMBER` | Client | Digits with country code, e.g. `61412345678` |
-| `VITE_GOOGLE_MAPS_API_KEY` | Client | Places + Directions; HTTP-referrer restricted |
+| `VITE_GOOGLE_MAPS_API_KEY` | Client (Netlify build) | Places + Directions; HTTP-referrer restricted. Never commit the key. |
+| `SEVEN_ELEVEN_DIESEL_AUD_PER_L` | Server optional | Pin diesel AUD/L (e.g. `1.95`). If unset, `GET /api/diesel-price` uses the 11-Seven NSW 7-Eleven feed. |
 | `VITE_LEGAL_TRADING_NAME` | Client | e.g. your registered trading name |
 | `VITE_COMPANY_EMAIL` | Client + webhook | Bookings inbox |
 | `VITE_COMPANY_PHONE` | Client | Display / call |
@@ -139,17 +163,6 @@ Create two templates in one EmailJS service:
 | Business job sheet | Office | `{{to_email}}` (app sends `VITE_COMPANY_EMAIL`) |
 
 Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{route}}` `{{job_details}}` `{{email_kind}}` (`client` or `business`) `{{stripe_session_id}}`.
-
-## Google Maps
-
-Enable Maps JavaScript API, Places API, and Directions API. **Restrict the new key** to HTTP referrers:
-
-- `http://localhost:3000/*`
-- `https://movemyhome.com.au/*`
-- `https://www.movemyhome.com.au/*`
-- `https://aama-removals.vercel.app/*`
-
-Do not put an unrestricted key in `index.html` (the old hardcoded key was removed). Without a key, customers can still type addresses.
 
 ## Demo mode
 

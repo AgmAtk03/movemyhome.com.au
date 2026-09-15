@@ -4,6 +4,7 @@ import { calculateFullQuote } from '../shared/quoteCalc.js';
 import { formatMoney } from '../shared/money.js';
 import { buildQuoteSnapshot } from '../shared/snapshot.js';
 import { companyConfig, isStripeConfigured, publicSiteUrl } from './_lib/env.js';
+import { dieselAudFromResult, getDieselPrice } from './_lib/dieselPrice.js';
 import { getStripe, meta } from './_lib/stripeClient.js';
 import { BRAND_NAME } from '../shared/rates.js';
 import { sanitizePlainText } from '../lib/sanitize.js';
@@ -32,6 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { state } = parsed;
+  const diesel = await getDieselPrice();
+  const dieselAudPerLitre = dieselAudFromResult(diesel);
   const breakdown = calculateFullQuote({
     vehicle: state.vehicle,
     truckHours: state.truckHours,
@@ -44,6 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     distanceKm: state.distanceKm,
     travelTimeHrs: state.travelTimeHrs,
     isInterstate: state.isInterstate,
+    dieselAudPerLitre,
   });
 
   if (breakdown.depositCents < 50) {
@@ -123,6 +127,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         notes: meta(state.details.instructions || '', 400),
         distance_km: meta(state.distanceKm.toFixed(1), 16),
         travel_hrs: meta(state.travelTimeHrs.toFixed(1), 16),
+        fuel: meta(String(breakdown.fuel), 24),
+        fuel_status: meta(
+          breakdown.fuelStatus === 'none' && state.distanceKm <= 0 ? 'tbc' : breakdown.fuelStatus,
+          12,
+        ),
+        diesel_aud_per_l: meta(dieselAudPerLitre != null ? String(dieselAudPerLitre) : '', 16),
         move_type: meta(snapshot.moveType, 80),
         legal_name: meta(company.legalName, 80),
       },
