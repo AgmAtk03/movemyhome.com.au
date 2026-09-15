@@ -366,7 +366,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col max-w-lg mx-auto bg-white shadow-2xl relative">
+    <div className="h-[100dvh] min-h-[100dvh] flex flex-col max-w-lg mx-auto bg-white shadow-2xl relative overflow-hidden">
       <Header
         step={state.step}
         totalSteps={WIZARD_STEPS.length}

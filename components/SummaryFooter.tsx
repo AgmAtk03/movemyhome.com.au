@@ -215,7 +215,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 <span className="font-black text-slate-900">Estimated total</span>
                 <span className="text-2xl font-black text-[#146eb4]">{formatMoney(breakdown.total)}</span>
               </div>
-              {isBookStep && (
+              {showPay && (
                 <>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Pay today (10%)</span>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { MoveDetails, QuoteSnapshot } from '../types';
 import { ContactErrors } from '../lib/validation';
 import QuoteRecap from './QuoteRecap';
@@ -77,6 +77,10 @@ const Step5Contact: React.FC<Step5Props> = ({
 }) => {
   const filled = Boolean(details.name.trim() || details.email.trim() || details.phone.trim());
   const quoteWhatsApp = Boolean(whatsappUrl) && isSafeWhatsAppUrl(whatsappUrl || '');
+
+  useLayoutEffect(() => {
+    document.querySelector('main')?.scrollTo({ top: 0 });
+  }, [phase]);
 
   if (phase === 'review') {
     return (
