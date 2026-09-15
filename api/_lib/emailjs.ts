@@ -1,6 +1,7 @@
 import type { QuoteSnapshot, QuoteState } from '../../types.js';
 import { htmlSafeMultiline, htmlSafePlainText, sanitizeMultiline, sanitizePlainText } from '../../lib/sanitize.js';
 import { buildJobDetailsBody } from '../../shared/snapshot.js';
+import { formatDateAu } from '../../shared/format.js';
 import { BRAND_NAME } from '../../shared/rates.js';
 import { companyConfig, emailJsConfig, emailJsMissingVars, isEmailJsServerConfigured, isMemberEmailConfigured } from './env.js';
 
@@ -66,9 +67,9 @@ function joinedAddresses(addresses: string[] | undefined): string {
   return sanitizePlainText((addresses || []).filter(Boolean).join(' | '), 200);
 }
 
-function paidClientEmailSubject(snapshot: QuoteSnapshot): string {
+function paidClientEmailSubject(state: QuoteState, snapshot: QuoteSnapshot): string {
   const company = sanitizePlainText(companyConfig().name || BRAND_NAME, 80);
-  const datePart = snapshot.scheduleLabel.split(',')[0]?.trim() || '';
+  const datePart = formatDateAu(state.details.date) || snapshot.scheduleLabel;
   if (datePart && datePart !== 'Time still to confirm') {
     return sanitizePlainText(`Booking confirmed — ${company} — ${datePart}`, 120);
   }
@@ -216,7 +217,7 @@ export async function sendPaidBookingEmails(
         ...params,
         to_email: params.user_email,
         email_kind: 'client',
-        email_subject: paidClientEmailSubject(snapshot),
+        email_subject: paidClientEmailSubject(state, snapshot),
       });
       clientSent = true;
     } catch (error) {
