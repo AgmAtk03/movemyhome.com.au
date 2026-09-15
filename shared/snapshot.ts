@@ -163,8 +163,53 @@ export function buildCustomerMessage(state: QuoteState, snapshot: QuoteSnapshot)
   );
 }
 
-export function buildJobDetailsBody(state: QuoteState, snapshot: QuoteSnapshot): string {
+/** Addresses only — no stairs/access. Used in the customer booking email. */
+export function formatClientRoute(snapshot: QuoteSnapshot): string {
+  const from = snapshot.pickupAddresses.filter(Boolean).join(' | ') || 'To confirm';
+  const to = snapshot.dropoffAddresses.filter(Boolean).join(' | ') || 'To confirm';
+  return `From: ${from}\nTo: ${to}`;
+}
+
+/**
+ * Short customer booking confirmation. No Stripe IDs, quote line items, fuel maths, or ops notes.
+ */
+export function buildClientBookingSummary(snapshot: QuoteSnapshot): string {
+  return sanitizeMultiline(
+    [
+      `Your move is booked for ${snapshot.scheduleLabel}.`,
+      '',
+      formatClientRoute(snapshot),
+      '',
+      `Deposit paid: ${snapshot.depositLabel}`,
+      `Balance due on the day: ${snapshot.balanceLabel}`,
+      '',
+      'We’ll confirm the plan with you before moving day.',
+    ].join('\n'),
+    1200,
+  );
+}
+
+function formatBusinessQuoteLine(snapshot: QuoteSnapshot, line: QuoteSnapshot['lines'][number]): string {
+  const fuelMaths = line.label === 'Fuel' && snapshot.fuelLine.note ? snapshot.fuelLine.note : '';
+  const note = fuelMaths || line.note || '';
+  const detail = [line.amount, note].filter(Boolean).join(' — ');
+  return `- ${line.label}: ${detail}`;
+}
+
+export type JobSheetPayment = {
+  sessionId?: string;
+  paymentIntentId?: string;
+  paymentStatus?: string;
+};
+
+/** Full removals job sheet. Keep every ops field — do not thin this for the customer template. */
+export function buildJobDetailsBody(
+  state: QuoteState,
+  snapshot: QuoteSnapshot,
+  payment: JobSheetPayment = {},
+): string {
   const instructions = sanitizeMultiline(state.details.instructions, 800) || 'None';
+  const quoteLines = snapshot.lines.map((line) => formatBusinessQuoteLine(snapshot, line)).join('\n');
   return sanitizeMultiline(
     [
       'NEW BOOKING — 10% DEPOSIT',
@@ -179,16 +224,44 @@ export function buildJobDetailsBody(state: QuoteState, snapshot: QuoteSnapshot):
       `Distance: ${snapshot.distanceLabel} · Drive time: ${snapshot.travelTimeLabel}`,
       snapshot.routeSummary,
       `Items: ${snapshot.inventorySummary}`,
+      'Quote lines:',
+      quoteLines,
       `Quote total: ${snapshot.totalLabel}`,
       snapshot.memberDiscountCode
         ? `Member 5% off (${snapshot.memberDiscountCode}): ${snapshot.memberDiscountLabel} (was ${snapshot.subtotalLabel})`
         : '',
-      `Deposit paid / due: ${snapshot.depositLabel}`,
+      `Deposit paid: ${snapshot.depositLabel}`,
       `Balance on the day: ${snapshot.balanceLabel}`,
-      snapshot.lines.map((line) => `- ${line.label}: ${line.note || line.amount}`).join('\n'),
+      payment.paymentStatus ? `Payment status: ${sanitizePlainText(payment.paymentStatus, 40)}` : '',
+      payment.sessionId ? `Stripe session: ${sanitizePlainText(payment.sessionId, 80)}` : '',
+      payment.paymentIntentId ? `Payment intent: ${sanitizePlainText(payment.paymentIntentId, 80)}` : '',
       `Notes: ${instructions}`,
+    ].filter(Boolean).join('\n'),
+    2500,
+  );
+}
+
+export function buildMemberClientSummary(name: string, discountCode: string): string {
+  return sanitizeMultiline(
+    [
+      `${sanitizePlainText(name, 80)}, your 5% off code is ${sanitizePlainText(discountCode, 32)}.`,
+      '',
+      'Enter this code on the book step when you book your first move.',
     ].join('\n'),
-    2500
+    800,
+  );
+}
+
+export function buildMemberBusinessDetails(name: string, email: string, discountCode: string): string {
+  return sanitizeMultiline(
+    [
+      'NEW MEMBER 5% SIGNUP — not a booking',
+      `Name: ${sanitizePlainText(name, 80)}`,
+      `Email: ${sanitizePlainText(email, 120)}`,
+      `Code: ${sanitizePlainText(discountCode, 32)}`,
+      'Follow up for their first move.',
+    ].join('\n'),
+    800,
   );
 }
 

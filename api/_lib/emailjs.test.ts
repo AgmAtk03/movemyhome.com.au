@@ -57,8 +57,48 @@ function samplePaidState(): QuoteState {
   };
 }
 
-function assertCompletePaidBookingParams(params: Record<string, string>, kind: 'business' | 'client') {
-  assert.equal(params.email_kind, kind);
+function assertCustomerSafeBody(body: string) {
+  assert.match(body, /2 Oct 2026/);
+  assert.match(body, /9:00 am/);
+  assert.match(body, /12 Illawarra Rd, Marrickville NSW 2204/);
+  assert.match(body, /88 Queen St, Newtown NSW 2042/);
+  assert.match(body, /Deposit paid/);
+  assert.match(body, /Balance due on the day/);
+  assert.match(body, /confirm the plan/i);
+  assert.equal(body.includes('cs_test_paid'), false);
+  assert.equal(body.includes('pi_test_paid'), false);
+  assert.equal(/stripe/i.test(body), false);
+  assert.equal(body.includes('NEW BOOKING'), false);
+  assert.equal(body.includes('0412 345 678'), false);
+  assert.equal(body.includes('Ring the bell'), false);
+  assert.equal(/quote lines/i.test(body), false);
+  assert.equal(/7-Eleven|fuelLitres|÷ 10 km|diesel/i.test(body), false);
+  assert.equal(/Ground floor or lift|1st floor, stairs/i.test(body), false);
+}
+
+function assertClientPaidParams(params: Record<string, string>) {
+  assert.equal(params.email_kind, 'client');
+  assert.equal(params.to_email, 'jane@example.com');
+  assert.equal(params.email_subject, 'Your move is booked — My Home Removals');
+  assert.equal(params.customer_name, 'Jane Client');
+  assert.equal(params.payment_status, 'deposit_paid');
+  assert.equal(params.stripe_session_id, '');
+  assert.equal(params.stripe_payment_intent, '');
+  assert.equal(params.user_phone, '');
+  assert.equal(params.inventory, '');
+  assert.equal(params.quote_lines, '');
+  assert.equal(params.vehicle, '');
+  assert.equal(params.service_type, '');
+  assert.match(params.deposit_amount, /^\$/);
+  assert.match(params.balance_amount, /^\$/);
+  assertCustomerSafeBody(params.client_summary);
+  assertCustomerSafeBody(params.job_details);
+}
+
+function assertBusinessPaidParams(params: Record<string, string>) {
+  assert.equal(params.email_kind, 'business');
+  assert.equal(params.to_email, 'removalsmyhome@gmail.com');
+  assert.equal(params.email_subject, 'New booking — deposit paid');
   assert.equal(params.payment_status, 'deposit_paid');
   assert.equal(params.customer_name, 'Jane Client');
   assert.equal(params.user_email, 'jane@example.com');
@@ -67,21 +107,31 @@ function assertCompletePaidBookingParams(params: Record<string, string>, kind: '
   assert.match(params.move_time, /9:00 am/);
   assert.match(params.route, /12 Illawarra Rd, Marrickville NSW 2204/);
   assert.match(params.route, /88 Queen St, Newtown NSW 2042/);
+  assert.match(params.route, /Ground floor or lift/);
   assert.match(params.inventory, /12× Boxes \/ bags/);
   assert.match(params.inventory, /Sofa/);
   assert.match(params.inventory, /Fridge/);
   assert.match(params.total_quote, /^\$/);
   assert.match(params.deposit_amount, /^\$/);
   assert.match(params.balance_amount, /^\$/);
-  assert.match(params.job_details, /NEW BOOKING/);
-  assert.match(params.job_details, /Jane Client/);
-  assert.match(params.job_details, /jane@example.com/);
-  assert.match(params.job_details, /0412 345 678/);
-  assert.match(params.job_details, /Marrickville/);
-  assert.match(params.job_details, /Newtown/);
-  assert.match(params.job_details, /Ring the bell/);
   assert.notEqual(params.vehicle, '');
   assert.notEqual(params.service_type, '');
+  assert.equal(params.stripe_session_id, 'cs_test_paid');
+  assert.equal(params.stripe_payment_intent, 'pi_test_paid');
+  const sheet = params.job_details;
+  assert.match(sheet, /NEW BOOKING/);
+  assert.match(sheet, /Jane Client/);
+  assert.match(sheet, /jane@example.com/);
+  assert.match(sheet, /0412 345 678/);
+  assert.match(sheet, /Marrickville/);
+  assert.match(sheet, /Newtown/);
+  assert.match(sheet, /Ground floor or lift/);
+  assert.match(sheet, /Ring the bell/);
+  assert.match(sheet, /Quote lines/);
+  assert.match(sheet, /Payment status: deposit_paid/);
+  assert.match(sheet, /Stripe session: cs_test_paid/);
+  assert.match(sheet, /Items:/);
+  assert.match(sheet, /Fuel/);
 }
 
 test('member signup reuses client then business templates, not a third member template', async () => {
@@ -125,17 +175,26 @@ test('member signup reuses client then business templates, not a third member te
       assert.equal(first.accessToken, 'private_live');
       assert.equal(second.accessToken, 'private_live');
       assert.equal(first.template_params.to_email, 'sam@student.edu.au');
-      assert.equal(first.template_params.email_kind, 'member');
+      assert.equal(first.template_params.email_kind, 'client');
+      assert.equal(first.template_params.email_subject, 'Your 5% off code — My Home Removals');
       assert.equal(first.template_params.payment_status, '');
       assert.equal(first.template_params.discount_code, 'STUDENT5-ABCDEFGH');
       assert.equal(first.template_params.customer_name, 'Sam Nguyen');
-      assert.match(first.template_params.job_details, /STUDENT5-ABCDEFGH/);
-      assert.match(first.template_params.job_details, /not a booking/i);
+      assert.match(first.template_params.client_summary, /Sam Nguyen/);
+      assert.match(first.template_params.client_summary, /STUDENT5-ABCDEFGH/);
+      assert.match(first.template_params.client_summary, /book step/i);
+      assert.equal(/paid booking confirmed/i.test(first.template_params.client_summary), false);
+      assert.equal(/NEW BOOKING/i.test(first.template_params.client_summary), false);
       assert.equal(second.template_params.to_email, 'removalsmyhome@gmail.com');
-      assert.equal(second.template_params.email_kind, 'member');
+      assert.equal(second.template_params.email_kind, 'business');
+      assert.equal(second.template_params.email_subject, 'New member 5% signup');
       assert.equal(second.template_params.reply_to, 'sam@student.edu.au');
       assert.equal(second.template_params.user_email, 'sam@student.edu.au');
       assert.match(second.template_params.job_details, /STUDENT5-ABCDEFGH/);
+      assert.match(second.template_params.job_details, /not a booking/i);
+      assert.match(second.template_params.job_details, /Sam Nguyen/);
+      assert.match(second.template_params.job_details, /sam@student.edu.au/);
+      assert.match(second.template_params.job_details, /Follow up/);
       assert.equal(calls.some((row) => String((row as { template_id?: string }).template_id || '').includes('member')), false);
     } finally {
       globalThis.fetch = orig;
@@ -161,7 +220,7 @@ test('member emails fill booking {{}} fields without inventing fake job data', a
       });
       for (const row of calls) {
         const params = (row as { template_params: Record<string, string> }).template_params;
-        assert.equal(params.email_kind, 'member');
+        assert.equal(params.email_kind === 'client' || params.email_kind === 'business', true);
         assert.notEqual(params.payment_status, 'deposit_paid');
         assert.equal(params.move_date, '');
         assert.equal(params.move_time, '');
@@ -172,9 +231,12 @@ test('member emails fill booking {{}} fields without inventing fake job data', a
         assert.equal(params.deposit_amount, '');
         assert.equal(params.balance_amount, '');
         assert.equal(params.service_type, '');
+        assert.equal(params.stripe_session_id, '');
         assert.notEqual(params.move_date, 'First move');
         assert.notEqual(params.vehicle, 'Member offer');
         assert.notEqual(params.inventory, 'Code STUDENT5-ABCDEFGH');
+        assert.equal(/paid booking confirmed/i.test(params.client_summary + params.job_details), false);
+        assert.equal(/NEW BOOKING — 10% DEPOSIT/.test(params.client_summary + params.job_details), false);
       }
     } finally {
       globalThis.fetch = orig;
@@ -208,7 +270,7 @@ test('member signup reports partial send when the office email fails', async () 
   });
 });
 
-test('sendPaidBookingEmails still sends complete client + business booking emails', async () => {
+test('sendPaidBookingEmails sends a short client confirmation and a full business job sheet', async () => {
   await withEnv(EMAIL_ENV, async () => {
     const calls: Array<Record<string, unknown>> = [];
     const orig = globalThis.fetch;
@@ -250,9 +312,10 @@ test('sendPaidBookingEmails still sends complete client + business booking email
       assert.equal((client as { accessToken?: string }).accessToken, 'private_live');
       assert.equal(business.template_params.to_email, 'removalsmyhome@gmail.com');
       assert.equal(client.template_params.to_email, 'jane@example.com');
-      assertCompletePaidBookingParams(business.template_params, 'business');
-      assertCompletePaidBookingParams(client.template_params, 'client');
-      assert.equal(business.template_params.stripe_session_id, 'cs_test_paid');
+      assertBusinessPaidParams(business.template_params);
+      assertClientPaidParams(client.template_params);
+      assert.equal(client.template_params.stripe_session_id, '');
+      assert.equal(business.template_params.client_summary, '');
     } finally {
       globalThis.fetch = orig;
     }

@@ -136,27 +136,38 @@ test('create-checkout-session + fulfillPaidBookingEmails still produce complete 
       const client = calls[1] as { template_id: string; template_params: Record<string, string> };
       assert.equal(business.template_id, 'template_business');
       assert.equal(client.template_id, 'template_client');
-      for (const params of [business.template_params, client.template_params]) {
-        assert.equal(params.payment_status, 'deposit_paid');
-        assert.equal(params.customer_name, 'Jane Client');
-        assert.equal(params.user_email, 'jane@example.com');
-        assert.equal(params.user_phone, '0412 345 678');
-        assert.match(params.move_date, /2 Oct 2026/);
-        assert.match(params.route, /12 Illawarra Rd, Marrickville NSW 2204/);
-        assert.match(params.route, /88 Queen St, Newtown NSW 2042/);
-        assert.match(params.inventory, /12× Boxes \/ bags/);
-        assert.match(params.inventory, /Sofa/);
-        assert.match(params.total_quote, /^\$/);
-        assert.match(params.deposit_amount, /^\$/);
-        assert.match(params.balance_amount, /^\$/);
-        assert.match(params.job_details, /NEW BOOKING/);
-        assert.match(params.job_details, /Ring the bell/);
-        assert.equal(params.email_kind === 'business' || params.email_kind === 'client', true);
-      }
       assert.equal(business.template_params.email_kind, 'business');
       assert.equal(client.template_params.email_kind, 'client');
       assert.equal(business.template_params.to_email, 'removalsmyhome@gmail.com');
       assert.equal(client.template_params.to_email, 'jane@example.com');
+      assert.equal(business.template_params.email_subject, 'New booking — deposit paid');
+      assert.equal(client.template_params.email_subject, 'Your move is booked — My Home Removals');
+      assert.equal(business.template_params.payment_status, 'deposit_paid');
+      assert.equal(client.template_params.payment_status, 'deposit_paid');
+      assert.equal(business.template_params.customer_name, 'Jane Client');
+      assert.equal(client.template_params.customer_name, 'Jane Client');
+      assert.equal(business.template_params.user_email, 'jane@example.com');
+      assert.equal(business.template_params.user_phone, '0412 345 678');
+      assert.match(business.template_params.move_date, /2 Oct 2026/);
+      assert.match(business.template_params.route, /12 Illawarra Rd, Marrickville NSW 2204/);
+      assert.match(business.template_params.route, /88 Queen St, Newtown NSW 2042/);
+      assert.match(business.template_params.inventory, /12× Boxes \/ bags/);
+      assert.match(business.template_params.inventory, /Sofa/);
+      assert.match(business.template_params.total_quote, /^\$/);
+      assert.match(business.template_params.deposit_amount, /^\$/);
+      assert.match(business.template_params.balance_amount, /^\$/);
+      assert.match(business.template_params.job_details, /NEW BOOKING/);
+      assert.match(business.template_params.job_details, /Ring the bell/);
+      assert.match(business.template_params.job_details, /Stripe session: cs_test_paid/);
+      assert.match(business.template_params.job_details, /Payment status: deposit_paid/);
+      assert.equal(business.template_params.stripe_session_id, 'cs_test_paid');
+      assert.match(client.template_params.client_summary, /12 Illawarra Rd, Marrickville NSW 2204/);
+      assert.match(client.template_params.client_summary, /88 Queen St, Newtown NSW 2042/);
+      assert.match(client.template_params.client_summary, /Deposit paid/);
+      assert.match(client.template_params.client_summary, /Balance due on the day/);
+      assert.equal(client.template_params.client_summary.includes('cs_test_paid'), false);
+      assert.equal(client.template_params.client_summary.includes('Ring the bell'), false);
+      assert.equal(client.template_params.stripe_session_id, '');
     } finally {
       globalThis.fetch = orig;
     }

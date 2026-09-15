@@ -170,16 +170,25 @@ Use any future expiry, any 3-digit CVC, and any Australian postcode. See [Stripe
 
 Emails go out from **`/api/stripe-webhook` after a verified paid session**. Demo mode skips email.
 
-Create two templates in one EmailJS service:
+Create two templates in one EmailJS service (Hobby/Free allows only these two):
 
-| Template | Recipient | Suggested To |
-| --- | --- | --- |
-| Client confirmation | Customer | `{{to_email}}` |
-| Business job sheet | Office | `{{to_email}}` (app sends `VITE_COMPANY_EMAIL` / `removalsmyhome@gmail.com`) |
+| Template | Recipient | Suggested To | Subject | Body |
+| --- | --- | --- | --- | --- |
+| Client | Customer | `{{to_email}}` | `{{email_subject}}` | Hi `{{customer_name}}`, thanks… then `{{client_summary}}` … company phone / sign-off |
+| Business | Office | `{{to_email}}` (app sends `VITE_COMPANY_EMAIL` / `removalsmyhome@gmail.com`) | `{{email_subject}}` | Team greeting + `{{job_details}}` (full ops sheet) |
 
-Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{route}}` `{{job_details}}` `{{email_kind}}` (`client` or `business` on paid mail; `member` on 5% signup) `{{payment_status}}` (`deposit_paid` on paid mail) `{{stripe_session_id}}` `{{discount_code}}` `{{member_discount}}` `{{quote_subtotal}}`.
+Code builds `{{client_summary}}` and `{{job_details}}` so the templates stay thin.
 
-Paid booking behaviour is unchanged: webhook / `fulfillPaidBookingEmails` still send the **same** client confirmation + business job sheet with addresses, inventory, date/time, contact, quote, and deposit. Member signup never mutates those param objects.
+**Paid booking — different content per side** (`email_kind` `client` or `business`):
+
+- Customer: subject like `Your move is booked — My Home Removals`. `client_summary` is only move date/time, from→to addresses, deposit paid, balance on the day, and a short “we’ll confirm before moving day”. No Stripe session ID, quote line items, fuel maths, or internal notes.
+- Office: subject like `New booking — deposit paid`. `job_details` is the full sheet: name, email, phone, when, service, vehicle, crew, move type, distance/drive time, from/to + access, inventory, quote lines (including fuel), total, deposit, balance, `payment_status`, Stripe session id, notes.
+
+**Never strip paid-booking completeness on the business side** to make the customer mail shorter.
+
+Useful variables: `{{email_subject}}` `{{client_summary}}` `{{job_details}}` `{{company_name}}` `{{customer_name}}` `{{company_phone}}` `{{to_email}}` `{{email_kind}}` (`client` or `business`) `{{payment_status}}` (`deposit_paid` on paid mail; empty on member mail) `{{stripe_session_id}}` (business paid mail only) `{{discount_code}}`.
+
+Paid booking behaviour: webhook / `fulfillPaidBookingEmails` still send **both** templates, with the customer copy and the office job sheet built separately. Member signup never mutates those paid param objects.
 
 Vercel REST send uses `service_id` + `user_id` (public key) + `accessToken` (private key). Dashboard Gmail tests can succeed while `/api` fails if **Account → Security → Allow EmailJS API for non-browser applications** is off, or `EMAILJS_PRIVATE_KEY` is missing on Vercel Production. `POST /api/member-signup` temporarily returns `mailErrorHint` (status + EmailJS body, no secrets) when send fails.
 
@@ -190,10 +199,10 @@ Vercel REST send uses `service_id` + `user_id` (public key) + `accessToken` (pri
 Homepage **Get 5% off** posts `POST /api/member-signup`. That route:
 
 1. Issues a unique code `STUDENT5-XXXXXXXX` (unambiguous letters/digits).
-2. Emails the **student** then the **office** via `sendMemberDiscountEmails` — a **separate** sender from `sendPaidBookingEmails`. Transport reuses the two existing template IDs only (`EMAILJS_CLIENT_TEMPLATE_ID` then `EMAILJS_BUSINESS_TEMPLATE_ID`). `email_kind=member` (not `deposit_paid`). Real fields: `to_email`, `customer_name`, `user_email`, `discount_code`, `reply_to`, plus the offer in `job_details` / `special_instructions`. Unused booking `{{}}` fields are sent **empty** (no fake addresses, dates, vehicles, or quote totals).
+2. Emails the **student** then the **office** via `sendMemberDiscountEmails` — a **separate** sender from `sendPaidBookingEmails`. Transport reuses the two existing template IDs only (`EMAILJS_CLIENT_TEMPLATE_ID` then `EMAILJS_BUSINESS_TEMPLATE_ID`). `email_kind` is `client` or `business` (same two templates). Customer subject is `Your 5% off code — My Home Removals`; `client_summary` is name + code + how to enter it on the book step — never “paid booking confirmed”. Office subject is `New member 5% signup`; `job_details` is name, email, code, and a follow-up note. Unused booking `{{}}` fields are sent **empty** (no fake addresses, dates, vehicles, or quote totals).
 3. Persists the code on a **Stripe Customer** (`metadata.mhr_member_code`, `mhr_member_status=issued`) so serverless functions share one ledger. If Stripe is off, codes are still HMAC’d from the email + `MEMBER_CODE_SECRET` / `EMAILJS_PRIVATE_KEY`.
 
-EmailJS **Hobby/Free allows only two templates**. Do **not** create a third member template and do **not** set `EMAILJS_MEMBER_TEMPLATE_ID`. If the current template body is written only for bookings, member sends can look sparse until you optionally branch copy on `{{email_kind}}` (member vs client/business) — EmailJS supports that if you put both blocks in the same template. **Never strip booking fields from the paid path to make member mail look nicer.**
+EmailJS **Hobby/Free allows only two templates**. Do **not** create a third member template and do **not** set `EMAILJS_MEMBER_TEMPLATE_ID`. Member vs booking copy lives in `{{email_subject}}`, `{{client_summary}}`, and `{{job_details}}` from the API — keep the EmailJS templates as thin wrappers. **Never strip booking fields from the paid business path to make member mail look nicer.**
 
 On the book step, **Discount code** is checked with `POST /api/validate-member-code`. `POST /api/create-checkout-session` **recomputes** the quote, applies 5% only after that check, then takes **10% of the discounted total** as the deposit. After a paid Checkout Session, webhook and verify set `mhr_member_status=redeemed` (one use per code, matched to the signup email).
 
