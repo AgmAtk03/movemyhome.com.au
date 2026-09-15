@@ -114,13 +114,15 @@ Set these in `.env.local` and in the Vercel project. Do not commit values.
 | `VITE_EMAILJS_SERVICE_ID` | Client + webhook | For paid emails |
 | `VITE_EMAILJS_CLIENT_TEMPLATE_ID` | Client + webhook | Customer confirmation |
 | `VITE_EMAILJS_BUSINESS_TEMPLATE_ID` | Client + webhook | Business job sheet |
-| `VITE_EMAILJS_PUBLIC_KEY` | Client + webhook | EmailJS public key |
-| `EMAILJS_PRIVATE_KEY` | Server optional | Recommended for webhook sends |
+| `VITE_EMAILJS_MEMBER_TEMPLATE_ID` | Client mirror + API | Member 5% signup emails (same ID as `EMAILJS_MEMBER_TEMPLATE_ID`) |
+| `EMAILJS_MEMBER_TEMPLATE_ID` | Server (Vercel) | Member 5% signup emails. Create the template first — do not invent an ID. |
+| `EMAILJS_PRIVATE_KEY` | Server optional | Recommended for webhook and member sends |
+| `MEMBER_CODE_SECRET` | Server optional | Stable HMAC secret for `STUDENT5-XXXXXXXX`. Falls back to `EMAILJS_PRIVATE_KEY`. |
 | `VITE_WHATSAPP_NUMBER` | Client (Netlify build) | `61410721370` — WhatsApp `https://wa.me/61410721370` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Client (Netlify build) | Places + Directions; HTTP-referrer restricted. Never commit the key. |
 | `SEVEN_ELEVEN_DIESEL_AUD_PER_L` | Server optional | Pin diesel AUD/L (e.g. `1.95`). If unset, `GET /api/diesel-price` uses the 11-Seven NSW 7-Eleven feed. |
 | `VITE_LEGAL_TRADING_NAME` | Client | e.g. your registered trading name |
-| `VITE_COMPANY_EMAIL` | Client + webhook | Bookings inbox |
+| `VITE_COMPANY_EMAIL` | Client + API | Bookings inbox. Server falls back to `removalsmyhome@gmail.com`. |
 | `VITE_COMPANY_PHONE` | Client (Netlify build) | Display as `0410 721 370`. Call link `tel:+61410721370`. |
 | `VITE_COMPANY_WEBSITE` | Client | Public site |
 | `VITE_ABN` | Client | ABN placeholder until you fill it |
@@ -163,7 +165,9 @@ Use the `whsec_…` that `stripe listen` prints as `STRIPE_WEBHOOK_SECRET` for l
 
 Use any future expiry, any 3-digit CVC, and any Australian postcode. See [Stripe test cards](https://docs.stripe.com/testing).
 
-## EmailJS (paid path only)
+## EmailJS (paid path + member 5% off)
+
+### Paid booking emails
 
 Emails go out from **`/api/stripe-webhook` after a verified paid session**. Demo mode skips email.
 
@@ -172,9 +176,49 @@ Create two templates in one EmailJS service:
 | Template | Recipient | Suggested To |
 | --- | --- | --- |
 | Client confirmation | Customer | `{{to_email}}` |
-| Business job sheet | Office | `{{to_email}}` (app sends `VITE_COMPANY_EMAIL`) |
+| Business job sheet | Office | `{{to_email}}` (app sends `VITE_COMPANY_EMAIL` / `removalsmyhome@gmail.com`) |
 
-Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{route}}` `{{job_details}}` `{{email_kind}}` (`client` or `business`) `{{stripe_session_id}}`.
+Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{route}}` `{{job_details}}` `{{email_kind}}` (`client` or `business`) `{{stripe_session_id}}` `{{discount_code}}` `{{member_discount}}` `{{quote_subtotal}}`.
+
+### Member / student 5% off
+
+Homepage **Get 5% off** posts `POST /api/member-signup`. That route:
+
+1. Issues a unique code `STUDENT5-XXXXXXXX` (unambiguous letters/digits).
+2. Emails the **student** at the address they typed (`to_email` = their email).
+3. Emails **business** at `VITE_COMPANY_EMAIL` / `BOOKINGS_INBOX` (`removalsmyhome@gmail.com`) with the same template (`to_email` = office, `reply_to` = student).
+4. Persists the code on a **Stripe Customer** (`metadata.mhr_member_code`, `mhr_member_status=issued`) so serverless functions share one ledger. If Stripe is off, codes are still HMAC’d from the email + `MEMBER_CODE_SECRET` / `EMAILJS_PRIVATE_KEY`.
+
+On the book step, **Discount code** is checked with `POST /api/validate-member-code`. `POST /api/create-checkout-session` **recomputes** the quote, applies 5% only after that check, then takes **10% of the discounted total** as the deposit. After a paid Checkout Session, webhook and verify set `mhr_member_status=redeemed` (one use per code, matched to the signup email).
+
+The UI never trusts a client-only discount.
+
+#### EmailJS member template checklist (owner)
+
+Do **not** invent a template ID. Create one template in the **existing EmailJS Gmail service**:
+
+1. EmailJS dashboard → Email Templates → Create new template.
+2. **To email:** `{{to_email}}` (required — the app sends the student address, then the office address).
+3. Suggested subject: `{{company_name}} — 5% off your first move`.
+4. Suggested body variables:
+   - `{{customer_name}}`
+   - `{{user_email}}`
+   - `{{to_email}}`
+   - `{{discount_code}}` (e.g. `STUDENT5-AB3K9Q2H`)
+   - `{{email_kind}}` — `member_customer` or `member_business` (use this to branch copy if you like)
+   - `{{offer_label}}` — `5% off your first move`
+   - `{{company_name}}`
+   - `{{company_email}}`
+   - `{{reply_to}}` — office for the student mail; student for the office mail
+5. Copy the template ID (`template_XXXX`).
+6. On the **Vercel** project `aama-removals`, set for Production (and Preview if you test there):
+   - `EMAILJS_MEMBER_TEMPLATE_ID=template_XXXX`
+   - optional mirror `VITE_EMAILJS_MEMBER_TEMPLATE_ID` (same value)
+   - keep existing `EMAILJS_SERVICE_ID` / `VITE_EMAILJS_SERVICE_ID`, `EMAILJS_PUBLIC_KEY`, `EMAILJS_PRIVATE_KEY`
+   - `VITE_COMPANY_EMAIL=removalsmyhome@gmail.com`
+   - optional `MEMBER_CODE_SECRET` (stable random string)
+
+Until that ID is set, signup still saves locally and the API says membership emails aren’t switched on. Once set, a signup sends **two** EmailJS requests with the same template.
 
 ## Demo mode
 
@@ -188,7 +232,7 @@ If `STRIPE_SECRET_KEY` is missing, or you run `npm run dev` without `vercel dev`
 2. Create a Maps key, restrict referrers, set `VITE_GOOGLE_MAPS_API_KEY`.
 3. Stripe test keys + webhook (`https://aama-removals.vercel.app/api/stripe-webhook`) + `PUBLIC_SITE_URL=https://movemyhome.com.au`. Charge a test deposit with `4242…`. Confirm webhook emails.
 4. Switch to `sk_live_` / live webhook secret only when ready. Deploy on **HTTPS**.
-5. Restrict EmailJS keys. Prefer `EMAILJS_PRIVATE_KEY` on the server.
+5. Restrict EmailJS keys. Prefer `EMAILJS_PRIVATE_KEY` on the server. Create the member template (`To: {{to_email}}`) and set `EMAILJS_MEMBER_TEMPLATE_ID` on Vercel so homepage 5% signups email the student and `removalsmyhome@gmail.com`.
 6. Confirm Vercel env vars are set for Production and Preview. Confirm Deployment Protection is off if the public API must be reachable from Netlify.
 7. Delete any unused Google Maps keys that were previously hardcoded.
 

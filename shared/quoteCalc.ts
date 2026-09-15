@@ -1,10 +1,14 @@
 import type { Inventory, LocationEntry, PriceBreakdown, VehicleType } from '../types.js';
-import { FLOOR_RATES, INVENTORY_COSTS, RATES } from './rates.js';
+import { FLOOR_RATES, INVENTORY_COSTS, MEMBER_DISCOUNT_RATE, RATES } from './rates.js';
 import { depositFromQuoteTotal, roundMoney } from './money.js';
 import { calculateFuelSurcharge } from './fuel.js';
 
 export const EMPTY_BREAKDOWN: PriceBreakdown = {
   total: 0,
+  subtotal: 0,
+  memberDiscount: 0,
+  memberDiscountCode: '',
+  memberDiscountRate: 0,
   base: 0,
   distance: 0,
   inventory: 0,
@@ -44,13 +48,38 @@ export interface QuoteCalcInput {
 
 function withDeposit(breakdown: Omit<PriceBreakdown, 'deposit' | 'balance' | 'depositCents'>): PriceBreakdown {
   const money = depositFromQuoteTotal(breakdown.total);
+  const subtotal = breakdown.subtotal > 0 ? breakdown.subtotal : money.quoteTotal;
   return {
     ...breakdown,
     total: money.quoteTotal,
+    subtotal,
+    memberDiscount: breakdown.memberDiscount || 0,
+    memberDiscountCode: breakdown.memberDiscountCode || '',
+    memberDiscountRate: breakdown.memberDiscountRate || 0,
     deposit: money.deposit,
     balance: money.balance,
     depositCents: money.depositCents,
   };
+}
+
+/**
+ * 5% off the quote total, then 10% deposit of the discounted total.
+ * Recomputes from subtotal so it is safe to call more than once.
+ */
+export function applyMemberDiscount(breakdown: PriceBreakdown, code: string): PriceBreakdown {
+  const subtotal = breakdown.memberDiscountRate > 0 && breakdown.subtotal > 0
+    ? breakdown.subtotal
+    : breakdown.total;
+  const discount = roundMoney(subtotal * MEMBER_DISCOUNT_RATE);
+  const total = roundMoney(subtotal - discount);
+  return withDeposit({
+    ...breakdown,
+    total,
+    subtotal,
+    memberDiscount: discount,
+    memberDiscountCode: String(code || '').trim().toUpperCase(),
+    memberDiscountRate: MEMBER_DISCOUNT_RATE,
+  });
 }
 
 /**
@@ -128,6 +157,10 @@ export function calculateQuote(input: QuoteCalcInput): PriceBreakdown {
 
   return withDeposit({
     total,
+    subtotal: total,
+    memberDiscount: 0,
+    memberDiscountCode: '',
+    memberDiscountRate: 0,
     base: roundMoney(base),
     distance: roundMoney(filteredDistance),
     inventory: roundMoney(filteredInventory),

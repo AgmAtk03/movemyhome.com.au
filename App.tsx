@@ -20,9 +20,10 @@ import { isContactValid, validateContact } from './lib/validation';
 import { buildWhatsAppUrl } from './lib/booking';
 import { saveDemoJob } from './lib/jobsStore';
 import { sanitizePlainText } from './lib/sanitize';
-import { calculateQuote, EMPTY_BREAKDOWN } from './shared/quoteCalc';
+import { calculateQuote, applyMemberDiscount, EMPTY_BREAKDOWN } from './shared/quoteCalc';
 import { createCheckoutSession } from './lib/checkout';
 import { fetchDieselPrice } from './lib/dieselPrice';
+import { checkMemberDiscount } from './lib/members';
 import { PAYMENTS_OFF_BODY, PAYMENTS_OFF_SHORT, PAYMENT_START_ERROR, customerFacingError } from './lib/customerCopy';
 import { currentPath, isQuoteRoute, navigateTo } from './lib/nav';
 
@@ -47,6 +48,9 @@ const App: React.FC = () => {
   const [bookingNotice, setBookingNotice] = useState('');
   const [demoCheckout, setDemoCheckout] = useState(false);
   const [dieselAudPerLitre, setDieselAudPerLitre] = useState<number | null>(null);
+  const [discountApplied, setDiscountApplied] = useState(false);
+  const [discountHint, setDiscountHint] = useState('');
+  const [discountBusy, setDiscountBusy] = useState(false);
 
   const [state, setState] = useState<QuoteState>({
     step: 1,
@@ -63,6 +67,7 @@ const App: React.FC = () => {
     travelTimeHrs: 0,
     isCBD: false,
     isInterstate: false,
+    discountCode: '',
   });
 
   useEffect(() => {
@@ -118,22 +123,28 @@ const App: React.FC = () => {
   }, [state.step, state.vehicle, state.pickups, state.dropoffs, state.details, contactOk]);
 
   const priceBreakdown = useMemo(
-    () => calculateQuote({
-      vehicle: state.vehicle,
-      truckHours: state.truckHours,
-      crewSize: state.crewSize,
-      pickups: state.pickups,
-      dropoffs: state.dropoffs,
-      inventory: state.inventory,
-      bedDisassembly: state.details.bedDisassembly,
-      bedIsAssembled: state.details.bedIsAssembled,
-      distanceKm: state.distanceKm,
-      travelTimeHrs: state.travelTimeHrs,
-      isInterstate: state.isInterstate,
-      dieselAudPerLitre,
-      step: state.step,
-    }),
-    [state, dieselAudPerLitre]
+    () => {
+      const quote = calculateQuote({
+        vehicle: state.vehicle,
+        truckHours: state.truckHours,
+        crewSize: state.crewSize,
+        pickups: state.pickups,
+        dropoffs: state.dropoffs,
+        inventory: state.inventory,
+        bedDisassembly: state.details.bedDisassembly,
+        bedIsAssembled: state.details.bedIsAssembled,
+        distanceKm: state.distanceKm,
+        travelTimeHrs: state.travelTimeHrs,
+        isInterstate: state.isInterstate,
+        dieselAudPerLitre,
+        step: state.step,
+      });
+      if (discountApplied && state.discountCode) {
+        return applyMemberDiscount(quote, state.discountCode);
+      }
+      return quote;
+    },
+    [state, dieselAudPerLitre, discountApplied]
   );
 
   const snapshot = useMemo(() => buildQuoteSnapshot(state, priceBreakdown), [state, priceBreakdown]);
@@ -468,11 +479,46 @@ const App: React.FC = () => {
           {state.step === 6 && (
             <Step6Contact
               details={state.details}
+              discountCode={state.discountCode}
+              discountApplied={discountApplied}
+              discountHint={discountHint}
+              discountBusy={discountBusy}
               snapshot={snapshot}
               whatsappUrl={whatsappUrl}
               errors={contactErrors}
               showErrors={attemptedStep === 6}
-              onUpdateDetails={(det) => setState((s) => ({ ...s, details: { ...s.details, ...det } }))}
+              onUpdateDetails={(det) => {
+                setState((s) => ({ ...s, details: { ...s.details, ...det } }));
+                if (det.email !== undefined) {
+                  setDiscountApplied(false);
+                  setDiscountHint('');
+                }
+              }}
+              onDiscountCodeChange={(code) => {
+                setDiscountApplied(false);
+                setDiscountHint('');
+                setState((s) => ({ ...s, discountCode: code }));
+              }}
+              onApplyDiscount={async () => {
+                if (discountBusy) return;
+                setDiscountBusy(true);
+                try {
+                  const checked = await checkMemberDiscount({
+                    email: state.details.email,
+                    code: state.discountCode,
+                  });
+                  if (!checked.ok) {
+                    setDiscountApplied(false);
+                    setDiscountHint(checked.message);
+                    return;
+                  }
+                  setState((s) => ({ ...s, discountCode: checked.code }));
+                  setDiscountApplied(true);
+                  setDiscountHint(checked.message);
+                } finally {
+                  setDiscountBusy(false);
+                }
+              }}
             />
           )}
         </div>

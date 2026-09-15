@@ -104,6 +104,13 @@ export function buildQuoteSnapshot(state: QuoteState, breakdown: PriceBreakdown)
     });
   }
 
+  if (breakdown.memberDiscount > 0) {
+    lines.push({
+      label: `Member 5% off${breakdown.memberDiscountCode ? ` (${breakdown.memberDiscountCode})` : ''}`,
+      amount: `−${formatMoney(breakdown.memberDiscount)}`,
+    });
+  }
+
   const schedule = [formatDateAu(state.details.date), formatTimeAu(state.details.time)]
     .filter(Boolean)
     .join(', ') || 'Time still to confirm';
@@ -121,6 +128,9 @@ export function buildQuoteSnapshot(state: QuoteState, breakdown: PriceBreakdown)
     travelTimeLabel: `${state.travelTimeHrs.toFixed(1)} hrs`,
     moveType: moveTypeLabel(state, breakdown.isFixedTrip),
     totalLabel: formatMoney(breakdown.total),
+    subtotalLabel: formatMoney(breakdown.subtotal > 0 ? breakdown.subtotal : breakdown.total),
+    memberDiscountLabel: breakdown.memberDiscount > 0 ? `−${formatMoney(breakdown.memberDiscount)}` : '',
+    memberDiscountCode: breakdown.memberDiscountCode || '',
     depositLabel: formatMoney(breakdown.deposit),
     balanceLabel: formatMoney(breakdown.balance),
     included,
@@ -144,6 +154,7 @@ export function buildCustomerMessage(state: QuoteState, snapshot: QuoteSnapshot)
       snapshot.routeSummary,
       `Items: ${snapshot.inventorySummary}`,
       `Quote: ${snapshot.totalLabel} (${snapshot.moveType})`,
+      snapshot.memberDiscountCode ? `Member 5% off (${snapshot.memberDiscountCode}): ${snapshot.memberDiscountLabel}` : '',
       `Deposit (10%): ${snapshot.depositLabel}`,
       `Balance due on the day: ${snapshot.balanceLabel}`,
       instructions ? `Notes: ${instructions}` : '',
@@ -169,6 +180,9 @@ export function buildJobDetailsBody(state: QuoteState, snapshot: QuoteSnapshot):
       snapshot.routeSummary,
       `Items: ${snapshot.inventorySummary}`,
       `Quote total: ${snapshot.totalLabel}`,
+      snapshot.memberDiscountCode
+        ? `Member 5% off (${snapshot.memberDiscountCode}): ${snapshot.memberDiscountLabel} (was ${snapshot.subtotalLabel})`
+        : '',
       `Deposit paid / due: ${snapshot.depositLabel}`,
       `Balance on the day: ${snapshot.balanceLabel}`,
       snapshot.lines.map((line) => `- ${line.label}: ${line.note || line.amount}`).join('\n'),

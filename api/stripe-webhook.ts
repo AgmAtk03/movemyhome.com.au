@@ -4,9 +4,10 @@ import { isStripeWebhookConfigured, stripeWebhookSecret } from './_lib/env.js';
 import { getStripe } from './_lib/stripeClient.js';
 import { sendPaidBookingEmails } from './_lib/emailjs.js';
 import type { QuoteState } from '../types.js';
-import { calculateFullQuote } from '../shared/quoteCalc.js';
+import { applyMemberDiscount, calculateFullQuote } from '../shared/quoteCalc.js';
 import { buildQuoteSnapshot } from '../shared/snapshot.js';
 import { formatMoney } from '../shared/money.js';
+import { redeemMemberCode } from './_lib/memberCodes.js';
 
 export const config = {
   api: {
@@ -49,6 +50,7 @@ function stateFromMetadata(meta: Stripe.Metadata): QuoteState {
     travelTimeHrs: Number(meta.travel_hrs || 0) || 0,
     isCBD: pickup.includes('2000') || dropoff.includes('2000'),
     isInterstate: String(meta.move_type || '').toLowerCase().includes('interstate'),
+    discountCode: String(meta.discount_code || ''),
   };
 }
 
@@ -98,24 +100,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const state = stateFromMetadata(meta);
+  let paidQuote = calculateFullQuote({
+    vehicle: state.vehicle,
+    truckHours: state.truckHours,
+    crewSize: state.crewSize,
+    pickups: state.pickups,
+    dropoffs: state.dropoffs,
+    inventory: state.inventory,
+    bedDisassembly: state.details.bedDisassembly,
+    bedIsAssembled: state.details.bedIsAssembled,
+    distanceKm: state.distanceKm,
+    travelTimeHrs: state.travelTimeHrs,
+    isInterstate: state.isInterstate,
+    dieselAudPerLitre: (() => {
+      const n = Number(meta.diesel_aud_per_l || 0);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    })(),
+  });
+  if (state.discountCode) {
+    paidQuote = applyMemberDiscount(paidQuote, state.discountCode);
+  }
   const snapshot = {
-    ...buildQuoteSnapshot(state, calculateFullQuote({
-      vehicle: state.vehicle,
-      truckHours: state.truckHours,
-      crewSize: state.crewSize,
-      pickups: state.pickups,
-      dropoffs: state.dropoffs,
-      inventory: state.inventory,
-      bedDisassembly: state.details.bedDisassembly,
-      bedIsAssembled: state.details.bedIsAssembled,
-      distanceKm: state.distanceKm,
-      travelTimeHrs: state.travelTimeHrs,
-      isInterstate: state.isInterstate,
-      dieselAudPerLitre: (() => {
-        const n = Number(meta.diesel_aud_per_l || 0);
-        return Number.isFinite(n) && n > 0 ? n : null;
-      })(),
-    })),
+    ...buildQuoteSnapshot(state, paidQuote),
     serviceLabel: String(meta.service || 'Moving help'),
     vehicleLabel: String(meta.vehicle || ''),
     crewLabel: String(meta.crew || ''),
@@ -129,6 +135,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const paymentIntent = typeof session.payment_intent === 'string'
     ? session.payment_intent
     : session.payment_intent?.id || '';
+
+  if (state.discountCode) {
+    try {
+      await redeemMemberCode({
+        email: state.details.email,
+        code: state.discountCode,
+        sessionId: session.id,
+        name: state.details.name,
+      });
+    } catch {
+      console.error('Member code redeem failed', { sessionId: session.id });
+    }
+  }
 
   try {
     await sendPaidBookingEmails(state, snapshot, {

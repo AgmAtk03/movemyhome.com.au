@@ -50,6 +50,12 @@ const SuccessScreen: React.FC<SuccessProps> = ({
 
       <dl className="w-full text-left bg-slate-50 rounded-2xl p-5 mb-6 space-y-2 text-sm">
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Estimated total</dt><dd className="font-bold">{formatMoney(quoted.total)}</dd></div>
+        {quoted.memberDiscount > 0 && (
+          <div className="flex justify-between gap-3">
+            <dt className="text-slate-500">Member 5% off</dt>
+            <dd className="font-bold">−{formatMoney(quoted.memberDiscount)}</dd>
+          </div>
+        )}
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Pay today (10%) — not charged</dt><dd className="font-bold">{formatMoney(quoted.deposit)}</dd></div>
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Due on the day (90%)</dt><dd className="font-bold">{formatMoney(quoted.balance)}</dd></div>
       </dl>

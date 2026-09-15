@@ -1,10 +1,17 @@
 import type { QuoteSnapshot, QuoteState } from '../../types.js';
 import { htmlSafeMultiline, htmlSafePlainText, sanitizeMultiline, sanitizePlainText } from '../../lib/sanitize.js';
 import { buildJobDetailsBody } from '../../shared/snapshot.js';
-import { companyConfig, emailJsConfig, isEmailJsServerConfigured } from './env.js';
+import { BRAND_NAME } from '../../shared/rates.js';
+import { companyConfig, emailJsConfig, isEmailJsServerConfigured, isMemberEmailConfigured } from './env.js';
 
 export interface EmailSendResult {
   clientSent: boolean;
+  businessSent: boolean;
+  skipped: boolean;
+}
+
+export interface MemberEmailSendResult {
+  customerSent: boolean;
   businessSent: boolean;
   skipped: boolean;
 }
@@ -40,6 +47,9 @@ function templateParams(state: QuoteState, snapshot: QuoteSnapshot, extra: Recor
     reply_to: sanitizePlainText(state.details.email, 120),
     job_details_html: htmlSafeMultiline(buildJobDetailsBody(state, snapshot), 2500),
     customer_name_html: htmlSafePlainText(state.details.name, 80),
+    discount_code: sanitizePlainText(snapshot.memberDiscountCode || state.discountCode || '', 32),
+    member_discount: sanitizePlainText(snapshot.memberDiscountLabel || '', 24),
+    quote_subtotal: sanitizePlainText(snapshot.subtotalLabel || '', 24),
     ...extra,
   };
 }
@@ -109,4 +119,65 @@ export async function sendPaidBookingEmails(
   }
 
   return { clientSent, businessSent, skipped: false };
+}
+
+export async function sendMemberSignupEmails(input: {
+  name: string;
+  email: string;
+  discountCode: string;
+}): Promise<MemberEmailSendResult> {
+  if (!isMemberEmailConfigured()) {
+    return { customerSent: false, businessSent: false, skipped: true };
+  }
+
+  const cfg = emailJsConfig();
+  const company = companyConfig();
+  const name = sanitizePlainText(input.name, 80);
+  const email = sanitizePlainText(input.email, 120);
+  const code = sanitizePlainText(input.discountCode, 32);
+  const office = sanitizePlainText(company.email, 120);
+
+  const base = {
+    customer_name: name,
+    user_email: email,
+    discount_code: code,
+    offer_label: '5% off your first move',
+    company_name: sanitizePlainText(company.name || BRAND_NAME, 80),
+    company_email: office,
+    company_phone: sanitizePlainText(company.phone, 24),
+  };
+
+  let customerSent = false;
+  let businessSent = false;
+
+  try {
+    await sendTemplate(cfg.memberTemplateId, {
+      ...base,
+      to_email: email,
+      email_kind: 'member_customer',
+      reply_to: office,
+    });
+    customerSent = true;
+  } catch {
+    console.error('Member customer email failed');
+  }
+
+  if (office.toLowerCase() === email.toLowerCase()) {
+    businessSent = customerSent;
+    return { customerSent, businessSent, skipped: false };
+  }
+
+  try {
+    await sendTemplate(cfg.memberTemplateId, {
+      ...base,
+      to_email: office,
+      email_kind: 'member_business',
+      reply_to: email,
+    });
+    businessSent = true;
+  } catch {
+    console.error('Member business email failed');
+  }
+
+  return { customerSent, businessSent, skipped: false };
 }

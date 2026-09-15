@@ -18,8 +18,16 @@ const QuoteRecap: React.FC<QuoteRecapProps> = ({ snapshot, compact = false }) =>
           <h3 id="quote-recap-heading" className="text-base font-black text-slate-900 tracking-tight">
             Your quote
           </h3>
+          {snapshot.memberDiscountCode ? (
+            <p className="text-xs font-semibold text-[#0f5a94] mt-1">Member 5% off applied</p>
+          ) : null}
         </div>
-        <p className="text-xl font-black text-[#146eb4] whitespace-nowrap">{snapshot.totalLabel}</p>
+        <div className="text-right">
+          {snapshot.memberDiscountLabel ? (
+            <p className="text-sm text-slate-400 line-through">{snapshot.subtotalLabel}</p>
+          ) : null}
+          <p className="text-xl font-black text-[#146eb4] whitespace-nowrap">{snapshot.totalLabel}</p>
+        </div>
       </div>
 
       <dl className="space-y-2 text-sm">

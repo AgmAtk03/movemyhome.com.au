@@ -65,3 +65,6 @@ export const INVENTORY_LABELS: Record<string, string> = {
 export const BRAND_NAME = 'My Home Removals';
 export const CURRENCY = 'aud';
 export const DEPOSIT_RATE = 0.1;
+/** First-move student/member offer. Applied to the quote total before the 10% deposit. */
+export const MEMBER_DISCOUNT_RATE = 0.05;
+export const MEMBER_CODE_PREFIX = 'STUDENT5';

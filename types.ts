@@ -47,10 +47,17 @@ export interface QuoteState {
   travelTimeHrs: number;
   isCBD: boolean;
   isInterstate: boolean;
+  /** Student/member code from homepage signup. Validated server-side at checkout. */
+  discountCode: string;
 }
 
 export interface PriceBreakdown {
   total: number;
+  /** Quote before member 5% off. Equals `total` when no discount applies. */
+  subtotal: number;
+  memberDiscount: number;
+  memberDiscountCode: string;
+  memberDiscountRate: number;
   base: number;
   distance: number;
   inventory: number;
@@ -83,6 +90,9 @@ export interface QuoteSnapshot {
   travelTimeLabel: string;
   moveType: string;
   totalLabel: string;
+  subtotalLabel: string;
+  memberDiscountLabel: string;
+  memberDiscountCode: string;
   depositLabel: string;
   balanceLabel: string;
   included: string[];

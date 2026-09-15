@@ -6,7 +6,11 @@ const MemberSignup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [attempted, setAttempted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<{
+    heading: string;
+    message: string;
+    discountCode: string;
+  } | null>(null);
 
   const errors = validateMember({ name, email });
   const show = attempted;
@@ -18,7 +22,16 @@ const MemberSignup: React.FC = () => {
     setSubmitting(true);
     try {
       const response = await submitMemberSignup({ name, email });
-      setResult(response.message);
+      const heading = response.alreadyRedeemed
+        ? 'Already used'
+        : response.discountCode
+          ? 'You’re on the list'
+          : 'Saved on this device';
+      setResult({
+        heading,
+        message: response.message,
+        discountCode: response.alreadyRedeemed ? '' : response.discountCode,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -27,8 +40,11 @@ const MemberSignup: React.FC = () => {
   if (result) {
     return (
       <div className="rounded-[1.75rem] bg-white border border-slate-200 p-6" role="status">
-        <p className="text-lg font-black text-slate-900">You’re on the list</p>
-        <p className="text-sm text-slate-600 mt-2 leading-relaxed">{result}</p>
+        <p className="text-lg font-black text-slate-900">{result.heading}</p>
+        {result.discountCode ? (
+          <p className="mt-3 font-black text-slate-900 tracking-wide text-xl">{result.discountCode}</p>
+        ) : null}
+        <p className="text-sm text-slate-600 mt-2 leading-relaxed">{result.message}</p>
       </div>
     );
   }
@@ -37,7 +53,7 @@ const MemberSignup: React.FC = () => {
     <form onSubmit={onSubmit} className="rounded-[1.75rem] bg-white border border-slate-200 p-6 space-y-4" noValidate>
       <div>
         <p className="text-sm text-slate-600 leading-relaxed">
-          Name and email only. We’ll use it for that first-move discount.
+          Name and email only. We’ll email you a code for 5% off your first move.
         </p>
       </div>
 

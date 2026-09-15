@@ -5,6 +5,7 @@ Production source of truth for a **held slot**:
 1. Stripe Checkout Session (deposit amount in cents, metadata, `payment_status=paid`)
 2. Webhook `checkout.session.completed` with a **verified signature**
 3. EmailJS customer confirmation + business job sheet (when configured)
+4. Optional member code `STUDENT5-…` is marked redeemed on the Stripe Customer so it cannot be reused
 
 `/success?session_id=` is **not** proof of payment by itself. The page calls `/api/verify-checkout-session`, which retrieves the session from Stripe.
 

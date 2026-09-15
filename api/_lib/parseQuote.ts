@@ -119,6 +119,7 @@ export function parseCheckoutPayload(body: unknown): { ok: true; state: QuoteSta
     travelTimeHrs,
     isCBD: pickups.concat(dropoffs).some((loc) => loc.address.includes('2000') && !loc.hasLoadingDock),
     isInterstate: Boolean(row.isInterstate),
+    discountCode: sanitizePlainText(String(row.discountCode || detailsRaw.discountCode || ''), 24),
   };
 
   return { ok: true, state };
