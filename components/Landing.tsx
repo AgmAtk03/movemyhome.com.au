@@ -39,24 +39,54 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
     <div className="min-h-[100dvh] bg-slate-50 text-slate-900">
       <SiteHeader current="home" />
 
-      <BannerSlider>
-        <div className="absolute inset-0 z-[15] flex flex-col items-center justify-center px-4 pb-10 pt-6 text-center pointer-events-none">
-          <p className="text-[#ff9900] font-bold tracking-wide text-sm drop-shadow">{CONFIG.COMPANY_NAME}</p>
-          <h1 className="mt-1 text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight max-w-xl drop-shadow-md">
+      <BannerSlider />
+
+      <section className="bg-white border-b border-slate-100" aria-labelledby="quote-heading">
+        <div className="max-w-xl mx-auto px-4 py-8 sm:py-10 text-center">
+          <p className="text-[#146eb4] font-bold tracking-wide text-sm">{CONFIG.COMPANY_NAME}</p>
+          <h1 id="quote-heading" className="mt-1 text-3xl sm:text-4xl font-black tracking-tight text-slate-900 leading-tight">
             Sydney moving, made simple.
           </h1>
           <a
             href="/quote"
             onClick={startQuote}
-            className="btn-primary pointer-events-auto mt-5 w-full max-w-sm text-xl min-h-[52px] px-8 shadow-[0_12px_28px_rgba(255,153,0,0.45)]"
+            className="btn-primary mt-6 inline-flex w-full max-w-sm text-xl min-h-[52px] px-8"
           >
             Get an Instant Quote
           </a>
-          <p className="mt-3 text-sm font-medium text-white/90 drop-shadow">Takes about two minutes · No account needed</p>
+          <p className="mt-3 text-sm font-medium text-slate-500">Takes about two minutes · No account needed</p>
         </div>
-      </BannerSlider>
+      </section>
 
-      <main className="max-w-6xl mx-auto px-4 py-10 sm:py-14 space-y-12">
+      <main className="max-w-6xl mx-auto px-4 py-10 sm:py-14 space-y-8 sm:space-y-12">
+        <section aria-labelledby="email-heading" className="bg-white border border-slate-200 rounded-[1.75rem] p-5 sm:p-7">
+          <div className="flex items-start gap-4">
+            <span className="w-11 h-11 rounded-2xl bg-[#e7f2fa] text-[#146eb4] flex items-center justify-center text-xl flex-shrink-0" aria-hidden="true">
+              <Icon name="envelope-simple" />
+            </span>
+            <div>
+              <h2 id="email-heading" className="text-xl sm:text-2xl font-black tracking-tight">We’ll email you — and us</h2>
+              <p className="mt-2 text-slate-600 leading-relaxed">
+                Once a booking is in, you get a confirmation in your inbox, and we get the same details on our side. No chasing, no “did that go through?”
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="stripe-heading" className="bg-white border border-slate-200 rounded-[1.75rem] p-5 sm:p-7">
+          <div className="flex items-start gap-4">
+            <span className="w-11 h-11 rounded-2xl bg-[#fff4e0] text-[#e08700] flex items-center justify-center text-xl flex-shrink-0" aria-hidden="true">
+              <Icon name="credit-card" />
+            </span>
+            <div>
+              <h2 id="stripe-heading" className="text-xl sm:text-2xl font-black tracking-tight">Card payments, looked after</h2>
+              <p className="mt-2 text-slate-600 leading-relaxed">
+                When you’re ready to book, you pay by card on a secure Stripe page — we never see or store your card number on this site.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section aria-labelledby="care-heading">
           <p className="text-[#146eb4] font-bold text-sm tracking-wide">Looked after, not just loaded</p>
           <h2 id="care-heading" className="mt-1 text-2xl sm:text-3xl font-black tracking-tight">

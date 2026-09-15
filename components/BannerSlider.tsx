@@ -4,11 +4,7 @@ import Icon from './Icon';
 
 const INTERVAL_MS = 5500;
 
-interface BannerSliderProps {
-  children?: React.ReactNode;
-}
-
-const BannerSlider: React.FC<BannerSliderProps> = ({ children }) => {
+const BannerSlider: React.FC = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
@@ -58,7 +54,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ children }) => {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="relative h-[min(68vw,24rem)] sm:h-[min(48vw,30rem)] lg:h-[32rem]">
+      <div className="relative h-[10.5rem] sm:h-[min(44vw,28rem)] lg:h-[32rem]">
         {HOME_BANNERS.map((slide, i) => {
           const active = i === index;
           return (
@@ -86,33 +82,35 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ children }) => {
                   decoding={i === 0 ? 'sync' : 'async'}
                 />
               </picture>
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/30 to-slate-900/15" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-transparent to-transparent sm:from-slate-950/55" />
             </div>
           );
         })}
 
-        {children}
+        <p className="absolute left-3 right-14 bottom-11 z-20 sm:left-6 sm:right-auto sm:bottom-16 text-white text-xs font-semibold tracking-wide drop-shadow pointer-events-none">
+          {HOME_BANNERS[index].kicker}
+        </p>
 
-        <div className="absolute inset-y-0 left-0 right-0 z-20 flex items-center justify-between px-2 sm:px-4 pointer-events-none">
+        <div className="absolute inset-y-0 left-0 right-0 z-20 flex items-center justify-between px-1.5 sm:px-4 pointer-events-none">
           <button
             type="button"
-            className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/90 text-slate-800 shadow-md inline-flex items-center justify-center"
+            className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/85 text-slate-800 shadow-sm inline-flex items-center justify-center"
             onClick={() => go(index - 1)}
             aria-label="Previous photo"
           >
-            <Icon name="caret-left" className="text-xl" />
+            <Icon name="caret-left" className="text-lg" />
           </button>
           <button
             type="button"
-            className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/90 text-slate-800 shadow-md inline-flex items-center justify-center"
+            className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/85 text-slate-800 shadow-sm inline-flex items-center justify-center"
             onClick={() => go(index + 1)}
             aria-label="Next photo"
           >
-            <Icon name="caret-right" className="text-xl" />
+            <Icon name="caret-right" className="text-lg" />
           </button>
         </div>
 
-        <div className="absolute bottom-3 left-0 right-0 z-20 flex justify-center gap-2" role="tablist" aria-label="Banner slides">
+        <div className="absolute bottom-1.5 left-0 right-0 z-20 flex justify-center gap-1" role="tablist" aria-label="Banner slides">
           {HOME_BANNERS.map((slide, i) => (
             <button
               key={slide.id}
@@ -125,7 +123,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ children }) => {
             >
               <span
                 className={`block rounded-full ${
-                  i === index ? 'w-8 h-2.5 bg-[#ff9900]' : 'w-2.5 h-2.5 bg-white/85'
+                  i === index ? 'w-6 h-2 bg-[#ff9900]' : 'w-2 h-2 bg-white/85'
                 }`}
               />
             </button>
