@@ -421,7 +421,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <main className={`flex-1 px-5 pt-8 overflow-y-auto no-scrollbar bg-white ${state.step >= 6 ? 'pb-96' : 'pb-80'}`}>
+      <main className={`flex-1 px-5 pt-8 overflow-y-auto no-scrollbar bg-white ${bookReview ? 'pb-[28rem]' : state.step >= 6 ? 'pb-96' : 'pb-80'}`}>
         <div className="max-w-md mx-auto">
           {state.step === 1 && (
             <Step1ServiceType

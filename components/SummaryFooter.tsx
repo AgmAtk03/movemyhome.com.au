@@ -125,12 +125,6 @@ const SummaryFooter: React.FC<FooterProps> = ({
           </button>
         )}
 
-        {showPay && (
-          <p className="text-xs text-slate-500 leading-relaxed mt-1">
-            Fully refundable if you cancel at least 12 hours before your move date and time.
-          </p>
-        )}
-
         {nextHint && (
           <p className="text-sm text-rose-700 mt-2 font-medium" role="status">{nextHint}</p>
         )}
