@@ -49,14 +49,24 @@ export async function fulfillPaidBookingEmails(
   session: Stripe.Checkout.Session,
   options: { gapMs?: number } = {},
 ): Promise<FulfillEmailsResult> {
-  const { state, snapshot } = bookingFromCheckoutSession(session);
+  let current = session;
+  try {
+    current = await getStripe().checkout.sessions.retrieve(session.id);
+  } catch (error) {
+    console.error('Could not re-fetch Checkout Session before email send; using in-memory copy', {
+      sessionId: session.id,
+      error: error instanceof Error ? error.message : 'retrieve failed',
+    });
+  }
+
+  const { state, snapshot } = bookingFromCheckoutSession(current);
   const payment = {
-    sessionId: session.id,
-    paymentIntentId: paymentIntentId(session),
+    sessionId: current.id,
+    paymentIntentId: paymentIntentId(current),
   };
   const fallbackParams = paidBookingEmailParams(state, snapshot, payment);
-  const skipClient = mailAlreadySent(session.metadata, MAIL_CLIENT_META);
-  const skipBusiness = mailAlreadySent(session.metadata, MAIL_BIZ_META);
+  const skipClient = mailAlreadySent(current.metadata, MAIL_CLIENT_META);
+  const skipBusiness = mailAlreadySent(current.metadata, MAIL_BIZ_META);
 
   if (skipClient && skipBusiness) {
     return {
@@ -75,7 +85,7 @@ export async function fulfillPaidBookingEmails(
     skipBusiness,
   });
 
-  await recordMailStatus(session.id, {
+  await recordMailStatus(current.id, {
     ...result,
     clientSent: result.clientSent || skipClient,
     businessSent: result.businessSent || skipBusiness,

@@ -19,10 +19,26 @@ async function rawBody(req: VercelRequest): Promise<Buffer> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'GET') {
+    res.status(200).json({
+      ok: true,
+      endpoint: '/api/stripe-webhook',
+      liveUrl: 'https://aama-removals.vercel.app/api/stripe-webhook',
+      expects: 'POST checkout.session.completed',
+      configured: isStripeWebhookConfigured(),
+    });
+    return;
+  }
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
+
+  console.info('stripe-webhook POST', {
+    hasSignature: Boolean(req.headers['stripe-signature']),
+    contentType: String(req.headers['content-type'] || ''),
+  });
 
   if (!isStripeWebhookConfigured()) {
     console.error('Stripe webhook secret is not configured (STRIPE_WEBHOOK_SECRET). Paid emails cannot run from this endpoint.');
@@ -49,9 +65,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (event.type !== 'checkout.session.completed' && event.type !== 'checkout.session.async_payment_succeeded') {
+    console.info('stripe-webhook ignored event', { type: event.type, id: event.id });
     res.status(200).json({ received: true, ignored: event.type });
     return;
   }
+
+  console.info('stripe-webhook paid-path event', { type: event.type, id: event.id });
 
   const session = event.data.object as Stripe.Checkout.Session;
   const paid = session.payment_status === 'paid';

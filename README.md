@@ -23,11 +23,13 @@ PUBLIC_SITE_URL=https://movemyhome.com.au
 
 That origin is used for Stripe Checkout `success_url` / `cancel_url` (`/success?session_id={CHECKOUT_SESSION_ID}` and `/cancel`). If this is left blank, redirects can land on the Vercel hostname instead of the public site.
 
-**Stripe webhook:** point Checkout at the Vercel function directly:
+**Live Stripe webhook (required):** in the Stripe Dashboard, the endpoint must be exactly:
 
 `https://aama-removals.vercel.app/api/stripe-webhook`
 
-Do not send webhooks through the Netlify proxy. Stripe signs the raw body; an extra reverse-proxy hop can change bytes or headers and fail signature verification. Keep one endpoint (this Vercel URL) in the Stripe Dashboard.
+Event: `checkout.session.completed` (and optionally `checkout.session.async_payment_succeeded`). Use the **live** signing secret in Vercel `STRIPE_WEBHOOK_SECRET` for live mode. Do **not** register the Netlify `/api/stripe-webhook` proxy — Stripe signs the raw body, and that hop can drop the webhook or fail verification. If Vercel logs show checkout + verify but no `/api/stripe-webhook`, the Dashboard URL or mode is wrong; `/success` still sends mail via `GET /api/verify-checkout-session` as a backup.
+
+Do not send webhooks through the Netlify proxy. Keep one endpoint (this Vercel URL) in the Stripe Dashboard.
 
 Vercel compiles `/api/*.ts` to ESM `.js` on Node.js 24. Relative imports in that graph must use explicit **`.js` extensions** (TypeScript resolves `./env.js` to `./env.ts`). Extensionless paths such as `./_lib/env` become `Cannot find module '/var/task/api/_lib/env'` at runtime.
 
@@ -88,10 +90,9 @@ Contact submit
   → Stripe Checkout Session for Math.round(deposit * 100) cents (AUD)
   → redirect to Stripe-hosted Checkout (no card form on this site)
   → success_url /success?session_id={CHECKOUT_SESSION_ID}
-  → cancel_url /cancel
-  → webhook POST /api/stripe-webhook  (checkout.session.completed, signature verified)
+  → GET /api/verify-checkout-session  (Stripe retrieve; if paid, send EmailJS unless metadata says already sent)
+  → webhook POST /api/stripe-webhook  (checkout.session.completed, signature verified; same send, idempotent)
   → EmailJS customer confirmation + business job sheet
-  → /success also POST /api/notify-paid-booking (recoverable if the webhook was missed)
 ```
 
 Shared rate table: `shared/rates.ts` (same numbers as the historic wizard). Calculator: `shared/quoteCalc.ts`. Do not invent new rates.
@@ -169,11 +170,17 @@ Use any future expiry, any 3-digit CVC, and any Australian postcode. See [Stripe
 
 Emails go out after a **verified paid** Checkout session:
 
-1. **Primary:** `POST /api/stripe-webhook` (`checkout.session.completed` / `checkout.session.async_payment_succeeded`).
-2. **Recoverable:** `/success` calls `POST /api/notify-paid-booking` so a missed webhook still sends. Idempotent via Stripe metadata (`mail_client` / `mail_biz`).
-3. **Last resort:** if the API host is missing EmailJS env, the success page can retry with the public keys baked into the Netlify SPA (no private key in the browser).
+1. **Backup that already runs in production:** `GET /api/verify-checkout-session` (the success page). If the session is paid, it calls `sendPaidBookingEmails` unless Stripe metadata `mail_client` / `mail_biz` is already `sent`.
+2. **Primary when Dashboard is correct:** `POST /api/stripe-webhook` (`checkout.session.completed` / `checkout.session.async_payment_succeeded`). Same send; skipped if verify already marked the session.
+3. **Last resort:** `/success` can POST `/api/notify-paid-booking` and, if needed, retry with public EmailJS keys baked into the Netlify SPA (no private key in the browser).
 
-Demo mode skips email. The success screen tells the customer to **check the email they entered**; it does not claim an email was sent unless the send succeeded. Failures are `console.error`’d and stored on the Stripe session as `mail_note` (visible in the Stripe Dashboard).
+**Live webhook URL** (Stripe Dashboard → Developers → Webhooks, **live mode** for live keys):
+
+`https://aama-removals.vercel.app/api/stripe-webhook`
+
+Event: `checkout.session.completed`. Do not use the Netlify proxy URL.
+
+Demo mode skips email. The success screen always tells the customer to **check the email they entered** for booking confirmation; it does not claim an email was sent. Failures are `console.error`’d and stored on the Stripe session as `mail_note` (visible in the Stripe Dashboard).
 
 The UI is on **Netlify**. `/api/*` runs on **Vercel**. `VITE_*` values set only on Netlify are **invisible** to the webhook. Set the unprefixed `EMAILJS_*` names (and `VITE_COMPANY_EMAIL`) on the Vercel project for Production.
 

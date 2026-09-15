@@ -77,6 +77,27 @@ afterEach(() => {
   for (const key of KEYS) delete process.env[key];
 });
 
+test('skips already-sent client and business templates without calling EmailJS', async () => {
+  process.env.EMAILJS_SERVICE_ID = 'service_abc';
+  process.env.EMAILJS_CLIENT_TEMPLATE_ID = 'template_client';
+  process.env.EMAILJS_BUSINESS_TEMPLATE_ID = 'template_biz';
+  process.env.EMAILJS_PUBLIC_KEY = 'public_key';
+  process.env.EMAILJS_PRIVATE_KEY = 'private_key';
+  let fetches = 0;
+  globalThis.fetch = (async () => {
+    fetches += 1;
+    return new Response('OK', { status: 200 });
+  }) as typeof fetch;
+  const state = sampleState();
+  const result = await sendPaidBookingEmails(state, snapshotFor(state), {
+    sessionId: 'cs_test_dedupe',
+    paymentIntentId: 'pi_test',
+  }, { gapMs: 0, skipClient: true, skipBusiness: true });
+  assert.equal(fetches, 0);
+  assert.equal(result.clientSent, true);
+  assert.equal(result.businessSent, true);
+});
+
 test('skips loudly when EmailJS env is missing instead of pretending both emails sent', async () => {
   const state = sampleState();
   const result = await sendPaidBookingEmails(state, snapshotFor(state), {

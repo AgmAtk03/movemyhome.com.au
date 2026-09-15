@@ -20,17 +20,12 @@ interface VerifyResponse {
   currency?: string;
   mailClient?: boolean;
   mailBusiness?: boolean;
-}
-
-interface NotifyResponse {
-  paid?: boolean;
-  customerEmail?: string;
   clientSent?: boolean;
   businessSent?: boolean;
   skipped?: boolean;
-  fallbackParams?: Record<string, string>;
   needClient?: boolean;
   needBusiness?: boolean;
+  fallbackParams?: Record<string, string>;
 }
 
 const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => {
@@ -54,11 +49,14 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
         if (cancelled) return;
         setData(json);
         if (!json.paid) {
-          setStatus(json.demoMode ? 'unpaid' : 'unpaid');
+          setStatus('unpaid');
           return;
         }
         setStatus('paid');
-        if (json.mailClient) setClientSent(true);
+        setClientSent(json.clientSent === true ? true : json.clientSent === false ? false : null);
+
+        const needsMail = Boolean(json.needClient || json.needBusiness || json.clientSent === false || json.businessSent === false);
+        if (!needsMail) return;
 
         try {
           const notifyRes = await fetch('/api/notify-paid-booking', {
@@ -66,21 +64,20 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId }),
           });
-          const notify = (await notifyRes.json()) as NotifyResponse;
+          const notify = (await notifyRes.json()) as VerifyResponse;
           if (cancelled) return;
-          let nextClient = Boolean(notify.clientSent);
-          if ((!nextClient || !notify.businessSent) && notify.fallbackParams) {
+          let nextClient = Boolean(notify.clientSent || json.clientSent);
+          if ((!nextClient || notify.needBusiness || json.needBusiness) && (notify.fallbackParams || json.fallbackParams)) {
             const fallback = await sendPaidEmailsFromBrowser({
-              params: notify.fallbackParams,
-              needClient: Boolean(notify.needClient),
-              needBusiness: Boolean(notify.needBusiness),
+              params: notify.fallbackParams || json.fallbackParams || {},
+              needClient: Boolean(notify.needClient ?? json.needClient),
+              needBusiness: Boolean(notify.needBusiness ?? json.needBusiness),
             });
             nextClient = nextClient || fallback.clientSent;
           }
           if (!cancelled) setClientSent(nextClient);
         } catch {
-          if (!cancelled && json.mailClient) setClientSent(true);
-          else if (!cancelled) setClientSent(false);
+          if (!cancelled) setClientSent(Boolean(json.clientSent));
         }
       } catch {
         if (!cancelled) setStatus('error');
@@ -125,7 +122,7 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
           <div className="flex justify-between gap-3"><dt className="text-slate-500">Due on the day (90%)</dt><dd className="font-bold">{data.balanceLabel}</dd></div>
           {data.customerEmail ? (
             <div className="flex justify-between gap-3 pt-2 border-t border-slate-200">
-              <dt className="text-slate-500">Confirmation email</dt>
+              <dt className="text-slate-500">Check this inbox</dt>
               <dd className="font-bold break-all text-right">{data.customerEmail}</dd>
             </div>
           ) : null}
