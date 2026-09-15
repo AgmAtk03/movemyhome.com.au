@@ -63,7 +63,10 @@ const QuoteRecap: React.FC<QuoteRecapProps> = ({ snapshot, compact = false }) =>
           <span className="font-bold text-slate-900">{snapshot.balanceLabel}</span>
         </div>
       </div>
-      <p className="mt-4 text-xs font-medium text-slate-500 leading-relaxed">
+      <p className="mt-3 text-xs font-medium text-slate-600 leading-relaxed">
+        Pay 10% of the total today to book and hold your slot. Fully refundable if you cancel at least 12 hours before your move date and time.
+      </p>
+      <p className="mt-3 text-xs font-medium text-slate-500 leading-relaxed">
         Included: {snapshot.included.join(', ')}.
       </p>
     </section>

@@ -75,14 +75,18 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 <dt className="text-sm font-bold text-slate-600">Estimated total</dt>
                 <dd className="text-2xl font-black text-slate-900 tracking-tight" aria-live="polite">{formatMoney(breakdown.total)}</dd>
               </div>
-              <div className="flex justify-between gap-3 text-sm">
-                <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
-                <dd className="font-black text-slate-800">{formatMoney(breakdown.deposit)}</dd>
-              </div>
-              <div className="flex justify-between gap-3 text-sm">
-                <dt className="font-semibold text-slate-500">Due on the day (90%)</dt>
-                <dd className="font-black text-slate-800">{formatMoney(breakdown.balance)}</dd>
-              </div>
+              {isBookStep && (
+                <>
+                  <div className="flex justify-between gap-3 text-sm">
+                    <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
+                    <dd className="font-black text-slate-800">{formatMoney(breakdown.deposit)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 text-sm">
+                    <dt className="font-semibold text-slate-500">Due on the day (90%)</dt>
+                    <dd className="font-black text-slate-800">{formatMoney(breakdown.balance)}</dd>
+                  </div>
+                </>
+              )}
             </dl>
           ) : (
             <p className="text-lg font-black text-slate-400">Your quote appears as you go</p>
@@ -96,8 +100,8 @@ const SummaryFooter: React.FC<FooterProps> = ({
           <p className="text-sm text-rose-700 mt-3 font-medium" role="status">{nextHint}</p>
         )}
         {isBookStep && (
-          <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-            This is an estimate. Pay 10% today to hold the slot. The rest is due on the day.
+          <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+            Pay <strong>10% of the total today</strong> to book and hold your slot. Fully refundable if you cancel at least 12 hours before your move date and time. The rest is due on the day.
           </p>
         )}
 
@@ -178,14 +182,21 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 <span className="font-black text-slate-900">Estimated total</span>
                 <span className="text-2xl font-black text-[#146eb4]">{formatMoney(breakdown.total)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Pay today (10%)</span>
-                <span className="font-bold">{formatMoney(breakdown.deposit)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Due on the day (90%)</span>
-                <span className="font-bold">{formatMoney(breakdown.balance)}</span>
-              </div>
+              {isBookStep && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Pay today (10%)</span>
+                    <span className="font-bold">{formatMoney(breakdown.deposit)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Due on the day (90%)</span>
+                    <span className="font-bold">{formatMoney(breakdown.balance)}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed pt-1">
+                    Fully refundable if you cancel at least 12 hours before your move date and time.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         )}

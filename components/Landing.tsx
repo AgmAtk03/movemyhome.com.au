@@ -10,10 +10,22 @@ interface LandingProps {
   onStart: () => void;
 }
 
-const VALUE_PROPS: { icon: IconName; t: string; d: string }[] = [
-  { icon: 'map-pin', t: 'Sydney & NSW', d: 'From the Inner West to the beaches and regional NSW — we’ll tell you if a job is too far.' },
-  { icon: 'calendar-check', t: '10% holds the day', d: 'Pay a tenth now so the slot is yours. Nothing more until we actually move you.' },
-  { icon: 'wallet', t: 'The rest on the day', d: 'The remaining 90% is due when we arrive. No surprise card charge for the full quote.' },
+const CARE_PROPS: { icon: IconName; t: string; d: string }[] = [
+  {
+    icon: 'bubbles',
+    t: 'Bubble wrap',
+    d: 'Glass, TVs, and the awkward bits get wrapped so they don’t rattle around in the back.',
+  },
+  {
+    icon: 'straps',
+    t: 'Ties and straps',
+    d: 'Everything is strapped into the truck so it stays put on Sydney roads — hills, roundabouts, the lot.',
+  },
+  {
+    icon: 'shield-check',
+    t: 'Careful handling',
+    d: 'We take our time with your things. If something needs extra care, we’ll say so before we lift it.',
+  },
 ];
 
 const Landing: React.FC<LandingProps> = ({ onStart }) => {
@@ -40,15 +52,21 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
           >
             Get an Instant Quote
           </a>
-          <p className="mt-3 text-sm font-medium text-white/90 drop-shadow">Takes about two minutes · 10% holds the day</p>
+          <p className="mt-3 text-sm font-medium text-white/90 drop-shadow">Takes about two minutes · No account needed</p>
         </div>
       </BannerSlider>
 
       <main className="max-w-6xl mx-auto px-4 py-10 sm:py-14 space-y-12">
-        <section aria-labelledby="value-heading">
-          <h2 id="value-heading" className="text-2xl font-black tracking-tight">Why people book with us</h2>
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {VALUE_PROPS.map((item) => (
+        <section aria-labelledby="care-heading">
+          <p className="text-[#146eb4] font-bold text-sm tracking-wide">Looked after, not just loaded</p>
+          <h2 id="care-heading" className="mt-1 text-2xl sm:text-3xl font-black tracking-tight">
+            How we protect your things
+          </h2>
+          <p className="mt-3 text-slate-600 max-w-2xl leading-relaxed">
+            Local Sydney movers, packing like we’d pack our own place. Wrap, strap, and take it steady — that’s the job.
+          </p>
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {CARE_PROPS.map((item) => (
               <article key={item.t} className="bg-white border border-slate-200 rounded-[1.75rem] p-5">
                 <span className="w-11 h-11 rounded-2xl bg-[#e7f2fa] text-[#146eb4] flex items-center justify-center text-xl" aria-hidden="true">
                   <Icon name={item.icon} />

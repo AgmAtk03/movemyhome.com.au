@@ -27,7 +27,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           How can we reach you?
         </h2>
         <p className="text-slate-500 text-base font-medium leading-relaxed">
-          We’ll use this to confirm after you pay the 10% deposit. We never share your details.
+          We’ll use this to confirm your booking. We never share your details.
         </p>
       </div>
 

@@ -15,7 +15,8 @@ import { sanitizeMultiline, sanitizePlainText } from '../lib/sanitize';
 export function buildQuoteSnapshot(state: QuoteState, breakdown: PriceBreakdown): QuoteSnapshot {
   const included = [
     'We’ll confirm the plan before moving day',
-    'A 10% deposit holds the slot; 90% is due on the day',
+    '10% today holds the slot — fully refundable if you cancel at least 12 hours before the move',
+    'The remaining 90% is due on the day',
   ];
   if (state.vehicle === 'truck' && breakdown.potentialAccess > 0) {
     included.push('Stairs and access (included with the truck)');
