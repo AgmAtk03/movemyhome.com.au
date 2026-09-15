@@ -1,4 +1,5 @@
 import { QuoteState } from '../types';
+import { apiUrl } from './api';
 import { sanitizePlainText } from './sanitize';
 import { PAYMENTS_OFF_SHORT, PAYMENT_OPEN_ERROR, PAYMENT_START_ERROR, customerFacingError } from './customerCopy';
 
@@ -54,7 +55,7 @@ export function checkoutPayload(state: QuoteState) {
 export async function createCheckoutSession(state: QuoteState): Promise<CheckoutResult> {
   let response: Response;
   try {
-    response = await fetch('/api/create-checkout-session', {
+    response = await fetch(apiUrl('/api/create-checkout-session'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(checkoutPayload(state)),

@@ -13,7 +13,9 @@ The running total is an **estimate**. **Pay 10% deposit** creates a Stripe Check
 | Customer UI (Vite SPA) | Netlify | Canonical: `https://movemyhome.com.au` (`www` 301s here) |
 | Serverless `/api/*` | Vercel | `https://aama-removals.vercel.app` |
 
-`netlify.toml` proxies `/api/*` to `https://aama-removals.vercel.app/api/:splat` **before** the SPA catch-all. The browser must keep posting to **relative** `/api/create-checkout-session` (same origin) so that rewrite applies. Do not hardcode the Vercel host in frontend fetch URLs.
+`netlify.toml` **and** `public/_redirects` proxy `/api/*` to `https://aama-removals.vercel.app/api/:splat` **before** the SPA `/* → /index.html` catch-all. Vite copies `_redirects` into `dist`, and Netlify checks that file first.
+
+Checkout and payment verify **do not rely on that proxy**. The SPA calls `VITE_API_BASE` (default `https://aama-removals.vercel.app`) for `POST /api/create-checkout-session` and `GET /api/verify-checkout-session`. Vercel allows CORS from `https://movemyhome.com.au`, `https://www.movemyhome.com.au`, and `https://*.netlify.app`. Stripe webhooks stay on the Vercel URL and are not opened to browsers.
 
 On the Vercel project set:
 
@@ -108,6 +110,7 @@ Set these in `.env.local` and in the Vercel project. Do not commit values.
 | `STRIPE_PUBLISHABLE_KEY` | Server optional | No. `pk_` only. Unused unless you later add Stripe.js. |
 | `PUBLIC_SITE_URL` | Server (Vercel) | Yes in production. Canonical: `https://movemyhome.com.au` (no trailing slash). Success URL: `{PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`. Cancel URL: `{PUBLIC_SITE_URL}/cancel`. |
 | `VITE_PUBLIC_SITE_URL` | Same origin, optional | Fallback if `PUBLIC_SITE_URL` is empty. |
+| `VITE_API_BASE` | Client (Netlify build) | Origin for checkout + verify. Default: `https://aama-removals.vercel.app`. |
 | `VITE_EMAILJS_SERVICE_ID` | Client + webhook | For paid emails |
 | `VITE_EMAILJS_CLIENT_TEMPLATE_ID` | Client + webhook | Customer confirmation |
 | `VITE_EMAILJS_BUSINESS_TEMPLATE_ID` | Client + webhook | Business job sheet |

@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { applyCors } from './_lib/cors.js';
 import { isValidEmail, isValidPersonName } from '../lib/validation.js';
 import { sanitizePlainText } from '../lib/sanitize.js';
 import { emailJsConfig } from './_lib/env.js';
@@ -21,10 +22,7 @@ function isMemberEmailConfigured(): boolean {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+  if (applyCors(req, res)) return;
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

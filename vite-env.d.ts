@@ -15,6 +15,7 @@ interface ImportMetaEnv {
   readonly VITE_COMPANY_WEBSITE?: string;
   readonly VITE_ABN?: string;
   readonly VITE_PUBLIC_SITE_URL?: string;
+  readonly VITE_API_BASE?: string;
 }
 
 interface ImportMeta {
