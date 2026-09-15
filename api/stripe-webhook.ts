@@ -2,11 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { isStripeWebhookConfigured, stripeWebhookSecret } from './_lib/env.js';
 import { getStripe } from './_lib/stripeClient.js';
-import { sendPaidBookingEmails } from './_lib/emailjs.js';
-import type { QuoteState } from '../types.js';
-import { calculateFullQuote } from '../shared/quoteCalc.js';
-import { buildQuoteSnapshot } from '../shared/snapshot.js';
-import { formatMoney } from '../shared/money.js';
+import { fulfillPaidBookingEmailsOrThrow, PaidEmailIncompleteError } from './_lib/fulfillPaidBooking.js';
 
 export const config = {
   api: {
@@ -22,36 +18,6 @@ async function rawBody(req: VercelRequest): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
-function stateFromMetadata(meta: Stripe.Metadata): QuoteState {
-  const pickup = String(meta.pickup || '');
-  const dropoff = String(meta.dropoff || '');
-  return {
-    step: 6,
-    serviceType: null,
-    vehicle: String(meta.vehicle || '').toLowerCase().includes('truck') ? 'truck' : 'van',
-    isManualTruckSelection: false,
-    truckHours: 2,
-    crewSize: 2,
-    pickups: [{ id: 'p1', address: pickup, access: 'ground', hasLoadingDock: false }],
-    dropoffs: [{ id: 'd1', address: dropoff, access: 'ground', hasLoadingDock: false }],
-    inventory: { boxes: 0, sofa: 0, mattress: 0, bed: 0, fridge: 0, tv: 0, washer: 0 },
-    details: {
-      date: String(meta.move_date || ''),
-      time: String(meta.move_time || ''),
-      name: String(meta.customer_name || ''),
-      email: String(meta.customer_email || ''),
-      phone: String(meta.customer_phone || ''),
-      instructions: String(meta.notes || ''),
-      bedDisassembly: false,
-      bedIsAssembled: true,
-    },
-    distanceKm: Number(meta.distance_km || 0) || 0,
-    travelTimeHrs: Number(meta.travel_hrs || 0) || 0,
-    isCBD: pickup.includes('2000') || dropoff.includes('2000'),
-    isInterstate: String(meta.move_type || '').toLowerCase().includes('interstate'),
-  };
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -59,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (!isStripeWebhookConfigured()) {
+    console.error('Stripe webhook secret is not configured (STRIPE_WEBHOOK_SECRET). Paid emails cannot run from this endpoint.');
     res.status(500).json({ error: 'Webhook secret is not configured.' });
     return;
   }
@@ -73,7 +40,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const buf = await rawBody(req);
     event = getStripe().webhooks.constructEvent(buf, signature, stripeWebhookSecret());
-  } catch {
+  } catch (error) {
+    console.error('Invalid Stripe webhook signature', {
+      error: error instanceof Error ? error.message : 'constructEvent failed',
+    });
     res.status(400).json({ error: 'Invalid Stripe signature.' });
     return;
   }
@@ -97,48 +67,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Deposit amount mismatch on paid session', { sessionId: session.id });
   }
 
-  const state = stateFromMetadata(meta);
-  const snapshot = {
-    ...buildQuoteSnapshot(state, calculateFullQuote({
-      vehicle: state.vehicle,
-      truckHours: state.truckHours,
-      crewSize: state.crewSize,
-      pickups: state.pickups,
-      dropoffs: state.dropoffs,
-      inventory: state.inventory,
-      bedDisassembly: state.details.bedDisassembly,
-      bedIsAssembled: state.details.bedIsAssembled,
-      distanceKm: state.distanceKm,
-      travelTimeHrs: state.travelTimeHrs,
-      isInterstate: state.isInterstate,
-      dieselAudPerLitre: (() => {
-        const n = Number(meta.diesel_aud_per_l || 0);
-        return Number.isFinite(n) && n > 0 ? n : null;
-      })(),
-    })),
-    serviceLabel: String(meta.service || 'Moving help'),
-    vehicleLabel: String(meta.vehicle || ''),
-    crewLabel: String(meta.crew || ''),
-    inventorySummary: String(meta.inventory || 'See notes'),
-    moveType: String(meta.move_type || ''),
-    totalLabel: formatMoney(Number(meta.quote_total || 0)),
-    depositLabel: formatMoney(Number(meta.deposit || (amountCents / 100))),
-    balanceLabel: formatMoney(Number(meta.balance || 0)),
-  };
-
-  const paymentIntent = typeof session.payment_intent === 'string'
-    ? session.payment_intent
-    : session.payment_intent?.id || '';
-
   try {
-    await sendPaidBookingEmails(state, snapshot, {
+    const result = await fulfillPaidBookingEmailsOrThrow(session);
+    res.status(200).json({
+      received: true,
+      paid: true,
       sessionId: session.id,
-      paymentIntentId: paymentIntent,
+      clientSent: result.clientSent,
+      businessSent: result.businessSent,
     });
-  } catch {
+  } catch (error) {
+    const result = error instanceof PaidEmailIncompleteError ? error.result : null;
+    console.error('Paid, but email delivery failed — Stripe will retry.', {
+      sessionId: session.id,
+      clientSent: result?.clientSent,
+      businessSent: result?.businessSent,
+      skipped: result?.skipped,
+      error: error instanceof Error ? error.message : 'email failed',
+    });
     res.status(500).json({ error: 'Paid, but email delivery failed — Stripe will retry.' });
-    return;
   }
-
-  res.status(200).json({ received: true, paid: true, sessionId: session.id });
 }

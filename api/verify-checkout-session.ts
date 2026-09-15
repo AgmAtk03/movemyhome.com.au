@@ -51,6 +51,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       quoteTotalLabel: quoteTotal ? formatMoney(quoteTotal) : '',
       depositLabel: deposit ? formatMoney(deposit) : formatMoney(depositCents / 100),
       balanceLabel: balance ? formatMoney(balance) : '',
+      mailClient: meta.mail_client === 'sent',
+      mailBusiness: meta.mail_biz === 'sent',
     });
   } catch {
     res.status(404).json({ paid: false, error: PAYMENT_NOT_FOUND });

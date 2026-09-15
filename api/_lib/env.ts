@@ -1,7 +1,27 @@
-import { BRAND_NAME } from '../../shared/rates.js';
+import { BOOKINGS_INBOX, BRAND_NAME } from '../../shared/rates.js';
 
 function read(name: string): string {
-  return String(process.env[name] ?? '').trim();
+  let value = String(process.env[name] ?? '').trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"') && value.length >= 2)
+    || (value.startsWith("'") && value.endsWith("'") && value.length >= 2)
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+function firstEnv(...names: string[]): string {
+  for (const name of names) {
+    const value = read(name);
+    if (value) return value;
+  }
+  return '';
+}
+
+function isUsableEmail(value: string): boolean {
+  if (!value || value.includes('YOUR_')) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
 }
 
 function isSecretLike(value: string): boolean {
@@ -45,31 +65,62 @@ export function publicSiteUrl(reqHost?: string | null, proto?: string | null): s
 }
 
 export function companyConfig() {
+  const email = firstEnv('VITE_COMPANY_EMAIL', 'COMPANY_EMAIL', 'BOOKINGS_EMAIL');
   return {
-    name: read('VITE_COMPANY_NAME') || BRAND_NAME,
+    name: firstEnv('VITE_COMPANY_NAME', 'COMPANY_NAME') || BRAND_NAME,
     legalName: read('VITE_LEGAL_TRADING_NAME') || 'YOUR_LEGAL_TRADING_NAME',
-    email: read('VITE_COMPANY_EMAIL') || 'YOUR_BOOKINGS_EMAIL',
+    email: isUsableEmail(email) ? email : BOOKINGS_INBOX,
     phone: read('VITE_COMPANY_PHONE') || '0410 721 370',
     website: read('VITE_COMPANY_WEBSITE') || 'https://YOUR_WEBSITE',
   };
 }
 
 export function emailJsConfig() {
+  const privateKey = firstEnv('EMAILJS_PRIVATE_KEY', 'VITE_EMAILJS_PRIVATE_KEY');
+  if (read('VITE_EMAILJS_PRIVATE_KEY') && !read('EMAILJS_PRIVATE_KEY')) {
+    console.error('EmailJS private key is set as VITE_EMAILJS_PRIVATE_KEY; use EMAILJS_PRIVATE_KEY on Vercel (server-only, no VITE_ prefix).');
+  }
   return {
-    serviceId: read('EMAILJS_SERVICE_ID') || read('VITE_EMAILJS_SERVICE_ID'),
-    clientTemplateId: read('EMAILJS_CLIENT_TEMPLATE_ID') || read('VITE_EMAILJS_CLIENT_TEMPLATE_ID'),
-    businessTemplateId: read('EMAILJS_BUSINESS_TEMPLATE_ID') || read('VITE_EMAILJS_BUSINESS_TEMPLATE_ID'),
-    publicKey: read('EMAILJS_PUBLIC_KEY') || read('VITE_EMAILJS_PUBLIC_KEY'),
-    privateKey: read('EMAILJS_PRIVATE_KEY'),
+    serviceId: firstEnv('EMAILJS_SERVICE_ID', 'VITE_EMAILJS_SERVICE_ID'),
+    clientTemplateId: firstEnv('EMAILJS_CLIENT_TEMPLATE_ID', 'VITE_EMAILJS_CLIENT_TEMPLATE_ID'),
+    businessTemplateId: firstEnv('EMAILJS_BUSINESS_TEMPLATE_ID', 'VITE_EMAILJS_BUSINESS_TEMPLATE_ID'),
+    publicKey: firstEnv('EMAILJS_PUBLIC_KEY', 'VITE_EMAILJS_PUBLIC_KEY'),
+    privateKey,
   };
+}
+
+function looksUnset(value: string, tokens: string[]): boolean {
+  if (!value) return true;
+  return tokens.some((token) => value.includes(token));
+}
+
+export function emailJsMissingVars(): string[] {
+  const cfg = emailJsConfig();
+  const missing: string[] = [];
+  if (looksUnset(cfg.serviceId, ['YOUR_ID'])) missing.push('EMAILJS_SERVICE_ID (or VITE_EMAILJS_SERVICE_ID)');
+  if (looksUnset(cfg.publicKey, ['YOUR_PUBLIC_KEY']) || isSecretLike(cfg.publicKey)) {
+    missing.push('EMAILJS_PUBLIC_KEY (or VITE_EMAILJS_PUBLIC_KEY)');
+  }
+  if (looksUnset(cfg.clientTemplateId, ['CLIENT_ID', 'YOUR_ID'])) {
+    missing.push('EMAILJS_CLIENT_TEMPLATE_ID (or VITE_EMAILJS_CLIENT_TEMPLATE_ID)');
+  }
+  if (looksUnset(cfg.businessTemplateId, ['BUSINESS_ID', 'YOUR_ID'])) {
+    missing.push('EMAILJS_BUSINESS_TEMPLATE_ID (or VITE_EMAILJS_BUSINESS_TEMPLATE_ID)');
+  }
+  if (!cfg.privateKey) missing.push('EMAILJS_PRIVATE_KEY');
+  return missing;
 }
 
 export function isEmailJsServerConfigured(): boolean {
   const cfg = emailJsConfig();
-  if (!cfg.serviceId || cfg.serviceId.includes('YOUR_ID')) return false;
-  if (!cfg.publicKey || cfg.publicKey.includes('YOUR_PUBLIC_KEY')) return false;
-  if (!cfg.clientTemplateId || cfg.clientTemplateId.includes('CLIENT_ID') || cfg.clientTemplateId.includes('YOUR_ID')) return false;
-  if (!cfg.businessTemplateId || cfg.businessTemplateId.includes('BUSINESS_ID') || cfg.businessTemplateId.includes('YOUR_ID')) return false;
-  if (isSecretLike(cfg.publicKey)) return false;
+  if (looksUnset(cfg.serviceId, ['YOUR_ID'])) return false;
+  if (looksUnset(cfg.publicKey, ['YOUR_PUBLIC_KEY']) || isSecretLike(cfg.publicKey)) return false;
+  if (looksUnset(cfg.clientTemplateId, ['CLIENT_ID', 'YOUR_ID'])) return false;
+  if (looksUnset(cfg.businessTemplateId, ['BUSINESS_ID', 'YOUR_ID'])) return false;
   return true;
+}
+
+/** Server-side EmailJS needs the private key when “Use Private Key” is on (recommended). */
+export function isEmailJsReadyToSend(): boolean {
+  return isEmailJsServerConfigured() && Boolean(emailJsConfig().privateKey);
 }

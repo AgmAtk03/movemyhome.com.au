@@ -4,7 +4,7 @@ Production source of truth for a **held slot**:
 
 1. Stripe Checkout Session (deposit amount in cents, metadata, `payment_status=paid`)
 2. Webhook `checkout.session.completed` with a **verified signature**
-3. EmailJS customer confirmation + business job sheet (when configured)
+3. EmailJS customer confirmation + business job sheet after a **verified paid** Checkout session (webhook, plus `/api/notify-paid-booking` if the customer lands on `/success`). Failures are logged and written to Stripe session metadata (`mail_client`, `mail_biz`, `mail_note`) — the success page does not claim an email was sent unless it was.
 
 `/success?session_id=` is **not** proof of payment by itself. The page calls `/api/verify-checkout-session`, which retrieves the session from Stripe.
 

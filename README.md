@@ -90,7 +90,8 @@ Contact submit
   → success_url /success?session_id={CHECKOUT_SESSION_ID}
   → cancel_url /cancel
   → webhook POST /api/stripe-webhook  (checkout.session.completed, signature verified)
-  → mark job paid (Stripe is the ledger) + EmailJS customer + business emails
+  → EmailJS customer confirmation + business job sheet
+  → /success also POST /api/notify-paid-booking (recoverable if the webhook was missed)
 ```
 
 Shared rate table: `shared/rates.ts` (same numbers as the historic wizard). Calculator: `shared/quoteCalc.ts`. Do not invent new rates.
@@ -108,16 +109,20 @@ Set these in `.env.local` and in the Vercel project. Do not commit values.
 | `STRIPE_PUBLISHABLE_KEY` | Server optional | No. `pk_` only. Unused unless you later add Stripe.js. |
 | `PUBLIC_SITE_URL` | Server (Vercel) | Yes in production. Canonical: `https://movemyhome.com.au` (no trailing slash). Success URL: `{PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`. Cancel URL: `{PUBLIC_SITE_URL}/cancel`. |
 | `VITE_PUBLIC_SITE_URL` | Same origin, optional | Fallback if `PUBLIC_SITE_URL` is empty. |
-| `VITE_EMAILJS_SERVICE_ID` | Client + webhook | For paid emails |
-| `VITE_EMAILJS_CLIENT_TEMPLATE_ID` | Client + webhook | Customer confirmation |
-| `VITE_EMAILJS_BUSINESS_TEMPLATE_ID` | Client + webhook | Business job sheet |
-| `VITE_EMAILJS_PUBLIC_KEY` | Client + webhook | EmailJS public key |
-| `EMAILJS_PRIVATE_KEY` | Server optional | Recommended for webhook sends |
+| `VITE_EMAILJS_SERVICE_ID` | Netlify build + Vercel | Same EmailJS service as below. **Also set unprefixed `EMAILJS_*` on Vercel.** |
+| `VITE_EMAILJS_CLIENT_TEMPLATE_ID` | Netlify build + Vercel | Customer confirmation |
+| `VITE_EMAILJS_BUSINESS_TEMPLATE_ID` | Netlify build + Vercel | Business job sheet |
+| `VITE_EMAILJS_PUBLIC_KEY` | Netlify build + Vercel | EmailJS public key |
+| `EMAILJS_SERVICE_ID` | **Vercel (API)** | Same value as `VITE_EMAILJS_SERVICE_ID`. Webhooks do not see Netlify env. |
+| `EMAILJS_CLIENT_TEMPLATE_ID` | **Vercel (API)** | Customer confirmation template |
+| `EMAILJS_BUSINESS_TEMPLATE_ID` | **Vercel (API)** | Business job-sheet template |
+| `EMAILJS_PUBLIC_KEY` | **Vercel (API)** | EmailJS public key |
+| `EMAILJS_PRIVATE_KEY` | **Vercel server-only** | Required for reliable webhook sends. Never prefix with `VITE_`. |
 | `VITE_WHATSAPP_NUMBER` | Client (Netlify build) | `61410721370` — WhatsApp `https://wa.me/61410721370` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Client (Netlify build) | Places + Directions; HTTP-referrer restricted. Never commit the key. |
 | `SEVEN_ELEVEN_DIESEL_AUD_PER_L` | Server optional | Pin diesel AUD/L (e.g. `1.95`). If unset, `GET /api/diesel-price` uses the 11-Seven NSW 7-Eleven feed. |
 | `VITE_LEGAL_TRADING_NAME` | Client | e.g. your registered trading name |
-| `VITE_COMPANY_EMAIL` | Client + webhook | Bookings inbox |
+| `VITE_COMPANY_EMAIL` | Client + webhook | Bookings inbox (`removalsmyhome@gmail.com`) |
 | `VITE_COMPANY_PHONE` | Client (Netlify build) | Display as `0410 721 370`. Call link `tel:+61410721370`. |
 | `VITE_COMPANY_WEBSITE` | Client | Public site |
 | `VITE_ABN` | Client | ABN placeholder until you fill it |
@@ -162,16 +167,28 @@ Use any future expiry, any 3-digit CVC, and any Australian postcode. See [Stripe
 
 ## EmailJS (paid path only)
 
-Emails go out from **`/api/stripe-webhook` after a verified paid session**. Demo mode skips email.
+Emails go out after a **verified paid** Checkout session:
 
-Create two templates in one EmailJS service:
+1. **Primary:** `POST /api/stripe-webhook` (`checkout.session.completed` / `checkout.session.async_payment_succeeded`).
+2. **Recoverable:** `/success` calls `POST /api/notify-paid-booking` so a missed webhook still sends. Idempotent via Stripe metadata (`mail_client` / `mail_biz`).
+3. **Last resort:** if the API host is missing EmailJS env, the success page can retry with the public keys baked into the Netlify SPA (no private key in the browser).
+
+Demo mode skips email. The success screen tells the customer to **check the email they entered**; it does not claim an email was sent unless the send succeeded. Failures are `console.error`’d and stored on the Stripe session as `mail_note` (visible in the Stripe Dashboard).
+
+The UI is on **Netlify**. `/api/*` runs on **Vercel**. `VITE_*` values set only on Netlify are **invisible** to the webhook. Set the unprefixed `EMAILJS_*` names (and `VITE_COMPANY_EMAIL`) on the Vercel project for Production.
+
+Create two templates in the existing EmailJS service (do not create a new account):
 
 | Template | Recipient | Suggested To |
 | --- | --- | --- |
 | Client confirmation | Customer | `{{to_email}}` |
-| Business job sheet | Office | `{{to_email}}` (app sends `VITE_COMPANY_EMAIL`) |
+| Business job sheet | Office | `{{to_email}}` (app sends `VITE_COMPANY_EMAIL` / `removalsmyhome@gmail.com`) |
 
-Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{route}}` `{{job_details}}` `{{email_kind}}` (`client` or `business`) `{{stripe_session_id}}`.
+Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{move_time}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{pickup}}` `{{dropoff}}` `{{route}}` `{{job_details}}` `{{message}}` `{{email_kind}}` (`client` or `business`) `{{stripe_session_id}}`.
+
+EmailJS allows **one request per second**. The API waits between the business and customer sends and retries `429` / `5xx`.
+
+In EmailJS **Account → Security**, enable API access for non-browser apps and prefer **Use Private Key**. Put that private key in `EMAILJS_PRIVATE_KEY` on Vercel (not `VITE_EMAILJS_PRIVATE_KEY`).
 
 ## Demo mode
 
@@ -185,7 +202,7 @@ If `STRIPE_SECRET_KEY` is missing, or you run `npm run dev` without `vercel dev`
 2. Create a Maps key, restrict referrers, set `VITE_GOOGLE_MAPS_API_KEY`.
 3. Stripe test keys + webhook (`https://aama-removals.vercel.app/api/stripe-webhook`) + `PUBLIC_SITE_URL=https://movemyhome.com.au`. Charge a test deposit with `4242…`. Confirm webhook emails.
 4. Switch to `sk_live_` / live webhook secret only when ready. Deploy on **HTTPS**.
-5. Restrict EmailJS keys. Prefer `EMAILJS_PRIVATE_KEY` on the server.
+5. Restrict EmailJS keys. Set `EMAILJS_PRIVATE_KEY` **and** `EMAILJS_SERVICE_ID` / template IDs / public key on **Vercel** (not only Netlify `VITE_*`). Confirm a test deposit emails both the booker and `removalsmyhome@gmail.com`.
 6. Confirm Vercel env vars are set for Production and Preview. Confirm Deployment Protection is off if the public API must be reachable from Netlify.
 7. Delete any unused Google Maps keys that were previously hardcoded.
 
