@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { VehicleType } from '../types';
 import { formatMoney } from '../lib/quote';
+import Icon from './Icon';
+import FuelCallout from './FuelCallout';
 
 interface FooterProps {
   breakdown: {
@@ -14,10 +16,19 @@ interface FooterProps {
     bedService: number;
     hours: number;
     fuel: number;
+    fuelLitres: number;
+    fuelStatus: 'none' | 'waived' | 'priced' | 'tbc';
+    dieselAudPerLitre: number | null;
     isFixedTrip: boolean;
     hourlyRate: number;
     deposit: number;
     balance: number;
+  };
+  fuelLine?: {
+    label: string;
+    amount: string;
+    note?: string;
+    status: 'none' | 'waived' | 'priced' | 'tbc';
   };
   vehicle: VehicleType | null;
   isInterstate: boolean;
@@ -28,7 +39,7 @@ interface FooterProps {
 }
 
 const SummaryFooter: React.FC<FooterProps> = ({
-  breakdown, vehicle, step, nextHint, onNext, onBook,
+  breakdown, fuelLine, vehicle, step, nextHint, onNext, onBook,
 }) => {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [animatePrice, setAnimatePrice] = useState(false);
@@ -66,7 +77,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
         >
           <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mb-2">
             Tap for a breakdown
-            <i className={`ph-bold ph-caret-up text-[10px] text-blue-600 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} aria-hidden="true"></i>
+            <Icon name="caret-up" className={`text-[10px] text-[#146eb4] transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
           </span>
           {showMoney ? (
             <dl className={`space-y-1.5 ${animatePrice ? 'animate-price-bump' : ''}`}>
@@ -74,48 +85,48 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 <dt className="text-sm font-bold text-slate-600">Estimated total</dt>
                 <dd className="text-2xl font-black text-slate-900 tracking-tight" aria-live="polite">{formatMoney(breakdown.total)}</dd>
               </div>
-              <div className="flex justify-between gap-3 text-sm">
-                <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
-                <dd className="font-black text-slate-800">{formatMoney(breakdown.deposit)}</dd>
-              </div>
-              <div className="flex justify-between gap-3 text-sm">
-                <dt className="font-semibold text-slate-500">Due on the day (90%)</dt>
-                <dd className="font-black text-slate-800">{formatMoney(breakdown.balance)}</dd>
-              </div>
+              {isBookStep && (
+                <>
+                  <div className="flex justify-between gap-3 text-sm">
+                    <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
+                    <dd className="font-black text-slate-800">{formatMoney(breakdown.deposit)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 text-sm">
+                    <dt className="font-semibold text-slate-500">Due on the day (90%)</dt>
+                    <dd className="font-black text-slate-800">{formatMoney(breakdown.balance)}</dd>
+                  </div>
+                </>
+              )}
             </dl>
           ) : (
             <p className="text-lg font-black text-slate-400">Your quote appears as you go</p>
           )}
           {isTruck && !breakdown.isFixedTrip && showMoney && (
-            <p className="text-[11px] font-bold text-indigo-700 mt-2">Hourly truck — final total depends on time on the day</p>
+            <p className="text-[11px] font-bold text-[#0f5a94] mt-2">Hourly truck — final total depends on time on the day</p>
           )}
         </button>
 
         {nextHint && (
           <p className="text-sm text-rose-700 mt-3 font-medium" role="status">{nextHint}</p>
         )}
+        {isBookStep && fuelLine && fuelLine.status !== 'none' && (
+          <p className="text-xs font-semibold text-slate-600 mt-3 leading-relaxed">
+            Fuel: <span className="font-black text-slate-900">{fuelLine.amount}</span>
+            {fuelLine.note ? ` — ${fuelLine.note}` : ''}
+          </p>
+        )}
         {isBookStep && (
-          <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-            This is an estimate. Pay 10% today to hold the slot. The rest is due on the day.
+          <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+            Pay <strong>10% of the total today</strong> to book and hold your slot. Fully refundable if you cancel at least 12 hours before your move date and time. The rest is due on the day.
           </p>
         )}
 
         {isBookStep ? (
-          <button
-            type="button"
-            onClick={onBook}
-            className="mt-3 w-full min-h-16 font-black rounded-2xl shadow-lg bg-emerald-600 text-white shadow-emerald-600/20 active:scale-[0.98] text-lg"
-          >
+          <button type="button" onClick={onBook} className="btn-primary mt-3 w-full text-lg">
             Pay 10% deposit
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={onNext}
-            className={`mt-3 w-full min-h-16 font-black rounded-2xl shadow-lg text-white active:scale-[0.98] text-lg ${
-              isTruck ? 'bg-indigo-600 shadow-indigo-600/20' : 'bg-blue-600 shadow-blue-600/20'
-            }`}
-          >
+          <button type="button" onClick={onNext} className="btn-primary mt-3 w-full text-lg">
             Continue
           </button>
         )}
@@ -124,13 +135,13 @@ const SummaryFooter: React.FC<FooterProps> = ({
           <div id="quote-breakdown" className="absolute bottom-full left-0 right-0 p-6 bg-white border-t border-slate-100 rounded-t-[2rem] shadow-2xl z-[48] max-h-[70vh] overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between mb-5">
               <h4 className="text-xl font-black text-slate-900">What’s in the quote</h4>
-              <button type="button" className="w-11 h-11 bg-slate-50 rounded-xl text-slate-500" onClick={() => setShowBreakdown(false)} aria-label="Close quote details">
-                <i className="ph ph-x text-xl" aria-hidden="true"></i>
+              <button type="button" className="w-11 h-11 bg-slate-50 rounded-xl text-slate-500 inline-flex items-center justify-center" onClick={() => setShowBreakdown(false)} aria-label="Close quote details">
+                <Icon name="x" className="text-xl" />
               </button>
             </div>
 
             {isTruck && !breakdown.isFixedTrip && (
-              <p className="mb-5 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-sm text-indigo-900">
+              <p className="mb-5 p-4 bg-[#e7f2fa] border border-[#c5dff0] rounded-2xl text-sm text-[#0f5a94]">
                 Truck jobs are {formatMoney(breakdown.hourlyRate)} per hour. We’ll confirm the final time with you on the day.
               </p>
             )}
@@ -146,12 +157,6 @@ const SummaryFooter: React.FC<FooterProps> = ({
                   <span className="font-bold">{formatMoney(breakdown.distance)}</span>
                 </li>
               )}
-              {breakdown.fuel > 0 && (
-                <li className="flex justify-between gap-3">
-                  <span className="text-slate-600">Fuel estimate</span>
-                  <span className="font-bold">{formatMoney(breakdown.fuel)}</span>
-                </li>
-              )}
               {breakdown.inventory > 0 && (
                 <li className="flex justify-between gap-3">
                   <span className="text-slate-600">Items</span>
@@ -162,7 +167,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 <li className="flex justify-between gap-3">
                   <span className={isTruck ? 'text-slate-400 line-through' : 'text-slate-600'}>Stairs and access</span>
                   {isTruck ? (
-                    <span className="text-emerald-700 font-bold">Included</span>
+                    <span className="text-[#146eb4] font-bold">Included</span>
                   ) : (
                     <span className="font-bold">{formatMoney(breakdown.access)}</span>
                   )}
@@ -182,19 +187,30 @@ const SummaryFooter: React.FC<FooterProps> = ({
               )}
             </ul>
 
+            {fuelLine && fuelLine.status !== 'none' && (
+              <FuelCallout fuelLine={fuelLine} />
+            )}
+
             <div className="pt-5 mt-4 border-t border-slate-100 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="font-black text-slate-900">Estimated total</span>
-                <span className={`text-2xl font-black ${isTruck ? 'text-indigo-700' : 'text-blue-700'}`}>{formatMoney(breakdown.total)}</span>
+                <span className="text-2xl font-black text-[#146eb4]">{formatMoney(breakdown.total)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Pay today (10%)</span>
-                <span className="font-bold">{formatMoney(breakdown.deposit)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Due on the day (90%)</span>
-                <span className="font-bold">{formatMoney(breakdown.balance)}</span>
-              </div>
+              {isBookStep && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Pay today (10%)</span>
+                    <span className="font-bold">{formatMoney(breakdown.deposit)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Due on the day (90%)</span>
+                    <span className="font-bold">{formatMoney(breakdown.balance)}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed pt-1">
+                    Fully refundable if you cancel at least 12 hours before your move date and time.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         )}

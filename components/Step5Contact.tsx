@@ -3,6 +3,7 @@ import { MoveDetails, QuoteSnapshot } from '../types';
 import { ContactErrors } from '../lib/validation';
 import QuoteRecap from './QuoteRecap';
 import BookingExtras from './BookingExtras';
+import Icon from './Icon';
 
 interface Step5Props {
   details: MoveDetails;
@@ -14,8 +15,8 @@ interface Step5Props {
 }
 
 const fieldClass = (invalid: boolean) =>
-  `w-full min-h-12 pl-14 p-4 bg-white border rounded-2xl text-base font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/15 ${
-    invalid ? 'border-rose-400' : 'border-slate-200 focus:border-blue-500'
+  `w-full min-h-12 pl-14 p-4 bg-white border rounded-2xl text-base font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#146eb4]/15 ${
+    invalid ? 'border-rose-400' : 'border-slate-200 focus:border-[#146eb4]'
   }`;
 
 const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot, whatsappUrl, errors, showErrors }) => {
@@ -26,7 +27,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           How can we reach you?
         </h2>
         <p className="text-slate-500 text-base font-medium leading-relaxed">
-          We’ll use this to confirm after you pay the 10% deposit. We never share your details.
+          We’ll use this to confirm your booking. We never share your details.
         </p>
       </div>
 
@@ -36,11 +37,11 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <label htmlFor="customer-name" className="text-sm font-bold text-slate-700">Your name</label>
-            <span className="text-xs font-semibold text-blue-700">Required</span>
+            <span className="text-xs font-semibold text-[#146eb4]">Required</span>
           </div>
           <div className="relative">
             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
-              <i className="ph-bold ph-user text-xl"></i>
+              <Icon name="user" className="text-xl" />
             </span>
             <input
               id="customer-name"
@@ -60,11 +61,11 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <label htmlFor="customer-email" className="text-sm font-bold text-slate-700">Email</label>
-            <span className="text-xs font-semibold text-blue-700">Required</span>
+            <span className="text-xs font-semibold text-[#146eb4]">Required</span>
           </div>
           <div className="relative">
             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
-              <i className="ph-bold ph-envelope-simple text-xl"></i>
+              <Icon name="envelope-simple" className="text-xl" />
             </span>
             <input
               id="customer-email"
@@ -85,11 +86,11 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <label htmlFor="customer-phone" className="text-sm font-bold text-slate-700">Mobile</label>
-            <span className="text-xs font-semibold text-blue-700">Required</span>
+            <span className="text-xs font-semibold text-[#146eb4]">Required</span>
           </div>
           <div className="relative">
             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
-              <i className="ph-bold ph-phone text-xl"></i>
+              <Icon name="phone" className="text-xl" />
             </span>
             <input
               id="customer-phone"
@@ -113,7 +114,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
             id="customer-notes"
             placeholder="Parking, stairs we missed, heavy pieces, gate codes…"
             rows={4}
-            className="w-full p-4 bg-white border border-slate-200 rounded-3xl text-base font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500 resize-none"
+            className="w-full p-4 bg-white border border-slate-200 rounded-3xl text-base font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#146eb4]/15 focus:border-[#146eb4] resize-none"
             value={details.instructions}
             onChange={(e) => onUpdateDetails({ instructions: e.target.value })}
           />

@@ -3,17 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script>
+      try { sessionStorage.setItem('ntl-drawer-initial-state','hidden'); } catch (e) {}
+    </script>
     <title>My Home Removals | Sydney moving quotes</title>
-    <meta name="description" content="My Home Removals — Sydney and NSW movers. Instant quotes for home, room, and item moves. Pay 10% to hold the day — the rest is due when we move.">
+    <meta name="description" content="My Home Removals — Sydney and NSW movers. Instant quotes for home, room, and item moves. We wrap, strap, and look after your things.">
     <meta name="robots" content="index,follow">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com https://unpkg.com data:; img-src 'self' data: blob: https://maps.gstatic.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; connect-src 'self' ws: wss: http://localhost:* https://localhost:* https://api.emailjs.com https://api.stripe.com https://maps.googleapis.com https://maps.gstatic.com https://places.googleapis.com https://*.googleapis.com https://unpkg.com; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; form-action 'self' https://checkout.stripe.com;">
-    <meta name="theme-color" content="#020617">
+    <meta name="theme-color" content="#146eb4">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="My Home Removals">
     <meta property="og:locale" content="en_AU">
     <meta property="og:title" content="My Home Removals | Sydney moving quotes">
-    <meta property="og:description" content="Honest quotes for home, room, and item moves across Sydney and NSW. Pay 10% to hold the day — the rest is due when we move.">
+    <meta property="og:description" content="Honest quotes for home, room, and item moves across Sydney and NSW. We wrap, strap, and look after your things.">
     <meta property="og:type" content="website">
 
     <script>
@@ -22,7 +29,23 @@
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                orange: '#ff9900',
+                blue: '#146eb4',
+              },
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
@@ -31,6 +54,11 @@
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
+            --brand-orange: #ff9900;
+            --brand-orange-dark: #e08700;
+            --brand-blue: #146eb4;
+            --brand-blue-dark: #0f5a94;
+            --brand-ink: #0f172a;
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -41,9 +69,17 @@
             padding: 0;
         }
         .pt-safe { padding-top: env(safe-area-inset-top); }
-        .pb-safe { padding-bottom: calc(1.25rem + var(--sab)); }
+        .pb-safe { padding-bottom: calc(1.75rem + max(var(--sab), 0.75rem)); }
         .safe-area-bottom {
-            padding-bottom: calc(1.5rem + var(--sab));
+            padding-bottom: calc(1.75rem + max(var(--sab), 0.75rem));
+        }
+        /* Netlify Collaborator Deploy Preview drawer (z-index 2147483647) */
+        [data-netlify-deploy-id] {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            height: 0 !important;
+            overflow: hidden !important;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -59,8 +95,51 @@
             border: 0;
         }
         :focus-visible {
-            outline: 3px solid #2563eb;
+            outline: 3px solid #146eb4;
             outline-offset: 2px;
+        }
+
+        .btn-primary,
+        .btn-secondary,
+        .btn-quiet {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0.85rem 1.25rem;
+            border: 0;
+            border-radius: 1rem;
+            font-weight: 900;
+            letter-spacing: -0.01em;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .btn-primary {
+            background: var(--brand-orange);
+            color: var(--brand-ink);
+            box-shadow: 0 10px 24px rgba(255, 153, 0, 0.22);
+        }
+        .btn-primary:hover { background: var(--brand-orange-dark); }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary {
+            background: var(--brand-blue);
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(20, 110, 180, 0.22);
+        }
+        .btn-secondary:hover { background: var(--brand-blue-dark); }
+        .btn-secondary:active { transform: scale(0.98); }
+        .btn-quiet {
+            background: #f1f5f9;
+            color: #334155;
+        }
+        .btn-quiet:hover { background: #e2e8f0; }
+        .btn-primary:disabled,
+        .btn-secondary:disabled,
+        .btn-quiet:disabled {
+            opacity: 0.7;
+            cursor: wait;
+            transform: none;
         }
 
         @keyframes slideUp {
@@ -73,7 +152,7 @@
 
         @keyframes priceBump {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); color: #2563eb; }
+            50% { transform: scale(1.05); color: #146eb4; }
             100% { transform: scale(1); }
         }
         .animate-price-bump {

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { LocationEntry, AccessType, VehicleType } from '../types';
 import { ACCESS_LABELS, RATES } from '../constants';
@@ -13,14 +12,29 @@ interface Step2Props {
   vehicle: VehicleType | null;
   isCBD: boolean;
   isInterstate: boolean;
+  distanceKm: number;
+  travelTimeHrs: number;
   onUpdatePickups: (p: LocationEntry[]) => void;
   onUpdateDropoffs: (d: LocationEntry[]) => void;
   onUpdateRouteInfo: (km: number, isCBD: boolean, isInterstate: boolean, hrs: number) => void;
 }
 
-const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, isInterstate, onUpdatePickups, onUpdateDropoffs, onUpdateRouteInfo }) => {
+const Step2Route: React.FC<Step2Props> = ({
+  pickups, dropoffs, vehicle, isCBD, isInterstate, distanceKm, travelTimeHrs,
+  onUpdatePickups, onUpdateDropoffs, onUpdateRouteInfo,
+}) => {
   const acRefs = useRef<Record<string, any>>({});
   const inputEls = useRef<Record<string, HTMLInputElement | null>>({});
+  const pickupsRef = useRef(pickups);
+  const dropoffsRef = useRef(dropoffs);
+  const onUpdatePickupsRef = useRef(onUpdatePickups);
+  const onUpdateDropoffsRef = useRef(onUpdateDropoffs);
+  const onUpdateRouteInfoRef = useRef(onUpdateRouteInfo);
+  pickupsRef.current = pickups;
+  dropoffsRef.current = dropoffs;
+  onUpdatePickupsRef.current = onUpdatePickups;
+  onUpdateDropoffsRef.current = onUpdateDropoffs;
+  onUpdateRouteInfoRef.current = onUpdateRouteInfo;
   const [routeError, setRouteError] = useState<string | null>(null);
   const [mapsStatus, setMapsStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>(() => {
     if (!isGoogleMapsConfigured()) return 'missing';
@@ -49,6 +63,8 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
   const calculateRoute = useCallback(() => {
     if (typeof google === 'undefined' || !google.maps || !google.maps.DirectionsService) return;
 
+    const pickups = pickupsRef.current;
+    const dropoffs = dropoffsRef.current;
     const validAddresses = [...pickups, ...dropoffs]
       .map((l) => l.address.trim())
       .filter((a) => a.length > 10);
@@ -94,19 +110,20 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
           }
         });
 
-        onUpdateRouteInfo(totalDistance / 1000, containsCBD, movingInterstate, travelHrs);
+        onUpdateRouteInfoRef.current(totalDistance / 1000, containsCBD, movingInterstate, travelHrs);
       } else {
         if (status === 'NOT_FOUND') {
           setRouteError('We couldn’t find one of those addresses. Check the spelling, or pick a suggestion.');
+          onUpdateRouteInfoRef.current(0, false, false, 0);
         } else if (status === 'ZERO_RESULTS') {
           setRouteError('We couldn’t find a driving route between those spots. Try a nearby street.');
+          onUpdateRouteInfoRef.current(0, false, false, 0);
         } else {
           setRouteError('We couldn’t map that route just now. You can still continue — we’ll confirm the distance with you.');
         }
-        onUpdateRouteInfo(0, false, false, 0);
       }
     });
-  }, [pickups, dropoffs, onUpdateRouteInfo]);
+  }, []);
 
   useEffect(() => {
     if (mapsStatus !== 'ready') return;
@@ -120,14 +137,15 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
       const ac = new google.maps.places.Autocomplete(el, {
         componentRestrictions: { country: 'au' },
         fields: ['formatted_address', 'address_components', 'geometry'],
+        types: ['address'],
       });
       ac.addListener('place_changed', () => {
         const place = ac.getPlace();
         const addr = place.formatted_address || el.value;
-        if (pickups.find((p) => p.id === id)) {
-          onUpdatePickups(pickups.map((p) => p.id === id ? { ...p, address: addr } : p));
+        if (pickupsRef.current.find((p) => p.id === id)) {
+          onUpdatePickupsRef.current(pickupsRef.current.map((p) => p.id === id ? { ...p, address: addr } : p));
         } else {
-          onUpdateDropoffs(dropoffs.map((d) => d.id === id ? { ...d, address: addr } : d));
+          onUpdateDropoffsRef.current(dropoffsRef.current.map((d) => d.id === id ? { ...d, address: addr } : d));
         }
       });
       acRefs.current[id] = ac;
@@ -224,9 +242,9 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
             type="button"
             onClick={() => toggleDock(loc.id, type)}
             aria-pressed={loc.hasLoadingDock}
-            className={`flex items-center gap-3 p-4 min-h-14 rounded-2xl border-2 w-full text-left ${loc.hasLoadingDock ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-blue-200 text-blue-800'}`}
+            className={`flex items-center gap-3 p-4 min-h-14 rounded-2xl border-2 w-full text-left ${loc.hasLoadingDock ? 'bg-[#146eb4] border-[#146eb4] text-white' : 'bg-white border-[#c5dff0] text-[#0f5a94]'}`}
           >
-            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${loc.hasLoadingDock ? 'border-white' : 'border-blue-400'}`}>
+            <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${loc.hasLoadingDock ? 'border-white' : 'border-[#146eb4]'}`}>
               {loc.hasLoadingDock && <span className="w-2 h-2 bg-white rounded-full" />}
             </span>
             <span>
@@ -253,9 +271,30 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
       </div>
 
       <div className="space-y-3">
+        {mapsStatus === 'loading' && (
+          <div className="bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] p-4 rounded-2xl text-sm font-medium" role="status">
+            Loading Google Maps address suggestions…
+          </div>
+        )}
+
+        {mapsStatus === 'ready' && (
+          <p className="text-sm font-medium text-slate-500">
+            Start typing and pick a Google suggestion so we can use the driving distance.
+          </p>
+        )}
+
         {mapsMissing && (
           <div className="bg-amber-50 border border-amber-200 text-amber-950 p-4 rounded-2xl text-sm font-medium leading-relaxed" role="status">
-            Address suggestions aren’t available right now. Type the full street and suburb — we’ll confirm the exact distance when we call.
+            Address suggestions aren’t available right now. Type the full street and suburb — we’ll confirm the exact driving distance when we call.
+          </div>
+        )}
+
+        {distanceKm > 0 && !routeError && (
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl text-sm font-medium text-slate-800" role="status">
+            <p className="font-black text-slate-900">Driving distance: {distanceKm.toFixed(1)} km</p>
+            {travelTimeHrs > 0 && (
+              <p className="text-slate-500 mt-1">About {Math.max(1, Math.round(travelTimeHrs * 60))} minutes in current traffic.</p>
+            )}
           </div>
         )}
 
@@ -266,13 +305,13 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
         )}
 
         {isCBD && !routeError && (
-          <div className="bg-blue-700 text-white p-4 rounded-2xl text-sm font-medium">
+          <div className="bg-[#146eb4] text-white p-4 rounded-2xl text-sm font-medium">
             That looks like Sydney CBD. Tell us if there’s a loading dock so we can skip the parking fee.
           </div>
         )}
 
         {isInterstate && (
-          <div className="bg-indigo-50 border border-indigo-100 text-indigo-900 p-4 rounded-2xl text-sm font-medium">
+          <div className="bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] p-4 rounded-2xl text-sm font-medium">
             This looks like an interstate trip, so we’ll use the truck.
           </div>
         )}
@@ -284,7 +323,7 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
         <button
           type="button"
           onClick={() => addLocation('pickup')}
-          className="w-full min-h-12 bg-blue-50 text-blue-800 border-2 border-dashed border-blue-200 rounded-2xl font-bold text-sm"
+          className="w-full min-h-12 bg-[#e7f2fa] text-[#0f5a94] border-2 border-dashed border-[#c5dff0] rounded-2xl font-bold text-sm"
         >
           + Add another pickup
         </button>
@@ -296,7 +335,7 @@ const Step2Route: React.FC<Step2Props> = ({ pickups, dropoffs, vehicle, isCBD, i
         <button
           type="button"
           onClick={() => addLocation('dropoff')}
-          className="w-full min-h-12 bg-emerald-50 text-emerald-800 border-2 border-dashed border-emerald-200 rounded-2xl font-bold text-sm"
+          className="w-full min-h-12 bg-[#fff4e0] text-[#0f172a] border-2 border-dashed border-[#ffcc80] rounded-2xl font-bold text-sm"
         >
           + Add another drop-off
         </button>

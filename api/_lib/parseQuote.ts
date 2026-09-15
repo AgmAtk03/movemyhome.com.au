@@ -1,4 +1,4 @@
-import {
+import type {
   AccessType,
   Inventory,
   LocationEntry,
@@ -6,10 +6,10 @@ import {
   QuoteState,
   ServiceType,
   VehicleType,
-} from '../../types';
-import { isContactValid } from '../../lib/validation';
-import { sanitizeMultiline, sanitizePlainText } from '../../lib/sanitize';
-import { addressesReady } from '../../shared/snapshot';
+} from '../../types.js';
+import { isContactValid } from '../../lib/validation.js';
+import { sanitizeMultiline, sanitizePlainText } from '../../lib/sanitize.js';
+import { addressesReady } from '../../shared/snapshot.js';
 
 const ACCESS: AccessType[] = ['ground', 'floor1', 'floor2', 'floor3', 'floor4'];
 const VEHICLES: VehicleType[] = ['van', 'truck'];

@@ -6,24 +6,83 @@ Live app repo: [AgmAtk03/movemyhome.com.au](https://github.com/AgmAtk03/movemyho
 
 The running total is an **estimate**. **Pay 10% deposit** creates a Stripe Checkout Session for that job’s deposit only. The remaining **90% is due on the day**. `/success` is not proof of payment — Stripe (verified webhook + session retrieve) is.
 
+## Production hosting (Netlify UI + Vercel API)
+
+| Piece | Host | URL |
+| --- | --- | --- |
+| Customer UI (Vite SPA) | Netlify | Canonical: `https://movemyhome.com.au` (`www` 301s here) |
+| Serverless `/api/*` | Vercel | `https://aama-removals.vercel.app` |
+
+`netlify.toml` proxies `/api/*` to `https://aama-removals.vercel.app/api/:splat` **before** the SPA catch-all. The browser must keep posting to **relative** `/api/create-checkout-session` (same origin) so that rewrite applies. Do not hardcode the Vercel host in frontend fetch URLs.
+
+On the Vercel project set:
+
+```
+PUBLIC_SITE_URL=https://movemyhome.com.au
+```
+
+That origin is used for Stripe Checkout `success_url` / `cancel_url` (`/success?session_id={CHECKOUT_SESSION_ID}` and `/cancel`). If this is left blank, redirects can land on the Vercel hostname instead of the public site.
+
+**Stripe webhook:** point Checkout at the Vercel function directly:
+
+`https://aama-removals.vercel.app/api/stripe-webhook`
+
+Do not send webhooks through the Netlify proxy. Stripe signs the raw body; an extra reverse-proxy hop can change bytes or headers and fail signature verification. Keep one endpoint (this Vercel URL) in the Stripe Dashboard.
+
+Vercel compiles `/api/*.ts` to ESM `.js` on Node.js 24. Relative imports in that graph must use explicit **`.js` extensions** (TypeScript resolves `./env.js` to `./env.ts`). Extensionless paths such as `./_lib/env` become `Cannot find module '/var/task/api/_lib/env'` at runtime.
+
+`@vercel/node` stays in `package.json` **dependencies** (not `devDependencies`) so production installs still have the Node helper types.
+
 ## Run locally
 
 **Prerequisites:** Node.js 18+ (20/22 recommended)
 
 1. `npm install`
 2. Copy `.env.example` to `.env.local`. Leave secrets blank to try the UI in **demo mode**.
-3. `npm run dev` — UI on [http://localhost:3000](http://localhost:3000). Without API functions this is demo-only (no charge / no email).
+3. `npm run dev` — UI on [http://localhost:3000](http://localhost:3000). Vite also serves `GET /api/diesel-price` so the fuel line can use a live 7-Eleven price. Stripe Checkout still needs `npx vercel dev`.
 4. `npm run build` — `tsc` + Vite production build.
 5. `npx vercel dev` — UI **and** `/api/*` serverless functions (needed for real Stripe Checkout and webhooks). Set `PUBLIC_SITE_URL=http://localhost:3000` for test-mode redirects.
 
 Never commit `.env.local`. Placeholders such as `YOUR_PUBLIC_KEY` and `YOUR_PHONE_NUMBER` are intentional.
+
+## Google Maps (live distance)
+
+Set `VITE_GOOGLE_MAPS_API_KEY` on **Netlify** (build-time; Vite bakes `VITE_*` into the SPA). Do not commit the key.
+
+Enable **Maps JavaScript API**, **Places API**, and **Directions API**. Restrict the key to HTTP referrers:
+
+- `http://localhost:3000/*`
+- `https://movemyhome.com.au/*`
+- `https://www.movemyhome.com.au/*`
+- `https://*.netlify.app/*`
+
+Pickup and drop-off fields use Places autocomplete (Australia). Driving distance comes from Directions. If the key is missing, customers can still type addresses and fuel/distance is confirmed later.
+
+## Call and WhatsApp
+
+Public booking mobile is **0410 721 370** (from `VITE_COMPANY_PHONE` / `VITE_WHATSAPP_NUMBER`):
+
+- Call: `tel:+61410721370`
+- WhatsApp: `https://wa.me/61410721370`
+
+Links sit in the sticky site header, the landing hero and footer, the quote-wizard header, booking help (“Prefer a chat?”), privacy, cancel, and payment result screens. They are real `<a>` links with `min-h-11` tap targets and aria-labels.
+
+## Fuel (7-Eleven diesel)
+
+On the **booking / final summary** (not the homepage):
+
+- Maps driving distance under **12 km** → fuel **$0**.
+- **12 km or more** → litres = `distanceKm / 10` (10 km per litre) × live 7-Eleven diesel AUD/L.
+- That fuel line is added to the quote total; the 10% deposit follows `quoteCalc` as usual.
+
+**Price source:** `GET /api/diesel-price` (Vercel, cached 30 minutes). 7-Eleven Australia does not publish a public unauthenticated diesel API (the My 7-Eleven app endpoints need device attestation). This route reads the public [11-Seven](https://projectzerothree.info/api.html) JSON feed (`https://projectzerothree.info/api.php?format=json`) — live **7-Eleven pump prices** — and uses the **NSW Diesel** row (cents/L ÷ 100). Optional override on Vercel: `SEVEN_ELEVEN_DIESEL_AUD_PER_L` (e.g. `1.95`) to pin a board price. If the feed is down and no override is set, the UI shows **Fuel TBC** and **does not invent a dollar amount**.
 
 ## Architecture
 
 ```
 Contact submit
   → POST /api/create-checkout-session
-  → server recalculates quote from shared/rates.ts (ignores browser totals)
+  → server fetches 7-Eleven diesel (cached) and recalculates quote from shared/quoteCalc.ts (ignores browser totals)
   → deposit = round(quoteTotal * 0.10, 2)
   → balance = quoteTotal - deposit
   → Stripe Checkout Session for Math.round(deposit * 100) cents (AUD)
@@ -47,18 +106,19 @@ Set these in `.env.local` and in the Vercel project. Do not commit values.
 | `STRIPE_SECRET_KEY` | Server | Yes (`sk_test_…` then `sk_live_…`) |
 | `STRIPE_WEBHOOK_SECRET` | Server | Yes (`whsec_…`) |
 | `STRIPE_PUBLISHABLE_KEY` | Server optional | No. `pk_` only. Unused unless you later add Stripe.js. |
-| `PUBLIC_SITE_URL` | Server | Yes in production. Example `https://www.your-domain.com` (no trailing slash). Success URL: `{PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`. Cancel URL: `{PUBLIC_SITE_URL}/cancel`. |
+| `PUBLIC_SITE_URL` | Server (Vercel) | Yes in production. Canonical: `https://movemyhome.com.au` (no trailing slash). Success URL: `{PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`. Cancel URL: `{PUBLIC_SITE_URL}/cancel`. |
 | `VITE_PUBLIC_SITE_URL` | Same origin, optional | Fallback if `PUBLIC_SITE_URL` is empty. |
 | `VITE_EMAILJS_SERVICE_ID` | Client + webhook | For paid emails |
 | `VITE_EMAILJS_CLIENT_TEMPLATE_ID` | Client + webhook | Customer confirmation |
 | `VITE_EMAILJS_BUSINESS_TEMPLATE_ID` | Client + webhook | Business job sheet |
 | `VITE_EMAILJS_PUBLIC_KEY` | Client + webhook | EmailJS public key |
 | `EMAILJS_PRIVATE_KEY` | Server optional | Recommended for webhook sends |
-| `VITE_WHATSAPP_NUMBER` | Client | Digits with country code, e.g. `61412345678` |
-| `VITE_GOOGLE_MAPS_API_KEY` | Client | Places + Directions; HTTP-referrer restricted |
+| `VITE_WHATSAPP_NUMBER` | Client (Netlify build) | `61410721370` — WhatsApp `https://wa.me/61410721370` |
+| `VITE_GOOGLE_MAPS_API_KEY` | Client (Netlify build) | Places + Directions; HTTP-referrer restricted. Never commit the key. |
+| `SEVEN_ELEVEN_DIESEL_AUD_PER_L` | Server optional | Pin diesel AUD/L (e.g. `1.95`). If unset, `GET /api/diesel-price` uses the 11-Seven NSW 7-Eleven feed. |
 | `VITE_LEGAL_TRADING_NAME` | Client | e.g. your registered trading name |
 | `VITE_COMPANY_EMAIL` | Client + webhook | Bookings inbox |
-| `VITE_COMPANY_PHONE` | Client | Display / call |
+| `VITE_COMPANY_PHONE` | Client (Netlify build) | Display as `0410 721 370`. Call link `tel:+61410721370`. |
 | `VITE_COMPANY_WEBSITE` | Client | Public site |
 | `VITE_ABN` | Client | ABN placeholder until you fill it |
 
@@ -73,9 +133,9 @@ A static Payment Link cannot charge a different 10% per job. This app creates a 
 1. Create a Stripe account. Start in **test mode**.
 2. Developers → API keys → copy `sk_test_…` into `STRIPE_SECRET_KEY`. Do not put `sk_`, `rk_`, or `whsec_` in any `VITE_` variable.
 3. Developers → Webhooks → Add endpoint  
-   Production: `https://YOUR_DOMAIN/api/stripe-webhook`  
+   Production: `https://aama-removals.vercel.app/api/stripe-webhook`  
    Events: `checkout.session.completed` (and optionally `checkout.session.async_payment_succeeded`).  
-   Copy the signing secret to `STRIPE_WEBHOOK_SECRET`.
+   Copy the signing secret to `STRIPE_WEBHOOK_SECRET`. Do not register the Netlify `/api/stripe-webhook` proxy as the webhook URL.
 4. Currency is **AUD**. The Session line item is the **deposit only**.
 5. Success and cancel URLs are set in code from `PUBLIC_SITE_URL` (see table above).
 
@@ -113,16 +173,6 @@ Create two templates in one EmailJS service:
 
 Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{route}}` `{{job_details}}` `{{email_kind}}` (`client` or `business`) `{{stripe_session_id}}`.
 
-## Google Maps
-
-Enable Maps JavaScript API, Places API, and Directions API. **Restrict the new key** to HTTP referrers:
-
-- `http://localhost:3000/*`
-- `https://YOUR_PRODUCTION_DOMAIN/*`
-- `https://YOUR_VERCEL_PROJECT.vercel.app/*`
-
-Do not put an unrestricted key in `index.html` (the old hardcoded key was removed). Without a key, customers can still type addresses.
-
 ## Demo mode
 
 If `STRIPE_SECRET_KEY` is missing, or you run `npm run dev` without `vercel dev`, checkout returns **Demo mode — no charge / no email**. The UI must not look like a real booking. `/success` without a paid Stripe session is **not** a booking.
@@ -131,12 +181,12 @@ If `STRIPE_SECRET_KEY` is missing, or you run `npm run dev` without `vercel dev`
 
 ## Owner checklist
 
-1. Fill `VITE_LEGAL_TRADING_NAME`, `VITE_COMPANY_EMAIL`, `VITE_COMPANY_PHONE`, `VITE_COMPANY_WEBSITE`, `VITE_ABN` (and WhatsApp if you use it). Do not invent licences.
+1. Confirm `VITE_COMPANY_PHONE=0410 721 370` and `VITE_WHATSAPP_NUMBER=61410721370` on Netlify (also in `.env.example`). Fill `VITE_LEGAL_TRADING_NAME`, `VITE_COMPANY_EMAIL`, `VITE_COMPANY_WEBSITE`, `VITE_ABN`. Do not invent licences.
 2. Create a Maps key, restrict referrers, set `VITE_GOOGLE_MAPS_API_KEY`.
-3. Stripe test keys + webhook + `PUBLIC_SITE_URL`. Charge a test deposit with `4242…`. Confirm webhook emails.
+3. Stripe test keys + webhook (`https://aama-removals.vercel.app/api/stripe-webhook`) + `PUBLIC_SITE_URL=https://movemyhome.com.au`. Charge a test deposit with `4242…`. Confirm webhook emails.
 4. Switch to `sk_live_` / live webhook secret only when ready. Deploy on **HTTPS**.
 5. Restrict EmailJS keys. Prefer `EMAILJS_PRIVATE_KEY` on the server.
-6. Confirm Vercel env vars are set for Production and Preview. Confirm Deployment Protection is off if the public site must be open.
+6. Confirm Vercel env vars are set for Production and Preview. Confirm Deployment Protection is off if the public API must be reachable from Netlify.
 7. Delete any unused Google Maps keys that were previously hardcoded.
 
 ## Security

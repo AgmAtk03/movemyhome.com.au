@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 96" role="img" aria-label="My Home Removals">
+  <!-- Three-peak range: centre blue behind, side peaks in front, orange accent in the gap -->
+  <polygon fill="#146eb4" points="38,86 80,10 122,86"/>
+  <polygon fill="#146eb4" points="14,86 46,36 82,86"/>
+  <polygon fill="#146eb4" points="78,86 114,36 146,86"/>
+  <polygon fill="#ffffff" points="50,86 80,38 110,86"/>
+  <polygon fill="#ff9900" points="56,86 80,48 104,86"/>
+</svg>

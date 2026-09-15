@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { VehicleType, QuoteState, Inventory, MoveDetails, LocationEntry, ServiceType } from './types';
 import { RATES, WIZARD_STEPS } from './constants';
 import Header from './components/Header';
@@ -22,7 +22,9 @@ import { saveDemoJob } from './lib/jobsStore';
 import { sanitizePlainText } from './lib/sanitize';
 import { calculateQuote, EMPTY_BREAKDOWN } from './shared/quoteCalc';
 import { createCheckoutSession } from './lib/checkout';
+import { fetchDieselPrice } from './lib/dieselPrice';
 import { PAYMENTS_OFF_BODY, PAYMENT_START_ERROR, customerFacingError } from './lib/customerCopy';
+import { currentPath, isQuoteRoute, navigateTo } from './lib/nav';
 
 const INITIAL_INVENTORY: Inventory = {
   boxes: 0, sofa: 0, mattress: 0, bed: 0, fridge: 0, tv: 0, washer: 0,
@@ -33,13 +35,8 @@ const INITIAL_DETAILS: MoveDetails = {
   bedDisassembly: false, bedIsAssembled: true,
 };
 
-function currentPath(): string {
-  return window.location.pathname.replace(/\/+$/, '') || '/';
-}
-
 const App: React.FC = () => {
   const [path, setPath] = useState(currentPath);
-  const [isStarted, setIsStarted] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
@@ -49,6 +46,7 @@ const App: React.FC = () => {
   const [nextHint, setNextHint] = useState('');
   const [bookingNotice, setBookingNotice] = useState('');
   const [demoCheckout, setDemoCheckout] = useState(false);
+  const [dieselAudPerLitre, setDieselAudPerLitre] = useState<number | null>(null);
 
   const [state, setState] = useState<QuoteState>({
     step: 1,
@@ -77,6 +75,16 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('hashchange', onNav);
       window.removeEventListener('popstate', onNav);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchDieselPrice().then((row) => {
+      if (!cancelled) setDieselAudPerLitre(row.audPerLitre);
+    });
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -122,20 +130,23 @@ const App: React.FC = () => {
       distanceKm: state.distanceKm,
       travelTimeHrs: state.travelTimeHrs,
       isInterstate: state.isInterstate,
+      dieselAudPerLitre,
       step: state.step,
     }),
-    [state]
+    [state, dieselAudPerLitre]
   );
 
   const snapshot = useMemo(() => buildQuoteSnapshot(state, priceBreakdown), [state, priceBreakdown]);
   const whatsappUrl = useMemo(() => buildWhatsAppUrl(state, snapshot), [state, snapshot]);
 
   const goHome = () => {
-    window.history.pushState({}, '', '/');
-    setPath('/');
-    setIsStarted(false);
+    navigateTo('/');
     setIsSuccess(false);
     setDemoCheckout(false);
+  };
+
+  const startQuote = () => {
+    navigateTo('/quote');
   };
 
   const handleBooking = async () => {
@@ -199,13 +210,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRouteUpdate = (km: number, isCBD: boolean, isInterstate: boolean, hrs: number) => {
+  const handleRouteUpdate = useCallback((km: number, isCBD: boolean, isInterstate: boolean, hrs: number) => {
     setState((prev) => {
       const vehicle = isInterstate ? 'truck' : prev.vehicle;
       return { ...prev, distanceKm: km, travelTimeHrs: hrs, isCBD, isInterstate, vehicle };
     });
     setDuplicateConfirmed(false);
-  };
+  }, []);
 
   const handleInventoryUpdate = (newInv: Inventory) => {
     setState((prev) => {
@@ -288,7 +299,7 @@ const App: React.FC = () => {
   };
 
   if (path === '/privacy') {
-    return <PrivacyPage onBack={goHome} />;
+    return <PrivacyPage onBack={goHome} onQuote={startQuote} />;
   }
 
   if (path === '/success') {
@@ -299,9 +310,7 @@ const App: React.FC = () => {
     return (
       <CancelScreen
         onRetry={() => {
-          window.history.pushState({}, '', '/');
-          setPath('/');
-          setIsStarted(true);
+          startQuote();
           setState((prev) => ({ ...prev, step: 6 }));
         }}
         onHome={goHome}
@@ -334,9 +343,9 @@ const App: React.FC = () => {
     );
   }
 
-  if (!isStarted) {
+  if (!isQuoteRoute(path)) {
     return (
-      <Landing onStart={() => setIsStarted(true)} />
+      <Landing onStart={startQuote} />
     );
   }
 
@@ -345,9 +354,14 @@ const App: React.FC = () => {
       <Header
         step={state.step}
         totalSteps={WIZARD_STEPS.length}
+        onHome={goHome}
         onBack={() => {
           setNextHint('');
           setAttemptedStep(null);
+          if (state.step <= 1) {
+            goHome();
+            return;
+          }
           setState((p) => ({ ...p, step: p.step - 1 }));
         }}
       />
@@ -367,10 +381,10 @@ const App: React.FC = () => {
               Pickup and drop-off look identical. That’s okay if you meant it — for example moving items within the same building.
             </p>
             <div className="space-y-3">
-              <button type="button" onClick={confirmDuplicate} className="w-full min-h-14 bg-blue-600 text-white font-black rounded-2xl">
+              <button type="button" onClick={confirmDuplicate} className="btn-primary w-full">
                 Yes, that’s right
               </button>
-              <button type="button" onClick={() => setShowDuplicateWarning(false)} className="w-full min-h-14 bg-slate-100 text-slate-700 font-black rounded-2xl">
+              <button type="button" onClick={() => setShowDuplicateWarning(false)} className="btn-quiet w-full">
                 Let me fix it
               </button>
             </div>
@@ -409,6 +423,8 @@ const App: React.FC = () => {
               vehicle={state.vehicle}
               isCBD={state.isCBD}
               isInterstate={state.isInterstate}
+              distanceKm={state.distanceKm}
+              travelTimeHrs={state.travelTimeHrs}
               onUpdatePickups={(p: LocationEntry[]) => {
                 setState((s) => ({ ...s, pickups: p }));
                 setDuplicateConfirmed(false);
@@ -455,6 +471,7 @@ const App: React.FC = () => {
 
       <SummaryFooter
         breakdown={priceBreakdown.total === 0 && state.step === 1 ? EMPTY_BREAKDOWN : priceBreakdown}
+        fuelLine={snapshot.fuelLine}
         vehicle={state.vehicle}
         isInterstate={state.isInterstate}
         step={state.step}
