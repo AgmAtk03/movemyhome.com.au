@@ -122,10 +122,6 @@ const SummaryFooter: React.FC<FooterProps> = ({
           </p>
         )}
 
-        <div className="mt-3 pt-3 border-t border-slate-100">
-          <ContactActions variant="dock" />
-        </div>
-
         {isBookStep ? (
           <button type="button" onClick={onBook} className="btn-primary mt-3 w-full text-lg">
             Pay 10% deposit
@@ -135,6 +131,11 @@ const SummaryFooter: React.FC<FooterProps> = ({
             Continue
           </button>
         )}
+
+        <div className="mt-2">
+          <p className="sr-only">Or call or WhatsApp</p>
+          <ContactActions variant="dock" />
+        </div>
 
         {showBreakdown && (
           <div id="quote-breakdown" className="absolute bottom-full left-0 right-0 p-6 bg-white border-t border-slate-100 rounded-t-[2rem] shadow-2xl z-[48] max-h-[70vh] overflow-y-auto no-scrollbar">

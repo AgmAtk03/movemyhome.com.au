@@ -75,23 +75,50 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
     );
   }
 
+  if (variant === 'dock') {
+    const dockBtn =
+      'flex-1 min-h-11 px-2 sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-xl font-semibold text-sm whitespace-nowrap';
+    return (
+      <nav aria-label="Call or WhatsApp" className={`flex gap-2 ${className}`}>
+        {contact.telHref && (
+          <a
+            href={contact.telHref}
+            className={`${dockBtn} bg-slate-50 border border-slate-200 text-slate-600`}
+            aria-label={callLabel}
+          >
+            <Icon name="phone" className="text-base" />
+            <span className="whitespace-nowrap">{contact.display}</span>
+          </a>
+        )}
+        {contact.whatsAppHref && (
+          <a
+            href={contact.whatsAppHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${dockBtn} bg-white border border-[#128C7E]/35 text-[#128C7E]`}
+            aria-label={waLabel}
+          >
+            <Icon name="whatsapp-logo" className="text-base" />
+            <span>WhatsApp</span>
+          </a>
+        )}
+      </nav>
+    );
+  }
+
   const callClass =
     variant === 'bar'
       ? 'flex-1 min-h-11 px-3 inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-[#c5dff0] text-[#0f5a94] font-bold text-sm'
-      : variant === 'dock'
-        ? 'flex-1 min-h-12 px-2 sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-sm whitespace-nowrap'
-        : variant === 'hero'
-          ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-base shadow-sm'
-          : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] font-black text-base';
+      : variant === 'hero'
+        ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-base shadow-sm'
+        : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] font-black text-base';
 
   const waClass =
     variant === 'bar'
       ? 'flex-1 min-h-11 px-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] text-white font-bold text-sm'
-      : variant === 'dock'
-        ? 'flex-1 min-h-12 px-2 sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-2xl bg-[#25D366] text-white font-black text-sm whitespace-nowrap'
-        : variant === 'hero'
-          ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20'
-          : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20';
+      : variant === 'hero'
+        ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20'
+        : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20';
 
   const wrap =
     variant === 'stack' || variant === 'hero'
@@ -103,15 +130,9 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
       {contact.telHref && (
         <a href={contact.telHref} className={callClass} aria-label={callLabel}>
           <Icon name="phone" className="text-lg" />
-          <span className={variant === 'dock' ? 'whitespace-nowrap' : undefined}>
-            {variant === 'dock' ? (
-              contact.display
-            ) : (
-              <>
-                <span className="max-[380px]:sr-only">Call </span>
-                {contact.display}
-              </>
-            )}
+          <span>
+            <span className="max-[380px]:sr-only">Call </span>
+            {contact.display}
           </span>
         </a>
       )}
