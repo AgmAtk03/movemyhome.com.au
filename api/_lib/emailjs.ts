@@ -2,12 +2,20 @@ import type { QuoteSnapshot, QuoteState } from '../../types.js';
 import { htmlSafeMultiline, htmlSafePlainText, sanitizeMultiline, sanitizePlainText } from '../../lib/sanitize.js';
 import { buildJobDetailsBody } from '../../shared/snapshot.js';
 import { BRAND_NAME } from '../../shared/rates.js';
-import { companyConfig, emailJsConfig, isEmailJsServerConfigured, isMemberEmailConfigured } from './env.js';
+import { companyConfig, emailJsConfig, emailJsMissingVars, isEmailJsServerConfigured, isMemberEmailConfigured } from './env.js';
 
 export interface EmailSendResult {
   clientSent: boolean;
   businessSent: boolean;
   skipped: boolean;
+  error?: string;
+}
+
+const DEFAULT_GAP_MS = 1100;
+
+function wait(ms: number): Promise<void> {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export interface MemberEmailSendResult {
@@ -80,10 +88,21 @@ async function sendTemplate(templateId: string, params: Record<string, string>):
 export async function sendPaidBookingEmails(
   state: QuoteState,
   snapshot: QuoteSnapshot,
-  payment: { sessionId: string; paymentIntentId: string }
+  payment: { sessionId: string; paymentIntentId: string },
+  options: { gapMs?: number; skipClient?: boolean; skipBusiness?: boolean } = {},
 ): Promise<EmailSendResult> {
+  const gapMs = options.gapMs ?? DEFAULT_GAP_MS;
+
   if (!isEmailJsServerConfigured()) {
-    return { clientSent: false, businessSent: false, skipped: true };
+    const missing = emailJsMissingVars().join(', ');
+    const error = `EmailJS is not configured on the API host (missing ${missing || 'keys'}).`;
+    console.error(error, { sessionId: payment.sessionId });
+    return {
+      clientSent: Boolean(options.skipClient),
+      businessSent: Boolean(options.skipBusiness),
+      skipped: true,
+      error,
+    };
   }
 
   const cfg = emailJsConfig();
@@ -93,33 +112,49 @@ export async function sendPaidBookingEmails(
     payment_status: 'deposit_paid',
   });
 
-  let clientSent = false;
-  let businessSent = false;
+  let clientSent = Boolean(options.skipClient);
+  let businessSent = Boolean(options.skipBusiness);
+  const errors: string[] = [];
 
-  try {
-    await sendTemplate(cfg.businessTemplateId, {
-      ...params,
-      to_email: sanitizePlainText(companyConfig().email, 120),
-      email_kind: 'business',
-    });
-    businessSent = true;
-  } catch (error) {
-    console.error('Business job-sheet email failed', { sessionId: payment.sessionId });
-    throw error;
+  if (!businessSent) {
+    try {
+      await sendTemplate(cfg.businessTemplateId, {
+        ...params,
+        to_email: sanitizePlainText(companyConfig().email, 120),
+        email_kind: 'business',
+      });
+      businessSent = true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'business email failed';
+      errors.push(message);
+      console.error('Business job-sheet email failed', { sessionId: payment.sessionId, error: message });
+    }
   }
 
-  try {
-    await sendTemplate(cfg.clientTemplateId, {
-      ...params,
-      to_email: params.user_email,
-      email_kind: 'client',
-    });
-    clientSent = true;
-  } catch {
-    console.error('Customer confirmation email failed', { sessionId: payment.sessionId });
+  if (!clientSent) {
+    if (businessSent && !options.skipBusiness) {
+      await wait(gapMs);
+    }
+    try {
+      await sendTemplate(cfg.clientTemplateId, {
+        ...params,
+        to_email: params.user_email,
+        email_kind: 'client',
+      });
+      clientSent = true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'customer email failed';
+      errors.push(message);
+      console.error('Customer confirmation email failed', { sessionId: payment.sessionId, error: message });
+    }
   }
 
-  return { clientSent, businessSent, skipped: false };
+  return {
+    clientSent,
+    businessSent,
+    skipped: false,
+    error: errors.length ? errors.join(' | ') : undefined,
+  };
 }
 
 /**

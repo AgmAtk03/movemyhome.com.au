@@ -217,7 +217,7 @@ test('sendPaidBookingEmails still sends complete client + business booking email
       const result = await sendPaidBookingEmails(state, snapshot, {
         sessionId: 'cs_test_paid',
         paymentIntentId: 'pi_test_paid',
-      });
+      }, { gapMs: 0 });
       assert.equal(result.skipped, false);
       assert.equal(result.businessSent, true);
       assert.equal(result.clientSent, true);
@@ -231,6 +231,45 @@ test('sendPaidBookingEmails still sends complete client + business booking email
       assertCompletePaidBookingParams(business.template_params, 'business');
       assertCompletePaidBookingParams(client.template_params, 'client');
       assert.equal(business.template_params.stripe_session_id, 'cs_test_paid');
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+});
+
+test('sendPaidBookingEmails skip flags do not resend a side already marked sent', async () => {
+  await withEnv(EMAIL_ENV, async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(JSON.parse(String(init?.body || '{}')));
+      return new Response('OK', { status: 200 });
+    }) as typeof fetch;
+    try {
+      const { sendPaidBookingEmails } = await import('./emailjs');
+      const state = samplePaidState();
+      const breakdown = calculateFullQuote({
+        vehicle: state.vehicle,
+        truckHours: state.truckHours,
+        crewSize: state.crewSize,
+        pickups: state.pickups,
+        dropoffs: state.dropoffs,
+        inventory: state.inventory,
+        bedDisassembly: state.details.bedDisassembly,
+        bedIsAssembled: state.details.bedIsAssembled,
+        distanceKm: state.distanceKm,
+        travelTimeHrs: state.travelTimeHrs,
+        isInterstate: state.isInterstate,
+      });
+      const snapshot = buildQuoteSnapshot(state, breakdown);
+      const result = await sendPaidBookingEmails(state, snapshot, {
+        sessionId: 'cs_test_paid',
+        paymentIntentId: 'pi_test_paid',
+      }, { gapMs: 0, skipBusiness: true });
+      assert.equal(result.businessSent, true);
+      assert.equal(result.clientSent, true);
+      assert.equal(calls.length, 1);
+      assert.equal((calls[0] as { template_id: string }).template_id, 'template_client');
     } finally {
       globalThis.fetch = orig;
     }

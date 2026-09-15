@@ -91,6 +91,7 @@ Contact submit
   → redirect to Stripe-hosted Checkout (no card form on this site)
   → success_url /success?session_id={CHECKOUT_SESSION_ID}
   → cancel_url /cancel
+  → GET /api/verify-checkout-session (success page) — backup EmailJS send if webhook missed
   → webhook POST /api/stripe-webhook  (checkout.session.completed, signature verified)
   → mark job paid (Stripe is the ledger) + EmailJS customer + business emails
 ```
@@ -179,6 +180,8 @@ Create two templates in one EmailJS service:
 Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{user_phone}}` `{{move_date}}` `{{service_type}}` `{{vehicle}}` `{{total_quote}}` `{{deposit_amount}}` `{{balance_amount}}` `{{inventory}}` `{{route}}` `{{job_details}}` `{{email_kind}}` (`client` or `business` on paid mail; `member` on 5% signup) `{{payment_status}}` (`deposit_paid` on paid mail) `{{stripe_session_id}}` `{{discount_code}}` `{{member_discount}}` `{{quote_subtotal}}`.
 
 Paid booking behaviour is unchanged: webhook / `fulfillPaidBookingEmails` still send the **same** client confirmation + business job sheet with addresses, inventory, date/time, contact, quote, and deposit. Member signup never mutates those param objects.
+
+**Live backup:** Stripe webhooks often miss this project. `GET /api/verify-checkout-session` (called from `/success?session_id=`) also runs `fulfillPaidBookingEmails` when the session is paid. Sends are idempotent via Checkout Session metadata `mail_client` / `mail_biz` = `sent`. Webhook GET `https://aama-removals.vercel.app/api/stripe-webhook` is a health check. Incomplete webhook sends return **500** so Stripe retries.
 
 ### Member / student 5% off
 

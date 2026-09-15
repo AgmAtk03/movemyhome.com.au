@@ -4,11 +4,41 @@ import { applyMemberDiscount, calculateFullQuote } from '../../shared/quoteCalc.
 import { buildQuoteSnapshot } from '../../shared/snapshot.js';
 import { formatMoney } from '../../shared/money.js';
 import { BRAND_NAME } from '../../shared/rates.js';
-import { companyConfig } from './env.js';
-import { meta } from './stripeClient.js';
+import { companyConfig, isStripeConfigured } from './env.js';
+import { getStripe, meta } from './stripeClient.js';
 import { sendPaidBookingEmails, type EmailSendResult } from './emailjs.js';
 
+export const MAIL_CLIENT_META = 'mail_client';
+export const MAIL_BIZ_META = 'mail_biz';
+export const MAIL_NOTE_META = 'mail_note';
+export const MAIL_SENT_VALUE = 'sent';
+
 type SessionMeta = Stripe.Metadata | Record<string, string>;
+
+export interface FulfillEmailsResult extends EmailSendResult {
+  alreadySent: boolean;
+}
+
+export class PaidEmailIncompleteError extends Error {
+  result: FulfillEmailsResult;
+
+  constructor(result: FulfillEmailsResult) {
+    super(result.error || 'Paid, but email delivery failed — Stripe will retry.');
+    this.name = 'PaidEmailIncompleteError';
+    this.result = result;
+  }
+}
+
+export type PaidCheckoutSession = {
+  id: string;
+  payment_intent?: string | { id?: string } | null;
+  amount_total?: number | null;
+  metadata?: SessionMeta | null;
+};
+
+export function mailAlreadySent(row: SessionMeta | null | undefined, key: string): boolean {
+  return String(row?.[key] || '') === MAIL_SENT_VALUE;
+}
 
 function readMeta(row: SessionMeta, key: string): string {
   return String(row[key] || '');
@@ -131,23 +161,93 @@ export function snapshotFromPaidSession(
  * Paid booking emails after Stripe confirms the deposit.
  * Rebuilds the job sheet from Checkout Session metadata (same fields
  * create-checkout-session stores) and sends the client + business templates.
+ * Idempotent: Stripe metadata mail_client / mail_biz = sent so webhook +
+ * verify-checkout-session do not double-send.
  */
-export async function fulfillPaidBookingEmails(session: {
-  id: string;
-  payment_intent?: string | { id?: string } | null;
-  amount_total?: number | null;
-  metadata?: SessionMeta | null;
-}): Promise<EmailSendResult> {
-  const row = session.metadata || {};
-  const amountCents = session.amount_total ?? 0;
+export async function fulfillPaidBookingEmails(
+  session: PaidCheckoutSession,
+  options: { gapMs?: number } = {},
+): Promise<FulfillEmailsResult> {
+  const current = await refreshPaidSession(session);
+  const row = current.metadata || {};
+  const amountCents = current.amount_total ?? 0;
   const state = stateFromPaidMetadata(row);
   const snapshot = snapshotFromPaidSession(state, row, amountCents);
-  const paymentIntent = typeof session.payment_intent === 'string'
-    ? session.payment_intent
-    : session.payment_intent?.id || '';
+  const paymentIntent = typeof current.payment_intent === 'string'
+    ? current.payment_intent
+    : current.payment_intent?.id || '';
+  const skipClient = mailAlreadySent(row, MAIL_CLIENT_META);
+  const skipBusiness = mailAlreadySent(row, MAIL_BIZ_META);
 
-  return sendPaidBookingEmails(state, snapshot, {
-    sessionId: session.id,
+  if (skipClient && skipBusiness) {
+    return {
+      clientSent: true,
+      businessSent: true,
+      skipped: false,
+      alreadySent: true,
+    };
+  }
+
+  const result = await sendPaidBookingEmails(state, snapshot, {
+    sessionId: current.id,
     paymentIntentId: paymentIntent,
+  }, {
+    gapMs: options.gapMs,
+    skipClient,
+    skipBusiness,
   });
+
+  const combined: FulfillEmailsResult = {
+    ...result,
+    clientSent: result.clientSent || skipClient,
+    businessSent: result.businessSent || skipBusiness,
+    alreadySent: false,
+  };
+  await recordMailStatus(current.id, combined);
+  return combined;
+}
+
+export async function fulfillPaidBookingEmailsOrThrow(
+  session: PaidCheckoutSession,
+  options: { gapMs?: number } = {},
+): Promise<FulfillEmailsResult> {
+  const result = await fulfillPaidBookingEmails(session, options);
+  if (!result.clientSent || !result.businessSent) {
+    throw new PaidEmailIncompleteError(result);
+  }
+  return result;
+}
+
+async function refreshPaidSession(session: PaidCheckoutSession): Promise<PaidCheckoutSession> {
+  if (!isStripeConfigured()) return session;
+  try {
+    return await getStripe().checkout.sessions.retrieve(session.id);
+  } catch (error) {
+    console.error('Could not re-fetch Checkout Session before email send; using in-memory copy', {
+      sessionId: session.id,
+      error: error instanceof Error ? error.message : 'retrieve failed',
+    });
+    return session;
+  }
+}
+
+async function recordMailStatus(sessionId: string, result: EmailSendResult): Promise<void> {
+  if (!isStripeConfigured()) return;
+  const metadata: Record<string, string> = {};
+  if (result.clientSent) metadata[MAIL_CLIENT_META] = MAIL_SENT_VALUE;
+  if (result.businessSent) metadata[MAIL_BIZ_META] = MAIL_SENT_VALUE;
+  if (result.error || result.skipped) {
+    metadata[MAIL_NOTE_META] = String(result.error || 'EmailJS skipped or failed').slice(0, 500);
+  } else if (result.clientSent && result.businessSent) {
+    metadata[MAIL_NOTE_META] = 'client+business sent';
+  }
+  if (!Object.keys(metadata).length) return;
+  try {
+    await getStripe().checkout.sessions.update(sessionId, { metadata });
+  } catch (error) {
+    console.error('Could not write email status onto Stripe session metadata', {
+      sessionId,
+      error: error instanceof Error ? error.message : 'update failed',
+    });
+  }
 }

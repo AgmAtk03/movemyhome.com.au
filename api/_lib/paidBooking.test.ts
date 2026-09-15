@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { QuoteState } from '../../types.js';
 import { applyMemberDiscount, calculateFullQuote } from '../../shared/quoteCalc.js';
 import { buildQuoteSnapshot } from '../../shared/snapshot.js';
-import { buildCheckoutSessionMetadata, fulfillPaidBookingEmails } from './paidBooking.js';
+import { buildCheckoutSessionMetadata, fulfillPaidBookingEmails, fulfillPaidBookingEmailsOrThrow } from './paidBooking.js';
 
 function withEnv(vars: Record<string, string | undefined>, fn: () => Promise<void>): Promise<void> {
   const previous: Record<string, string | undefined> = {};
@@ -27,6 +27,7 @@ const EMAIL_ENV = {
   EMAILJS_CLIENT_TEMPLATE_ID: 'template_client',
   EMAILJS_BUSINESS_TEMPLATE_ID: 'template_business',
   VITE_COMPANY_EMAIL: 'removalsmyhome@gmail.com',
+  STRIPE_SECRET_KEY: undefined,
 };
 
 function samplePaidState(discountCode = ''): QuoteState {
@@ -126,7 +127,7 @@ test('create-checkout-session + fulfillPaidBookingEmails still produce complete 
         payment_intent: 'pi_test_paid',
         amount_total: breakdown.depositCents,
         metadata,
-      });
+      }, { gapMs: 0 });
       assert.equal(result.skipped, false);
       assert.equal(result.businessSent, true);
       assert.equal(result.clientSent, true);
@@ -159,5 +160,72 @@ test('create-checkout-session + fulfillPaidBookingEmails still produce complete 
     } finally {
       globalThis.fetch = orig;
     }
+  });
+});
+
+test('fulfillPaidBookingEmails is idempotent when mail_client and mail_biz are already sent', async () => {
+  await withEnv(EMAIL_ENV, async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(JSON.parse(String(init?.body || '{}')));
+      return new Response('OK', { status: 200 });
+    }) as typeof fetch;
+    try {
+      const state = samplePaidState();
+      const breakdown = quotedBreakdown(state);
+      const snapshot = buildQuoteSnapshot(state, breakdown);
+      const metadata = {
+        ...buildCheckoutSessionMetadata({
+          state,
+          snapshot,
+          breakdown,
+          dieselAudPerLitre: 1.95,
+        }),
+        mail_client: 'sent',
+        mail_biz: 'sent',
+      };
+      const result = await fulfillPaidBookingEmails({
+        id: 'cs_test_paid',
+        payment_intent: 'pi_test_paid',
+        amount_total: breakdown.depositCents,
+        metadata,
+      }, { gapMs: 0 });
+      assert.equal(result.alreadySent, true);
+      assert.equal(result.clientSent, true);
+      assert.equal(result.businessSent, true);
+      assert.equal(calls.length, 0);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+});
+
+test('fulfillPaidBookingEmailsOrThrow fails when EmailJS is not configured', async () => {
+  await withEnv({
+    ...EMAIL_ENV,
+    EMAILJS_SERVICE_ID: undefined,
+    EMAILJS_PUBLIC_KEY: undefined,
+    EMAILJS_CLIENT_TEMPLATE_ID: undefined,
+    EMAILJS_BUSINESS_TEMPLATE_ID: undefined,
+  }, async () => {
+    const state = samplePaidState();
+    const breakdown = quotedBreakdown(state);
+    const snapshot = buildQuoteSnapshot(state, breakdown);
+    const metadata = buildCheckoutSessionMetadata({
+      state,
+      snapshot,
+      breakdown,
+      dieselAudPerLitre: null,
+    });
+    await assert.rejects(
+      () => fulfillPaidBookingEmailsOrThrow({
+        id: 'cs_test_paid',
+        payment_intent: 'pi_test_paid',
+        amount_total: breakdown.depositCents,
+        metadata,
+      }, { gapMs: 0 }),
+      /email delivery failed|not configured/i,
+    );
   });
 });

@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { isStripeWebhookConfigured, stripeWebhookSecret } from './_lib/env.js';
 import { getStripe } from './_lib/stripeClient.js';
-import { fulfillPaidBookingEmails } from './_lib/paidBooking.js';
+import { fulfillPaidBookingEmailsOrThrow, PaidEmailIncompleteError } from './_lib/paidBooking.js';
 import { redeemMemberCode } from './_lib/memberCodes.js';
 
 export const config = {
@@ -20,12 +20,29 @@ async function rawBody(req: VercelRequest): Promise<Buffer> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'GET') {
+    res.status(200).json({
+      ok: true,
+      endpoint: '/api/stripe-webhook',
+      liveUrl: 'https://aama-removals.vercel.app/api/stripe-webhook',
+      expects: 'POST checkout.session.completed',
+      configured: isStripeWebhookConfigured(),
+    });
+    return;
+  }
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
+  console.info('stripe-webhook POST', {
+    hasSignature: Boolean(req.headers['stripe-signature']),
+    contentType: String(req.headers['content-type'] || ''),
+  });
+
   if (!isStripeWebhookConfigured()) {
+    console.error('Stripe webhook secret is not configured (STRIPE_WEBHOOK_SECRET). Paid emails cannot run from this endpoint.');
     res.status(500).json({ error: 'Webhook secret is not configured.' });
     return;
   }
@@ -40,15 +57,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const buf = await rawBody(req);
     event = getStripe().webhooks.constructEvent(buf, signature, stripeWebhookSecret());
-  } catch {
+  } catch (error) {
+    console.error('Invalid Stripe webhook signature', {
+      error: error instanceof Error ? error.message : 'constructEvent failed',
+    });
     res.status(400).json({ error: 'Invalid Stripe signature.' });
     return;
   }
 
   if (event.type !== 'checkout.session.completed' && event.type !== 'checkout.session.async_payment_succeeded') {
+    console.info('stripe-webhook ignored event', { type: event.type, id: event.id });
     res.status(200).json({ received: true, ignored: event.type });
     return;
   }
+
+  console.info('stripe-webhook paid-path event', { type: event.type, id: event.id });
 
   const session = event.data.object as Stripe.Checkout.Session;
   const paid = session.payment_status === 'paid';
@@ -81,11 +104,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await fulfillPaidBookingEmails(session);
-  } catch {
+    const result = await fulfillPaidBookingEmailsOrThrow(session);
+    res.status(200).json({
+      received: true,
+      paid: true,
+      sessionId: session.id,
+      clientSent: result.clientSent,
+      businessSent: result.businessSent,
+    });
+  } catch (error) {
+    const result = error instanceof PaidEmailIncompleteError ? error.result : null;
+    console.error('Paid, but email delivery failed — Stripe will retry.', {
+      sessionId: session.id,
+      clientSent: result?.clientSent,
+      businessSent: result?.businessSent,
+      skipped: result?.skipped,
+      error: error instanceof Error ? error.message : 'email failed',
+    });
     res.status(500).json({ error: 'Paid, but email delivery failed — Stripe will retry.' });
-    return;
   }
-
-  res.status(200).json({ received: true, paid: true, sessionId: session.id });
 }
