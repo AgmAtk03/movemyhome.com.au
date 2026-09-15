@@ -6,6 +6,31 @@ Live app repo: [AgmAtk03/movemyhome.com.au](https://github.com/AgmAtk03/movemyho
 
 The running total is an **estimate**. **Pay 10% deposit** creates a Stripe Checkout Session for that job’s deposit only. The remaining **90% is due on the day**. `/success` is not proof of payment — Stripe (verified webhook + session retrieve) is.
 
+## Production hosting (Netlify UI + Vercel API)
+
+| Piece | Host | URL |
+| --- | --- | --- |
+| Customer UI (Vite SPA) | Netlify | Canonical: `https://movemyhome.com.au` (`www` 301s here) |
+| Serverless `/api/*` | Vercel | `https://aama-removals.vercel.app` |
+
+`netlify.toml` proxies `/api/*` to `https://aama-removals.vercel.app/api/:splat` **before** the SPA catch-all. The browser must keep posting to **relative** `/api/create-checkout-session` (same origin) so that rewrite applies. Do not hardcode the Vercel host in frontend fetch URLs.
+
+On the Vercel project set:
+
+```
+PUBLIC_SITE_URL=https://movemyhome.com.au
+```
+
+That origin is used for Stripe Checkout `success_url` / `cancel_url` (`/success?session_id={CHECKOUT_SESSION_ID}` and `/cancel`). If this is left blank, redirects can land on the Vercel hostname instead of the public site.
+
+**Stripe webhook:** point Checkout at the Vercel function directly:
+
+`https://aama-removals.vercel.app/api/stripe-webhook`
+
+Do not send webhooks through the Netlify proxy. Stripe signs the raw body; an extra reverse-proxy hop can change bytes or headers and fail signature verification. Keep one endpoint (this Vercel URL) in the Stripe Dashboard.
+
+`@vercel/node` must stay in `package.json` **dependencies** (not `devDependencies`). Production serverless installs omit devDependencies; without that package the TypeScript `/api/*.ts` functions crash on boot with `FUNCTION_INVOCATION_FAILED` even when `STRIPE_SECRET_KEY` is set.
+
 ## Run locally
 
 **Prerequisites:** Node.js 18+ (20/22 recommended)
@@ -47,7 +72,7 @@ Set these in `.env.local` and in the Vercel project. Do not commit values.
 | `STRIPE_SECRET_KEY` | Server | Yes (`sk_test_…` then `sk_live_…`) |
 | `STRIPE_WEBHOOK_SECRET` | Server | Yes (`whsec_…`) |
 | `STRIPE_PUBLISHABLE_KEY` | Server optional | No. `pk_` only. Unused unless you later add Stripe.js. |
-| `PUBLIC_SITE_URL` | Server | Yes in production. Example `https://www.your-domain.com` (no trailing slash). Success URL: `{PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`. Cancel URL: `{PUBLIC_SITE_URL}/cancel`. |
+| `PUBLIC_SITE_URL` | Server (Vercel) | Yes in production. Canonical: `https://movemyhome.com.au` (no trailing slash). Success URL: `{PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`. Cancel URL: `{PUBLIC_SITE_URL}/cancel`. |
 | `VITE_PUBLIC_SITE_URL` | Same origin, optional | Fallback if `PUBLIC_SITE_URL` is empty. |
 | `VITE_EMAILJS_SERVICE_ID` | Client + webhook | For paid emails |
 | `VITE_EMAILJS_CLIENT_TEMPLATE_ID` | Client + webhook | Customer confirmation |
@@ -73,9 +98,9 @@ A static Payment Link cannot charge a different 10% per job. This app creates a 
 1. Create a Stripe account. Start in **test mode**.
 2. Developers → API keys → copy `sk_test_…` into `STRIPE_SECRET_KEY`. Do not put `sk_`, `rk_`, or `whsec_` in any `VITE_` variable.
 3. Developers → Webhooks → Add endpoint  
-   Production: `https://YOUR_DOMAIN/api/stripe-webhook`  
+   Production: `https://aama-removals.vercel.app/api/stripe-webhook`  
    Events: `checkout.session.completed` (and optionally `checkout.session.async_payment_succeeded`).  
-   Copy the signing secret to `STRIPE_WEBHOOK_SECRET`.
+   Copy the signing secret to `STRIPE_WEBHOOK_SECRET`. Do not register the Netlify `/api/stripe-webhook` proxy as the webhook URL.
 4. Currency is **AUD**. The Session line item is the **deposit only**.
 5. Success and cancel URLs are set in code from `PUBLIC_SITE_URL` (see table above).
 
@@ -118,8 +143,9 @@ Useful variables: `{{company_name}}` `{{customer_name}}` `{{user_email}}` `{{use
 Enable Maps JavaScript API, Places API, and Directions API. **Restrict the new key** to HTTP referrers:
 
 - `http://localhost:3000/*`
-- `https://YOUR_PRODUCTION_DOMAIN/*`
-- `https://YOUR_VERCEL_PROJECT.vercel.app/*`
+- `https://movemyhome.com.au/*`
+- `https://www.movemyhome.com.au/*`
+- `https://aama-removals.vercel.app/*`
 
 Do not put an unrestricted key in `index.html` (the old hardcoded key was removed). Without a key, customers can still type addresses.
 
@@ -133,10 +159,10 @@ If `STRIPE_SECRET_KEY` is missing, or you run `npm run dev` without `vercel dev`
 
 1. Fill `VITE_LEGAL_TRADING_NAME`, `VITE_COMPANY_EMAIL`, `VITE_COMPANY_PHONE`, `VITE_COMPANY_WEBSITE`, `VITE_ABN` (and WhatsApp if you use it). Do not invent licences.
 2. Create a Maps key, restrict referrers, set `VITE_GOOGLE_MAPS_API_KEY`.
-3. Stripe test keys + webhook + `PUBLIC_SITE_URL`. Charge a test deposit with `4242…`. Confirm webhook emails.
+3. Stripe test keys + webhook (`https://aama-removals.vercel.app/api/stripe-webhook`) + `PUBLIC_SITE_URL=https://movemyhome.com.au`. Charge a test deposit with `4242…`. Confirm webhook emails.
 4. Switch to `sk_live_` / live webhook secret only when ready. Deploy on **HTTPS**.
 5. Restrict EmailJS keys. Prefer `EMAILJS_PRIVATE_KEY` on the server.
-6. Confirm Vercel env vars are set for Production and Preview. Confirm Deployment Protection is off if the public site must be open.
+6. Confirm Vercel env vars are set for Production and Preview. Confirm Deployment Protection is off if the public API must be reachable from Netlify.
 7. Delete any unused Google Maps keys that were previously hardcoded.
 
 ## Security
