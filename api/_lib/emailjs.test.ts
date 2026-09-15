@@ -322,6 +322,55 @@ test('sendPaidBookingEmails sends a short client confirmation and a full busines
   });
 });
 
+test('paid business sheet keeps fuel maths and access; customer mail does not', async () => {
+  await withEnv(EMAIL_ENV, async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(JSON.parse(String(init?.body || '{}')));
+      return new Response('OK', { status: 200 });
+    }) as typeof fetch;
+    try {
+      const { sendPaidBookingEmails } = await import('./emailjs');
+      const state = samplePaidState();
+      state.distanceKm = 18;
+      state.travelTimeHrs = 0.7;
+      state.pickups[0].access = 'floor1';
+      const breakdown = calculateFullQuote({
+        vehicle: state.vehicle,
+        truckHours: state.truckHours,
+        crewSize: state.crewSize,
+        pickups: state.pickups,
+        dropoffs: state.dropoffs,
+        inventory: state.inventory,
+        bedDisassembly: state.details.bedDisassembly,
+        bedIsAssembled: state.details.bedIsAssembled,
+        distanceKm: state.distanceKm,
+        travelTimeHrs: state.travelTimeHrs,
+        isInterstate: state.isInterstate,
+        dieselAudPerLitre: 1.95,
+      });
+      const snapshot = buildQuoteSnapshot(state, breakdown);
+      await sendPaidBookingEmails(state, snapshot, {
+        sessionId: 'cs_test_paid',
+        paymentIntentId: 'pi_test_paid',
+      }, { gapMs: 0 });
+      const business = (calls[0] as { template_params: Record<string, string> }).template_params;
+      const client = (calls[1] as { template_params: Record<string, string> }).template_params;
+      assert.match(business.job_details, /1st floor, stairs/);
+      assert.match(business.job_details, /7-Eleven diesel/);
+      assert.match(business.job_details, /18\.0 km/);
+      assert.match(business.quote_lines, /Fuel/);
+      assert.equal(/1st floor, stairs/.test(client.client_summary), false);
+      assert.equal(/7-Eleven diesel/.test(client.client_summary), false);
+      assert.equal(/18\.0 km/.test(client.client_summary), false);
+      assert.match(client.client_summary, /12 Illawarra Rd, Marrickville NSW 2204/);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+});
+
 test('sendPaidBookingEmails skip flags do not resend a side already marked sent', async () => {
   await withEnv(EMAIL_ENV, async () => {
     const calls: Array<Record<string, unknown>> = [];
