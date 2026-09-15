@@ -2,11 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { isStripeWebhookConfigured, stripeWebhookSecret } from './_lib/env.js';
 import { getStripe } from './_lib/stripeClient.js';
-import { sendPaidBookingEmails } from './_lib/emailjs.js';
-import type { QuoteState } from '../types.js';
-import { applyMemberDiscount, calculateFullQuote } from '../shared/quoteCalc.js';
-import { buildQuoteSnapshot } from '../shared/snapshot.js';
-import { formatMoney } from '../shared/money.js';
+import { fulfillPaidBookingEmails } from './_lib/paidBooking.js';
 import { redeemMemberCode } from './_lib/memberCodes.js';
 
 export const config = {
@@ -21,37 +17,6 @@ async function rawBody(req: VercelRequest): Promise<Buffer> {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
   }
   return Buffer.concat(chunks);
-}
-
-function stateFromMetadata(meta: Stripe.Metadata): QuoteState {
-  const pickup = String(meta.pickup || '');
-  const dropoff = String(meta.dropoff || '');
-  return {
-    step: 6,
-    serviceType: null,
-    vehicle: String(meta.vehicle || '').toLowerCase().includes('truck') ? 'truck' : 'van',
-    isManualTruckSelection: false,
-    truckHours: 2,
-    crewSize: 2,
-    pickups: [{ id: 'p1', address: pickup, access: 'ground', hasLoadingDock: false }],
-    dropoffs: [{ id: 'd1', address: dropoff, access: 'ground', hasLoadingDock: false }],
-    inventory: { boxes: 0, sofa: 0, mattress: 0, bed: 0, fridge: 0, tv: 0, washer: 0 },
-    details: {
-      date: String(meta.move_date || ''),
-      time: String(meta.move_time || ''),
-      name: String(meta.customer_name || ''),
-      email: String(meta.customer_email || ''),
-      phone: String(meta.customer_phone || ''),
-      instructions: String(meta.notes || ''),
-      bedDisassembly: false,
-      bedIsAssembled: true,
-    },
-    distanceKm: Number(meta.distance_km || 0) || 0,
-    travelTimeHrs: Number(meta.travel_hrs || 0) || 0,
-    isCBD: pickup.includes('2000') || dropoff.includes('2000'),
-    isInterstate: String(meta.move_type || '').toLowerCase().includes('interstate'),
-    discountCode: String(meta.discount_code || ''),
-  };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -99,50 +64,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Deposit amount mismatch on paid session', { sessionId: session.id });
   }
 
-  const state = stateFromMetadata(meta);
-  let paidQuote = calculateFullQuote({
-    vehicle: state.vehicle,
-    truckHours: state.truckHours,
-    crewSize: state.crewSize,
-    pickups: state.pickups,
-    dropoffs: state.dropoffs,
-    inventory: state.inventory,
-    bedDisassembly: state.details.bedDisassembly,
-    bedIsAssembled: state.details.bedIsAssembled,
-    distanceKm: state.distanceKm,
-    travelTimeHrs: state.travelTimeHrs,
-    isInterstate: state.isInterstate,
-    dieselAudPerLitre: (() => {
-      const n = Number(meta.diesel_aud_per_l || 0);
-      return Number.isFinite(n) && n > 0 ? n : null;
-    })(),
-  });
-  if (state.discountCode) {
-    paidQuote = applyMemberDiscount(paidQuote, state.discountCode);
-  }
-  const snapshot = {
-    ...buildQuoteSnapshot(state, paidQuote),
-    serviceLabel: String(meta.service || 'Moving help'),
-    vehicleLabel: String(meta.vehicle || ''),
-    crewLabel: String(meta.crew || ''),
-    inventorySummary: String(meta.inventory || 'See notes'),
-    moveType: String(meta.move_type || ''),
-    totalLabel: formatMoney(Number(meta.quote_total || 0)),
-    depositLabel: formatMoney(Number(meta.deposit || (amountCents / 100))),
-    balanceLabel: formatMoney(Number(meta.balance || 0)),
-  };
+  const discountCode = String(meta.discount_code || '').trim();
+  const customerEmail = session.customer_email || meta.customer_email || '';
 
-  const paymentIntent = typeof session.payment_intent === 'string'
-    ? session.payment_intent
-    : session.payment_intent?.id || '';
-
-  if (state.discountCode) {
+  if (discountCode && customerEmail) {
     try {
       await redeemMemberCode({
-        email: state.details.email,
-        code: state.discountCode,
+        email: customerEmail,
+        code: discountCode,
         sessionId: session.id,
-        name: state.details.name,
+        name: meta.customer_name || '',
       });
     } catch {
       console.error('Member code redeem failed', { sessionId: session.id });
@@ -150,10 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await sendPaidBookingEmails(state, snapshot, {
-      sessionId: session.id,
-      paymentIntentId: paymentIntent,
-    });
+    await fulfillPaidBookingEmails(session);
   } catch {
     res.status(500).json({ error: 'Paid, but email delivery failed — Stripe will retry.' });
     return;

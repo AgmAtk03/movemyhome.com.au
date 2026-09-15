@@ -16,6 +16,7 @@ export interface MemberEmailSendResult {
   skipped: boolean;
 }
 
+/** Paid booking confirmation + job sheet. Do not drop any of these fields. */
 function templateParams(state: QuoteState, snapshot: QuoteSnapshot, extra: Record<string, string> = {}): Record<string, string> {
   const company = companyConfig();
   return {
@@ -121,7 +122,76 @@ export async function sendPaidBookingEmails(
   return { clientSent, businessSent, skipped: false };
 }
 
-export async function sendMemberSignupEmails(input: {
+/**
+ * Empty values for booking {{}} fields on the shared EmailJS templates.
+ * Do not invent fake move dates, vehicles, addresses, or quote totals —
+ * that would look like a broken booking confirmation.
+ */
+function emptyBookingTemplateFields(): Record<string, string> {
+  return {
+    user_phone: '',
+    move_date: '',
+    move_time: '',
+    service_type: '',
+    vehicle: '',
+    crew_size: '',
+    total_quote: '',
+    deposit_amount: '',
+    balance_amount: '',
+    inventory: '',
+    route: '',
+    distance: '',
+    travel_time: '',
+    move_type: '',
+    quote_lines: '',
+    included: '',
+    stripe_session_id: '',
+    stripe_payment_intent: '',
+    payment_status: '',
+    member_discount: '',
+    quote_subtotal: '',
+  };
+}
+
+function memberDiscountTemplateParams(input: {
+  name: string;
+  email: string;
+  discountCode: string;
+  toEmail: string;
+  replyTo: string;
+  jobDetails: string;
+  specialInstructions: string;
+}): Record<string, string> {
+  const company = companyConfig();
+  const name = sanitizePlainText(input.name, 80);
+  const email = sanitizePlainText(input.email, 120);
+  const code = sanitizePlainText(input.discountCode, 32);
+  const office = sanitizePlainText(company.email, 120);
+  return {
+    ...emptyBookingTemplateFields(),
+    company_name: sanitizePlainText(company.name || BRAND_NAME, 80),
+    company_email: office,
+    company_phone: sanitizePlainText(company.phone, 24),
+    from_name: name,
+    customer_name: name,
+    customer_name_html: htmlSafePlainText(name, 80),
+    user_email: email,
+    to_email: sanitizePlainText(input.toEmail, 120),
+    discount_code: code,
+    offer_label: '5% off your first move',
+    email_kind: 'member',
+    reply_to: sanitizePlainText(input.replyTo, 120),
+    special_instructions: sanitizePlainText(input.specialInstructions, 500),
+    job_details: sanitizeMultiline(input.jobDetails, 2500),
+    job_details_html: htmlSafeMultiline(input.jobDetails, 2500),
+  };
+}
+
+/**
+ * Member 5% signup mail. Reuses the two paid EmailJS template IDs as transport
+ * only. Never shares or mutates paid-booking templateParams().
+ */
+export async function sendMemberDiscountEmails(input: {
   name: string;
   email: string;
   discountCode: string;
@@ -136,53 +206,34 @@ export async function sendMemberSignupEmails(input: {
   const email = sanitizePlainText(input.email, 120);
   const code = sanitizePlainText(input.discountCode, 32);
   const office = sanitizePlainText(company.email, 120);
-  const offer = `5% off first move. Code ${code}.`;
   const studentDetails = [
-    'MEMBER 5% OFF',
+    'MEMBER 5% OFF — not a booking',
     `Name: ${name}`,
     `Email: ${email}`,
     `Code: ${code}`,
     'Enter this code on the book step for 5% off your first move.',
   ].join('\n');
   const officeDetails = [
-    'NEW MEMBER 5% SIGNUP',
+    'NEW MEMBER 5% SIGNUP — not a booking',
     `Name: ${name}`,
     `Email: ${email}`,
     `Code: ${code}`,
     'Follow up for their first move.',
   ].join('\n');
 
-  const shared = {
-    customer_name: name,
-    from_name: name,
-    user_email: email,
-    discount_code: code,
-    offer_label: '5% off your first move',
-    company_name: sanitizePlainText(company.name || BRAND_NAME, 80),
-    company_email: office,
-    company_phone: sanitizePlainText(company.phone, 24),
-    total_quote: offer,
-    inventory: `Code ${code}`,
-    vehicle: 'Member offer',
-    move_date: 'First move',
-    deposit_amount: '5% off',
-    balance_amount: '',
-  };
-
   let customerSent = false;
   let businessSent = false;
 
   try {
-    await sendTemplate(cfg.clientTemplateId, {
-      ...shared,
-      to_email: email,
-      email_kind: 'member',
-      reply_to: office,
-      service_type: 'Member 5% off',
-      special_instructions: `Your 5% off code is ${code}. Enter it when you book your first move.`,
-      job_details: studentDetails,
-      job_details_html: htmlSafeMultiline(studentDetails, 2500),
-    });
+    await sendTemplate(cfg.clientTemplateId, memberDiscountTemplateParams({
+      name,
+      email,
+      discountCode: code,
+      toEmail: email,
+      replyTo: office,
+      jobDetails: studentDetails,
+      specialInstructions: `Not a booking. Your 5% off code is ${code}. Enter it on the book step.`,
+    }));
     customerSent = true;
   } catch {
     console.error('Member customer email failed');
@@ -194,16 +245,15 @@ export async function sendMemberSignupEmails(input: {
   }
 
   try {
-    await sendTemplate(cfg.businessTemplateId, {
-      ...shared,
-      to_email: office,
-      email_kind: 'business',
-      reply_to: email,
-      service_type: 'Member signup',
-      special_instructions: `${name} <${email}> code ${code}`,
-      job_details: officeDetails,
-      job_details_html: htmlSafeMultiline(officeDetails, 2500),
-    });
+    await sendTemplate(cfg.businessTemplateId, memberDiscountTemplateParams({
+      name,
+      email,
+      discountCode: code,
+      toEmail: office,
+      replyTo: email,
+      jobDetails: officeDetails,
+      specialInstructions: `Not a booking. ${name} <${email}> code ${code}`,
+    }));
     businessSent = true;
   } catch {
     console.error('Member business email failed');

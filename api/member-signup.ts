@@ -3,7 +3,7 @@ import { applyCors } from './_lib/cors.js';
 import { isValidEmail, isValidPersonName } from '../lib/validation.js';
 import { sanitizePlainText } from '../lib/sanitize.js';
 import { memberSignupMessage, MEMBER_EMAILS_OFF } from '../lib/customerCopy.js';
-import { sendMemberSignupEmails } from './_lib/emailjs.js';
+import { sendMemberDiscountEmails } from './_lib/emailjs.js';
 import { canIssueMemberCode, issueMemberCode } from './_lib/memberCodes.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -68,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const mailed = await sendMemberSignupEmails({ name, email, discountCode: code });
+  const mailed = await sendMemberDiscountEmails({ name, email, discountCode: code });
   const customerEmailed = mailed.customerSent;
   const businessEmailed = mailed.businessSent;
 
