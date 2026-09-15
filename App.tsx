@@ -392,7 +392,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 px-5 pt-8 pb-72 overflow-y-auto no-scrollbar bg-white">
+      <main className="flex-1 px-5 pt-8 pb-80 overflow-y-auto no-scrollbar bg-white">
         <div className="max-w-md mx-auto">
           {state.step === 1 && (
             <Step1ServiceType

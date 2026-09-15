@@ -3,7 +3,7 @@ import { CONFIG } from '../constants';
 import { getPublicContact } from '../lib/contact';
 import Icon from './Icon';
 
-type ContactVariant = 'bar' | 'header' | 'hero' | 'stack' | 'inline';
+type ContactVariant = 'bar' | 'header' | 'hero' | 'stack' | 'inline' | 'dock';
 
 interface ContactActionsProps {
   variant?: ContactVariant;
@@ -78,16 +78,20 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
   const callClass =
     variant === 'bar'
       ? 'flex-1 min-h-11 px-3 inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-[#c5dff0] text-[#0f5a94] font-bold text-sm'
-      : variant === 'hero'
-        ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-base shadow-sm'
-        : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] font-black text-base';
+      : variant === 'dock'
+        ? 'flex-1 min-h-12 px-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-sm'
+        : variant === 'hero'
+          ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-[#c5dff0] text-[#0f5a94] font-black text-base shadow-sm'
+          : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#e7f2fa] border border-[#c5dff0] text-[#0f5a94] font-black text-base';
 
   const waClass =
     variant === 'bar'
       ? 'flex-1 min-h-11 px-3 inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] text-white font-bold text-sm'
-      : variant === 'hero'
-        ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20'
-        : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20';
+      : variant === 'dock'
+        ? 'flex-1 min-h-12 px-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-sm'
+        : variant === 'hero'
+          ? 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20'
+          : 'w-full min-h-12 px-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20';
 
   const wrap =
     variant === 'stack' || variant === 'hero'

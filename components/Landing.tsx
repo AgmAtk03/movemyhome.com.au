@@ -43,10 +43,9 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
       <BannerSlider />
 
       <section className="bg-white border-b border-slate-100" aria-labelledby="quote-heading">
-        <div className="max-w-xl mx-auto px-4 py-8 sm:py-10 text-center">
-          <p className="text-[#146eb4] font-bold tracking-wide text-sm">{CONFIG.COMPANY_NAME}</p>
-          <h1 id="quote-heading" className="mt-1 text-3xl sm:text-4xl font-black tracking-tight text-slate-900 leading-tight">
-            Sydney moving, made simple.
+        <div className="max-w-xl mx-auto px-4 py-7 sm:py-10 text-center">
+          <h1 id="quote-heading" className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 leading-tight">
+            {CONFIG.COMPANY_TAGLINE}
           </h1>
           <a
             href="/quote"
