@@ -1,6 +1,12 @@
 import type { QuoteSnapshot, QuoteState } from '../../types.js';
 import { htmlSafeMultiline, htmlSafePlainText, sanitizeMultiline, sanitizePlainText } from '../../lib/sanitize.js';
-import { buildJobDetailsBody } from '../../shared/snapshot.js';
+import {
+  buildClientBookingSummary,
+  buildJobDetailsBody,
+  buildMemberBusinessDetails,
+  buildMemberClientSummary,
+  formatClientRoute,
+} from '../../shared/snapshot.js';
 import { BRAND_NAME } from '../../shared/rates.js';
 import { companyConfig, emailJsConfig, emailJsMissingVars, isEmailJsServerConfigured, isMemberEmailConfigured } from './env.js';
 
@@ -58,18 +64,79 @@ export interface MemberEmailSendResult {
   error?: string;
 }
 
-/** Paid booking confirmation + job sheet. Do not drop any of these fields. */
-function templateParams(state: QuoteState, snapshot: QuoteSnapshot, extra: Record<string, string> = {}): Record<string, string> {
+function companyIdentityParams(): Record<string, string> {
   const company = companyConfig();
   return {
-    company_name: sanitizePlainText(company.name, 80),
+    company_name: sanitizePlainText(company.name || BRAND_NAME, 80),
     company_email: sanitizePlainText(company.email, 120),
     company_phone: sanitizePlainText(company.phone, 24),
-    from_name: sanitizePlainText(state.details.name, 80),
-    customer_name: sanitizePlainText(state.details.name, 80),
-    user_email: sanitizePlainText(state.details.email, 120),
-    to_email: sanitizePlainText(state.details.email, 120),
+  };
+}
+
+function customerIdentityParams(state: QuoteState): Record<string, string> {
+  const name = sanitizePlainText(state.details.name, 80);
+  const email = sanitizePlainText(state.details.email, 120);
+  return {
+    from_name: name,
+    customer_name: name,
+    customer_name_html: htmlSafePlainText(name, 80),
+    user_email: email,
+    reply_to: email,
+  };
+}
+
+function bodyParams(summary: string, jobDetails: string): Record<string, string> {
+  return {
+    client_summary: sanitizeMultiline(summary, 2500),
+    client_summary_html: htmlSafeMultiline(summary, 2500),
+    job_details: sanitizeMultiline(jobDetails, 2500),
+    job_details_html: htmlSafeMultiline(jobDetails, 2500),
+  };
+}
+
+/** Customer confirmation only. Ops fields stay empty so leftover {{}} cannot leak the job sheet. */
+function paidClientTemplateParams(state: QuoteState, snapshot: QuoteSnapshot): Record<string, string> {
+  const summary = buildClientBookingSummary(snapshot);
+  const email = sanitizePlainText(state.details.email, 120);
+  return {
+    ...emptyBookingTemplateFields(),
+    ...companyIdentityParams(),
+    ...customerIdentityParams(state),
+    ...bodyParams(summary, summary),
+    to_email: email,
+    email_kind: 'client',
+    email_subject: sanitizePlainText(`Your move is booked — ${BRAND_NAME}`, 120),
+    move_date: sanitizePlainText(snapshot.scheduleLabel, 80),
+    move_time: sanitizePlainText(snapshot.scheduleLabel, 80),
+    deposit_amount: sanitizePlainText(snapshot.depositLabel, 24),
+    balance_amount: sanitizePlainText(snapshot.balanceLabel, 24),
+    route: sanitizeMultiline(formatClientRoute(snapshot), 500),
+    payment_status: 'deposit_paid',
+  };
+}
+
+/** Full removals job sheet. Do not drop booking fields to match the customer template. */
+function paidBusinessTemplateParams(
+  state: QuoteState,
+  snapshot: QuoteSnapshot,
+  payment: { sessionId: string; paymentIntentId: string },
+): Record<string, string> {
+  const jobDetails = buildJobDetailsBody(state, snapshot, {
+    sessionId: payment.sessionId,
+    paymentIntentId: payment.paymentIntentId,
+    paymentStatus: 'deposit_paid',
+  });
+  const quoteLines = snapshot.lines
+    .map((line) => `${line.label}: ${[line.amount, line.note].filter(Boolean).join(' — ')}`)
+    .join('\n');
+  return {
+    ...companyIdentityParams(),
+    ...customerIdentityParams(state),
+    ...bodyParams('', jobDetails),
+    to_email: sanitizePlainText(companyConfig().email, 120),
     user_phone: sanitizePlainText(state.details.phone, 24),
+    email_kind: 'business',
+    email_subject: sanitizePlainText('New booking — deposit paid', 120),
     move_date: sanitizePlainText(snapshot.scheduleLabel, 80),
     move_time: sanitizePlainText(snapshot.scheduleLabel, 80),
     service_type: sanitizePlainText(snapshot.serviceLabel, 80),
@@ -84,16 +151,14 @@ function templateParams(state: QuoteState, snapshot: QuoteSnapshot, extra: Recor
     distance: sanitizePlainText(snapshot.distanceLabel, 24),
     travel_time: sanitizePlainText(snapshot.travelTimeLabel, 24),
     move_type: sanitizePlainText(snapshot.moveType, 80),
-    quote_lines: sanitizeMultiline(snapshot.lines.map((line) => `${line.label}: ${line.note || line.amount}`).join('\n'), 800),
+    quote_lines: sanitizeMultiline(quoteLines, 800),
     included: sanitizePlainText(snapshot.included.join(', '), 240),
-    job_details: sanitizeMultiline(buildJobDetailsBody(state, snapshot), 2500),
-    reply_to: sanitizePlainText(state.details.email, 120),
-    job_details_html: htmlSafeMultiline(buildJobDetailsBody(state, snapshot), 2500),
-    customer_name_html: htmlSafePlainText(state.details.name, 80),
+    stripe_session_id: sanitizePlainText(payment.sessionId, 80),
+    stripe_payment_intent: sanitizePlainText(payment.paymentIntentId, 80),
+    payment_status: 'deposit_paid',
     discount_code: sanitizePlainText(snapshot.memberDiscountCode || state.discountCode || '', 32),
     member_discount: sanitizePlainText(snapshot.memberDiscountLabel || '', 24),
     quote_subtotal: sanitizePlainText(snapshot.subtotalLabel || '', 24),
-    ...extra,
   };
 }
 
@@ -157,11 +222,6 @@ export async function sendPaidBookingEmails(
       sessionId: payment.sessionId,
     });
   }
-  const params = templateParams(state, snapshot, {
-    stripe_session_id: sanitizePlainText(payment.sessionId, 80),
-    stripe_payment_intent: sanitizePlainText(payment.paymentIntentId, 80),
-    payment_status: 'deposit_paid',
-  });
 
   let clientSent = Boolean(options.skipClient);
   let businessSent = Boolean(options.skipBusiness);
@@ -169,11 +229,7 @@ export async function sendPaidBookingEmails(
 
   if (!businessSent) {
     try {
-      await sendTemplate(cfg.businessTemplateId, {
-        ...params,
-        to_email: sanitizePlainText(companyConfig().email, 120),
-        email_kind: 'business',
-      });
+      await sendTemplate(cfg.businessTemplateId, paidBusinessTemplateParams(state, snapshot, payment));
       businessSent = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'business email failed';
@@ -187,11 +243,7 @@ export async function sendPaidBookingEmails(
       await wait(gapMs);
     }
     try {
-      await sendTemplate(cfg.clientTemplateId, {
-        ...params,
-        to_email: params.user_email,
-        email_kind: 'client',
-      });
+      await sendTemplate(cfg.clientTemplateId, paidClientTemplateParams(state, snapshot));
       clientSent = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'customer email failed';
@@ -236,6 +288,8 @@ function emptyBookingTemplateFields(): Record<string, string> {
     payment_status: '',
     member_discount: '',
     quote_subtotal: '',
+    special_instructions: '',
+    discount_code: '',
   };
 }
 
@@ -245,19 +299,17 @@ function memberDiscountTemplateParams(input: {
   discountCode: string;
   toEmail: string;
   replyTo: string;
+  emailKind: 'client' | 'business';
+  emailSubject: string;
+  clientSummary: string;
   jobDetails: string;
-  specialInstructions: string;
 }): Record<string, string> {
-  const company = companyConfig();
   const name = sanitizePlainText(input.name, 80);
   const email = sanitizePlainText(input.email, 120);
   const code = sanitizePlainText(input.discountCode, 32);
-  const office = sanitizePlainText(company.email, 120);
   return {
     ...emptyBookingTemplateFields(),
-    company_name: sanitizePlainText(company.name || BRAND_NAME, 80),
-    company_email: office,
-    company_phone: sanitizePlainText(company.phone, 24),
+    ...companyIdentityParams(),
     from_name: name,
     customer_name: name,
     customer_name_html: htmlSafePlainText(name, 80),
@@ -265,11 +317,10 @@ function memberDiscountTemplateParams(input: {
     to_email: sanitizePlainText(input.toEmail, 120),
     discount_code: code,
     offer_label: '5% off your first move',
-    email_kind: 'member',
+    email_kind: input.emailKind,
+    email_subject: sanitizePlainText(input.emailSubject, 120),
     reply_to: sanitizePlainText(input.replyTo, 120),
-    special_instructions: sanitizePlainText(input.specialInstructions, 500),
-    job_details: sanitizeMultiline(input.jobDetails, 2500),
-    job_details_html: htmlSafeMultiline(input.jobDetails, 2500),
+    ...bodyParams(input.clientSummary, input.jobDetails),
   };
 }
 
@@ -300,20 +351,8 @@ export async function sendMemberDiscountEmails(input: {
   const email = sanitizePlainText(input.email, 120);
   const code = sanitizePlainText(input.discountCode, 32);
   const office = sanitizePlainText(company.email, 120);
-  const studentDetails = [
-    'MEMBER 5% OFF — not a booking',
-    `Name: ${name}`,
-    `Email: ${email}`,
-    `Code: ${code}`,
-    'Enter this code on the book step for 5% off your first move.',
-  ].join('\n');
-  const officeDetails = [
-    'NEW MEMBER 5% SIGNUP — not a booking',
-    `Name: ${name}`,
-    `Email: ${email}`,
-    `Code: ${code}`,
-    'Follow up for their first move.',
-  ].join('\n');
+  const clientSummary = buildMemberClientSummary(name, code);
+  const officeDetails = buildMemberBusinessDetails(name, email, code);
 
   let customerSent = false;
   let businessSent = false;
@@ -326,8 +365,10 @@ export async function sendMemberDiscountEmails(input: {
       discountCode: code,
       toEmail: email,
       replyTo: office,
-      jobDetails: studentDetails,
-      specialInstructions: `Not a booking. Your 5% off code is ${code}. Enter it on the book step.`,
+      emailKind: 'client',
+      emailSubject: `Your 5% off code — ${BRAND_NAME}`,
+      clientSummary,
+      jobDetails: clientSummary,
     }));
     customerSent = true;
   } catch (error) {
@@ -357,8 +398,10 @@ export async function sendMemberDiscountEmails(input: {
       discountCode: code,
       toEmail: office,
       replyTo: email,
+      emailKind: 'business',
+      emailSubject: 'New member 5% signup',
+      clientSummary: '',
       jobDetails: officeDetails,
-      specialInstructions: `Not a booking. ${name} <${email}> code ${code}`,
     }));
     businessSent = true;
   } catch (error) {
