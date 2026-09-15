@@ -27,7 +27,7 @@ export const HOME_BANNERS: BannerSlide[] = [
   {
     id: 4,
     stem: '/banners/banner-4',
-    alt: 'A couple packing boxes in their home',
+    alt: 'A couple packing clothes into boxes in their new place',
     kicker: 'Your new place, sorted',
   },
 ];

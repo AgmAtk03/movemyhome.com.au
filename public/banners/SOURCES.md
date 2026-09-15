@@ -1,12 +1,12 @@
 # Homepage banner photos
 
-| File | Scene | Source | Licence |
+All four slides are full-resolution exports from the owner’s **Canva Myhome** folder. JPEG originals are 1920×864, plus 768 / 1280 / 1920 WebP. First slide is eager; later slides are lazy.
+
+| File | Scene | Canva asset | Licence |
 | --- | --- | --- | --- |
-| banner-1 | Truck with My Home logo, movers loading a fridge | Canva Myhome folder, asset `MAHVMMGWdio` (design export DAHVOTRtK5U), 1920×864 | Owner Canva library — My Home Removals |
-| banner-2 | Van / fridge load | Canva Myhome folder, asset `MAHVMOxIv9o` (design export DAHVObNR_jk), 1920×864 | Owner Canva library — My Home Removals |
-| banner-3 | Packing with My Home boxes | Canva Myhome folder, asset `MAHVMPJxOH0` (design export DAHVOWrehG4), 1920×864 | Owner Canva library — My Home Removals |
-| banner-4 | Couple packing at home (stand-in) | [Pexels 4246191](https://www.pexels.com/photo/a-woman-in-brown-sweater-writing-on-the-box-4246191/) | Pexels Licence — keep until a full-res Canva couple still is swapped in. Canva Myhome `MAHVMBb-a68` is available as design DAHVOYNJiv4. |
+| banner-1 | Truck with My Home logo, movers loading a fridge | `MAHVMMGWdio` | Owner Canva library — My Home Removals |
+| banner-2 | Van / fridge load | `MAHVMOxIv9o` | Owner Canva library — My Home Removals |
+| banner-3 | Packing with My Home boxes and uniform | `MAHVMPJxOH0` | Owner Canva library — My Home Removals |
+| banner-4 | Couple packing boxes in a new place | `MAHVMBb-a68` | Owner Canva library — My Home Removals |
 
-Encoded as JPEG plus 768 / 1280 / 1920 WebP. First slide is eager; later slides are lazy.
-
-Site mark: `public/logo.png` is the Canva “MY HOME” truck lockup (design DAHVOSjcYpo). Favicon and apple-touch-icon are derived from that file.
+Site mark: `public/logo.png` is the Canva “MY HOME” truck lockup (1200×1200). Favicon and apple-touch-icon are derived from that file.
