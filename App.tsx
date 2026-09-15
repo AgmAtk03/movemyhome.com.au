@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [nextHint, setNextHint] = useState('');
   const [bookingNotice, setBookingNotice] = useState('');
   const [demoCheckout, setDemoCheckout] = useState(false);
+  const [bookReview, setBookReview] = useState(false);
   const [dieselAudPerLitre, setDieselAudPerLitre] = useState<number | null>(null);
 
   const [state, setState] = useState<QuoteState>({
@@ -109,6 +110,10 @@ const App: React.FC = () => {
 
   const contactErrors = useMemo(() => validateContact(state.details), [state.details]);
   const contactOk = useMemo(() => isContactValid(state.details), [state.details]);
+
+  useEffect(() => {
+    if (state.step !== 6) setBookReview(false);
+  }, [state.step]);
 
   useEffect(() => {
     if (state.step === 2 && state.vehicle) setNextHint('');
@@ -268,6 +273,16 @@ const App: React.FC = () => {
       setNextHint('Please choose a date and a start time.');
       return;
     }
+    if (state.step === 6) {
+      setAttemptedStep(6);
+      if (!contactOk) {
+        setNextHint('Please add a name, email, and Australian phone number.');
+        return;
+      }
+      setNextHint('');
+      setBookReview(true);
+      return;
+    }
 
     setNextHint('');
     setAttemptedStep(null);
@@ -311,6 +326,7 @@ const App: React.FC = () => {
       <CancelScreen
         onRetry={() => {
           startQuote();
+          setBookReview(false);
           setState((prev) => ({ ...prev, step: 6 }));
         }}
         onHome={goHome}
@@ -359,7 +375,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col max-w-lg mx-auto bg-white shadow-2xl relative">
+    <div className="h-[100dvh] min-h-[100dvh] flex flex-col max-w-lg mx-auto bg-white shadow-2xl relative overflow-hidden">
       <Header
         step={state.step}
         totalSteps={WIZARD_STEPS.length}
@@ -367,6 +383,10 @@ const App: React.FC = () => {
         onBack={() => {
           setNextHint('');
           setAttemptedStep(null);
+          if (state.step === 6 && bookReview) {
+            setBookReview(false);
+            return;
+          }
           if (state.step <= 1) {
             goHome();
             return;
@@ -401,7 +421,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 px-5 pt-8 pb-80 overflow-y-auto no-scrollbar bg-white">
+      <main className={`flex-1 px-5 pt-8 overflow-y-auto no-scrollbar bg-white ${bookReview ? 'pb-[28rem]' : state.step >= 6 ? 'pb-96' : 'pb-80'}`}>
         <div className="max-w-md mx-auto">
           {state.step === 1 && (
             <Step1ServiceType
@@ -471,7 +491,9 @@ const App: React.FC = () => {
               snapshot={snapshot}
               whatsappUrl={whatsappUrl}
               errors={contactErrors}
-              showErrors={attemptedStep === 6}
+              showErrors={attemptedStep === 6 && !bookReview}
+              phase={bookReview ? 'review' : 'details'}
+              onEditDetails={() => setBookReview(false)}
               onUpdateDetails={(det) => setState((s) => ({ ...s, details: { ...s.details, ...det } }))}
             />
           )}
@@ -484,6 +506,7 @@ const App: React.FC = () => {
         vehicle={state.vehicle}
         isInterstate={state.isInterstate}
         step={state.step}
+        readyToPay={bookReview}
         nextHint={nextHint}
         onNext={nextStep}
         onBook={handleBooking}

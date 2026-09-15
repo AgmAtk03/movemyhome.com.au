@@ -20,8 +20,9 @@ export function apiUrl(path: string, base = viteApiBase()): string {
 }
 
 /**
- * Same-origin first (Netlify /api proxy — no CORS), then the configured
- * Vercel origin, then the known production API host.
+ * Prefer the configured Vercel API host, then the hard-coded production
+ * host, then same-origin (Netlify /api proxy). HTML 404s from the proxy
+ * must never block checkout.
  */
 export function apiCandidates(path: string): string[] {
   const suffix = apiPath(path);
@@ -32,9 +33,9 @@ export function apiCandidates(path: string): string[] {
     seen.add(url);
     out.push(url);
   };
-  add(suffix);
   add(apiUrl(suffix));
   add(apiUrl(suffix, DEFAULT_API_BASE));
+  add(suffix);
   return out;
 }
 
@@ -42,14 +43,14 @@ export function isApiJson(contentType: string | null | undefined): boolean {
   return (contentType || '').toLowerCase().includes('application/json');
 }
 
-/** Fetch JSON from the API, retrying hosts when the response is HTML/404 or the request fails. */
+/** Fetch JSON from the API, retrying hosts when the response is HTML or the request fails. */
 export async function fetchApi(path: string, init?: RequestInit): Promise<Response> {
   const urls = apiCandidates(path);
   let lastError: Error | null = null;
   for (const url of urls) {
     try {
       const res = await fetch(url, init);
-      if (res.status === 404 || !isApiJson(res.headers.get('content-type'))) {
+      if (!isApiJson(res.headers.get('content-type'))) {
         lastError = new Error('not-json');
         continue;
       }

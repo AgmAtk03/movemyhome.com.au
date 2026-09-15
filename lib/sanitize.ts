@@ -40,6 +40,11 @@ export function htmlSafeMultiline(value: string, max = 1500): string {
   return escapeHtml(sanitizeMultiline(value, max));
 }
 
+/** Escaped text with line breaks preserved for HTML email templates (`{{{job_details_html}}}`). */
+export function htmlSafeMultilineWithBreaks(value: string, max = 1500): string {
+  return htmlSafeMultiline(value, max).replace(/\n/g, '<br>\n');
+}
+
 export function safeTelHref(phone: string): string | null {
   const cleaned = phone.replace(/[^\d+]/g, '');
   if (cleaned.length < 6) return null;

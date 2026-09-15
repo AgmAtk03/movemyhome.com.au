@@ -154,26 +154,59 @@ export function buildCustomerMessage(state: QuoteState, snapshot: QuoteSnapshot)
 
 export function buildJobDetailsBody(state: QuoteState, snapshot: QuoteSnapshot): string {
   const instructions = sanitizeMultiline(state.details.instructions, 800) || 'None';
+  const pickups = (snapshot.pickupAddresses.length ? snapshot.pickupAddresses : state.pickups.map((row) => row.address))
+    .map((address, index) => {
+      const loc = state.pickups[index];
+      const extra = loc ? ` · ${loc.access}${loc.hasLoadingDock ? ' · loading dock' : ''}` : '';
+      return `  ${index + 1}. ${address}${extra}`;
+    })
+    .join('\n');
+  const dropoffs = (snapshot.dropoffAddresses.length ? snapshot.dropoffAddresses : state.dropoffs.map((row) => row.address))
+    .map((address, index) => {
+      const loc = state.dropoffs[index];
+      const extra = loc ? ` · ${loc.access}${loc.hasLoadingDock ? ' · loading dock' : ''}` : '';
+      return `  ${index + 1}. ${address}${extra}`;
+    })
+    .join('\n');
+  const breakdown = snapshot.lines.map((line) => `  - ${line.label}: ${line.note || line.amount}`).join('\n');
   return sanitizeMultiline(
     [
-      'NEW BOOKING — 10% DEPOSIT',
-      `Customer: ${sanitizePlainText(state.details.name, 80)}`,
-      `Email: ${sanitizePlainText(state.details.email, 120)}`,
+      'NEW BOOKING — 10% DEPOSIT PAID',
+      '',
+      'CONTACT',
+      `Name: ${sanitizePlainText(state.details.name, 80)}`,
       `Phone: ${sanitizePlainText(state.details.phone, 24)}`,
-      `When: ${snapshot.scheduleLabel}`,
+      `Email: ${sanitizePlainText(state.details.email, 120)}`,
+      '',
+      'WHEN',
+      `Date / time: ${snapshot.scheduleLabel}`,
+      '',
+      'JOB',
       `Service: ${snapshot.serviceLabel}`,
       `Vehicle: ${snapshot.vehicleLabel}`,
       `Crew: ${snapshot.crewLabel}`,
       `Move type: ${snapshot.moveType}`,
       `Distance: ${snapshot.distanceLabel} · Drive time: ${snapshot.travelTimeLabel}`,
+      '',
+      'ADDRESSES',
+      'Pickup:',
+      pickups || `  ${snapshot.routeSummary}`,
+      'Drop-off:',
+      dropoffs || '',
       snapshot.routeSummary,
-      `Items: ${snapshot.inventorySummary}`,
+      '',
+      'ITEMS / INVENTORY',
+      snapshot.inventorySummary || 'No specific items listed yet',
+      '',
+      'QUOTE / DEPOSIT',
       `Quote total: ${snapshot.totalLabel}`,
-      `Deposit paid / due: ${snapshot.depositLabel}`,
-      `Balance on the day: ${snapshot.balanceLabel}`,
-      snapshot.lines.map((line) => `- ${line.label}: ${line.note || line.amount}`).join('\n'),
-      `Notes: ${instructions}`,
-    ].join('\n'),
+      `Deposit paid (10%): ${snapshot.depositLabel}`,
+      `Balance due on the day (90%): ${snapshot.balanceLabel}`,
+      breakdown ? `Breakdown:\n${breakdown}` : '',
+      '',
+      'NOTES',
+      instructions,
+    ].filter((line) => line !== '').join('\n'),
     2500
   );
 }

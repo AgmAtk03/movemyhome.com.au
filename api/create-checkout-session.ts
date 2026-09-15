@@ -6,7 +6,8 @@ import { formatMoney } from '../shared/money.js';
 import { buildQuoteSnapshot } from '../shared/snapshot.js';
 import { companyConfig, isStripeConfigured, publicSiteUrl } from './_lib/env.js';
 import { dieselAudFromResult, getDieselPrice } from './_lib/dieselPrice.js';
-import { getStripe, meta } from './_lib/stripeClient.js';
+import { getStripe } from './_lib/stripeClient.js';
+import { buildCheckoutMetadata } from './_lib/paidSession.js';
 import { BRAND_NAME } from '../shared/rates.js';
 import { sanitizePlainText } from '../lib/sanitize.js';
 import { PAYMENT_OPEN_ERROR, PAYMENTS_OFF_SHORT, QUOTE_TOO_SMALL } from '../lib/customerCopy.js';
@@ -108,36 +109,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
         },
       ],
-      metadata: {
-        brand: meta(BRAND_NAME, 40),
-        customer_name: meta(state.details.name, 80),
-        customer_email: meta(state.details.email, 120),
-        customer_phone: meta(state.details.phone, 24),
-        quote_total: meta(String(breakdown.total), 24),
-        deposit: meta(String(breakdown.deposit), 24),
-        balance: meta(String(breakdown.balance), 24),
-        deposit_cents: meta(String(breakdown.depositCents), 12),
-        currency: 'aud',
-        move_date: meta(state.details.date, 16),
-        move_time: meta(state.details.time, 8),
-        service: meta(snapshot.serviceLabel, 80),
-        vehicle: meta(snapshot.vehicleLabel, 40),
-        crew: meta(snapshot.crewLabel, 40),
-        pickup: meta(state.pickups.map((p) => p.address).join(' | '), 500),
-        dropoff: meta(state.dropoffs.map((d) => d.address).join(' | '), 500),
-        inventory: meta(snapshot.inventorySummary, 400),
-        notes: meta(state.details.instructions || '', 400),
-        distance_km: meta(state.distanceKm.toFixed(1), 16),
-        travel_hrs: meta(state.travelTimeHrs.toFixed(1), 16),
-        fuel: meta(String(breakdown.fuel), 24),
-        fuel_status: meta(
-          breakdown.fuelStatus === 'none' && state.distanceKm <= 0 ? 'tbc' : breakdown.fuelStatus,
-          12,
-        ),
-        diesel_aud_per_l: meta(dieselAudPerLitre != null ? String(dieselAudPerLitre) : '', 16),
-        move_type: meta(snapshot.moveType, 80),
-        legal_name: meta(company.legalName, 80),
-      },
+      metadata: buildCheckoutMetadata(state, snapshot, breakdown, {
+        dieselAudPerLitre,
+        legalName: company.legalName,
+      }),
     });
 
     if (!session.url) {

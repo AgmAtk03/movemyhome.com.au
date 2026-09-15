@@ -63,5 +63,7 @@ export const INVENTORY_LABELS: Record<string, string> = {
 };
 
 export const BRAND_NAME = 'My Home Removals';
+/** Production bookings inbox — used when VITE_COMPANY_EMAIL is unset on the API host. */
+export const BOOKINGS_INBOX = 'removalsmyhome@gmail.com';
 export const CURRENCY = 'aud';
 export const DEPOSIT_RATE = 0.1;

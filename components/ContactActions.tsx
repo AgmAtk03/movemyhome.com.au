@@ -46,35 +46,6 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
     );
   }
 
-  if (variant === 'header') {
-    return (
-      <nav aria-label="Call or WhatsApp" className={`flex items-center gap-1 ${className}`}>
-        {contact.telHref && (
-          <a
-            href={contact.telHref}
-            className="min-h-11 min-w-11 px-2 inline-flex items-center justify-center gap-1.5 rounded-xl text-[#146eb4] hover:bg-[#e7f2fa]"
-            aria-label={callLabel}
-          >
-            <Icon name="phone" className="text-lg" />
-            <span className="hidden sm:inline text-xs font-black whitespace-nowrap">{contact.display}</span>
-          </a>
-        )}
-        {contact.whatsAppHref && (
-          <a
-            href={contact.whatsAppHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="min-h-11 min-w-11 px-2 inline-flex items-center justify-center gap-1.5 rounded-xl text-[#128C7E] hover:bg-emerald-50"
-            aria-label={waLabel}
-          >
-            <Icon name="whatsapp-logo" className="text-lg" />
-            <span className="hidden sm:inline text-xs font-black">WhatsApp</span>
-          </a>
-        )}
-      </nav>
-    );
-  }
-
   if (variant === 'dock') {
     const dockBtn =
       'flex-1 min-h-11 px-2 sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-xl font-semibold text-sm whitespace-nowrap';
@@ -100,6 +71,35 @@ const ContactActions: React.FC<ContactActionsProps> = ({ variant = 'stack', clas
           >
             <Icon name="whatsapp-logo" className="text-base" />
             <span>WhatsApp</span>
+          </a>
+        )}
+      </nav>
+    );
+  }
+
+  if (variant === 'header') {
+    return (
+      <nav aria-label="Call or WhatsApp" className={`flex items-center gap-1 ${className}`}>
+        {contact.telHref && (
+          <a
+            href={contact.telHref}
+            className="min-h-11 min-w-11 px-2 inline-flex items-center justify-center gap-1.5 rounded-xl text-[#146eb4] hover:bg-[#e7f2fa]"
+            aria-label={callLabel}
+          >
+            <Icon name="phone" className="text-lg" />
+            <span className="hidden sm:inline text-xs font-black whitespace-nowrap">{contact.display}</span>
+          </a>
+        )}
+        {contact.whatsAppHref && (
+          <a
+            href={contact.whatsAppHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="min-h-11 min-w-11 px-2 inline-flex items-center justify-center gap-1.5 rounded-xl text-[#128C7E] hover:bg-emerald-50"
+            aria-label={waLabel}
+          >
+            <Icon name="whatsapp-logo" className="text-lg" />
+            <span className="hidden sm:inline text-xs font-black">WhatsApp</span>
           </a>
         )}
       </nav>

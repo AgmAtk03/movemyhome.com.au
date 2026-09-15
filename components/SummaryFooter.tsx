@@ -34,20 +34,26 @@ interface FooterProps {
   vehicle: VehicleType | null;
   isInterstate: boolean;
   step: number;
+  readyToPay?: boolean;
   nextHint?: string;
   onNext: () => void;
   onBook: () => void;
 }
 
 const SummaryFooter: React.FC<FooterProps> = ({
-  breakdown, fuelLine, vehicle, step, nextHint, onNext, onBook,
+  breakdown, fuelLine, vehicle, step, readyToPay = false, nextHint, onNext, onBook,
 }) => {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [animatePrice, setAnimatePrice] = useState(false);
   const prevTotalRef = useRef(breakdown.total);
   const isTruck = vehicle === 'truck';
   const isBookStep = step >= 6;
+  const showPay = isBookStep && readyToPay;
   const showMoney = step > 1 && Boolean(vehicle);
+
+  useEffect(() => {
+    setShowBreakdown(false);
+  }, [step, readyToPay]);
 
   useEffect(() => {
     if (prevTotalRef.current !== breakdown.total) {
@@ -73,15 +79,25 @@ const SummaryFooter: React.FC<FooterProps> = ({
 
   return (
     <>
+      {showBreakdown && (
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[45]"
+          onClick={() => setShowBreakdown(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-2xl border-t border-slate-100 px-5 pt-3 pb-safe z-50 rounded-t-[2rem] shadow-[0_-12px_40px_rgba(0,0,0,0.08)]">
         <div className={animatePrice ? 'animate-price-bump' : undefined}>
           {showMoney ? (
             <dl className="space-y-1">
               <div className="flex justify-between items-baseline gap-3">
                 <dt className="text-sm font-bold text-slate-600">Estimated total</dt>
-                <dd className="text-2xl font-black text-slate-900 tracking-tight" aria-live="polite">{formatMoney(breakdown.total)}</dd>
+                <dd className="text-2xl font-black text-slate-900 tracking-tight" aria-live="polite">
+                  {formatMoney(breakdown.total)}
+                </dd>
               </div>
-              {isBookStep && (
+              {showPay && (
                 <div className="flex justify-between gap-3 text-sm">
                   <dt className="font-semibold text-slate-500">Pay today (10%)</dt>
                   <dd className="font-black text-slate-800">{formatMoney(breakdown.deposit)}</dd>
@@ -95,22 +111,25 @@ const SummaryFooter: React.FC<FooterProps> = ({
             <p className="text-[11px] font-bold text-[#0f5a94] mt-1">Hourly truck — final total depends on time on the day</p>
           )}
         </div>
-        <button
-          type="button"
-          className="mt-1 min-h-11 text-left text-[11px] font-bold text-slate-400 flex items-center gap-1"
-          onClick={() => setShowBreakdown((open) => !open)}
-          aria-expanded={showBreakdown}
-          aria-controls="quote-breakdown"
-        >
-          {showBreakdown ? 'Hide quote details' : 'Quote details'}
-          <Icon name="caret-up" className={`text-[10px] text-[#146eb4] transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
-        </button>
+
+        {showMoney && (
+          <button
+            type="button"
+            className="mt-1 min-h-11 text-left text-[11px] font-bold text-slate-400 flex items-center gap-1"
+            onClick={() => setShowBreakdown((open) => !open)}
+            aria-expanded={showBreakdown}
+            aria-controls="quote-breakdown"
+          >
+            {showBreakdown ? 'Hide breakdown' : 'See breakdown'}
+            <Icon name="caret-up" className={`text-[10px] text-[#146eb4] transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
+          </button>
+        )}
 
         {nextHint && (
           <p className="text-sm text-rose-700 mt-2 font-medium" role="status">{nextHint}</p>
         )}
 
-        {isBookStep ? (
+        {showPay ? (
           <button type="button" onClick={onBook} className="btn-primary mt-3 w-full text-lg">
             Pay 10% deposit
           </button>
@@ -190,7 +209,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
                 <span className="font-black text-slate-900">Estimated total</span>
                 <span className="text-2xl font-black text-[#146eb4]">{formatMoney(breakdown.total)}</span>
               </div>
-              {isBookStep && (
+              {showPay && (
                 <>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Pay today (10%)</span>

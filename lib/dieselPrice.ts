@@ -1,3 +1,5 @@
+import { fetchApi } from './api';
+
 export interface DieselPriceClient {
   audPerLitre: number | null;
   source?: string;
@@ -6,7 +8,7 @@ export interface DieselPriceClient {
 
 export async function fetchDieselPrice(): Promise<DieselPriceClient> {
   try {
-    const response = await fetch('/api/diesel-price', { method: 'GET' });
+    const response = await fetchApi('/api/diesel-price', { method: 'GET' });
     if (!response.ok) return { audPerLitre: null };
     const data = await response.json() as {
       ok?: boolean;
