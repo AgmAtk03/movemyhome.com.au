@@ -1,9 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { HOME_BANNERS } from './banners';
+import Icon from './Icon';
 
 const INTERVAL_MS = 5500;
 
-const BannerSlider: React.FC = () => {
+interface BannerSliderProps {
+  children?: React.ReactNode;
+}
+
+const BannerSlider: React.FC<BannerSliderProps> = ({ children }) => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
@@ -53,7 +58,7 @@ const BannerSlider: React.FC = () => {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="relative h-[min(72vw,28rem)] sm:h-[min(52vw,32rem)] lg:h-[36rem]">
+      <div className="relative h-[min(68vw,24rem)] sm:h-[min(48vw,30rem)] lg:h-[32rem]">
         {HOME_BANNERS.map((slide, i) => {
           const active = i === index;
           return (
@@ -75,41 +80,39 @@ const BannerSlider: React.FC = () => {
                   alt={active ? slide.alt : ''}
                   className="h-full w-full object-cover"
                   width={1920}
-                  height={1080}
+                  height={864}
                   loading={i === 0 ? 'eager' : 'lazy'}
                   fetchPriority={i === 0 ? 'high' : 'low'}
                   decoding={i === 0 ? 'sync' : 'async'}
                 />
               </picture>
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/25 to-slate-900/10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/30 to-slate-900/15" />
             </div>
           );
         })}
 
-        <p className="absolute left-4 bottom-16 z-20 sm:left-8 sm:bottom-20 text-white text-sm font-bold tracking-wide drop-shadow">
-          {HOME_BANNERS[index].kicker}
-        </p>
+        {children}
 
         <div className="absolute inset-y-0 left-0 right-0 z-20 flex items-center justify-between px-2 sm:px-4 pointer-events-none">
           <button
             type="button"
-            className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/90 text-slate-800 shadow-md"
+            className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/90 text-slate-800 shadow-md inline-flex items-center justify-center"
             onClick={() => go(index - 1)}
             aria-label="Previous photo"
           >
-            <i className="ph-bold ph-caret-left text-xl" aria-hidden="true"></i>
+            <Icon name="caret-left" className="text-xl" />
           </button>
           <button
             type="button"
-            className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/90 text-slate-800 shadow-md"
+            className="pointer-events-auto min-w-11 min-h-11 rounded-full bg-white/90 text-slate-800 shadow-md inline-flex items-center justify-center"
             onClick={() => go(index + 1)}
             aria-label="Next photo"
           >
-            <i className="ph-bold ph-caret-right text-xl" aria-hidden="true"></i>
+            <Icon name="caret-right" className="text-xl" />
           </button>
         </div>
 
-        <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2" role="tablist" aria-label="Banner slides">
+        <div className="absolute bottom-3 left-0 right-0 z-20 flex justify-center gap-2" role="tablist" aria-label="Banner slides">
           {HOME_BANNERS.map((slide, i) => (
             <button
               key={slide.id}

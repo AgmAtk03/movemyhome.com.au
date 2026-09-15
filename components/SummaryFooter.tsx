@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { VehicleType } from '../types';
 import { formatMoney } from '../lib/quote';
+import Icon from './Icon';
 
 interface FooterProps {
   breakdown: {
@@ -66,7 +67,7 @@ const SummaryFooter: React.FC<FooterProps> = ({
         >
           <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mb-2">
             Tap for a breakdown
-            <i className={`ph-bold ph-caret-up text-[10px] text-[#146eb4] transition-transform ${showBreakdown ? 'rotate-180' : ''}`} aria-hidden="true"></i>
+            <Icon name="caret-up" className={`text-[10px] text-[#146eb4] transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
           </span>
           {showMoney ? (
             <dl className={`space-y-1.5 ${animatePrice ? 'animate-price-bump' : ''}`}>
@@ -114,8 +115,8 @@ const SummaryFooter: React.FC<FooterProps> = ({
           <div id="quote-breakdown" className="absolute bottom-full left-0 right-0 p-6 bg-white border-t border-slate-100 rounded-t-[2rem] shadow-2xl z-[48] max-h-[70vh] overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between mb-5">
               <h4 className="text-xl font-black text-slate-900">What’s in the quote</h4>
-              <button type="button" className="w-11 h-11 bg-slate-50 rounded-xl text-slate-500" onClick={() => setShowBreakdown(false)} aria-label="Close quote details">
-                <i className="ph ph-x text-xl" aria-hidden="true"></i>
+              <button type="button" className="w-11 h-11 bg-slate-50 rounded-xl text-slate-500 inline-flex items-center justify-center" onClick={() => setShowBreakdown(false)} aria-label="Close quote details">
+                <Icon name="x" className="text-xl" />
               </button>
             </div>
 

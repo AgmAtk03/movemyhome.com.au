@@ -9,19 +9,19 @@ export const HOME_BANNERS: BannerSlide[] = [
   {
     id: 1,
     stem: '/banners/banner-1',
-    alt: 'Removalists loading crates onto a moving truck',
+    alt: 'My Home Removals truck at a Sydney home, two movers loading a fridge',
     kicker: 'We load the truck',
   },
   {
     id: 2,
     stem: '/banners/banner-2',
-    alt: 'Movers packing a van with boxes',
+    alt: 'A My Home removalist sliding a fridge into a van',
     kicker: 'Vans for the smaller jobs',
   },
   {
     id: 3,
     stem: '/banners/banner-3',
-    alt: 'Someone taping a moving box ready for the trip',
+    alt: 'A customer packing clothes while a My Home mover carries branded boxes',
     kicker: 'Packed with care',
   },
   {

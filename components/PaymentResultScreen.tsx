@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PAYMENTS_OFF_BODY, PAYMENTS_OFF_HEADING, PAYMENT_NOT_FOUND, customerFacingError } from '../lib/customerCopy';
 import ConfiguredContact from './ConfiguredContact';
+import Icon from './Icon';
 
 interface VerifyResponse {
   paid?: boolean;
@@ -53,7 +54,7 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
     return (
       <div className="min-h-[100dvh] flex flex-col items-center p-6 bg-white max-w-lg mx-auto text-center pt-12">
         <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-5">
-          <i className="ph-fill ph-check-circle text-emerald-600 text-5xl" aria-hidden="true"></i>
+          <Icon name="check-circle" className="text-emerald-600 text-5xl" />
         </div>
         <h1 className="text-3xl font-black text-slate-900">Deposit received</h1>
         <p className="text-slate-600 mt-3 max-w-sm leading-relaxed">
@@ -84,7 +85,7 @@ const PaymentResultScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center p-6 bg-white max-w-lg mx-auto text-center pt-12">
       <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-5">
-        <i className="ph-fill ph-warning-circle text-amber-600 text-5xl" aria-hidden="true"></i>
+        <Icon name="warning-circle" className="text-amber-600 text-5xl" />
       </div>
       <h1 className="text-3xl font-black text-slate-900">
         {paymentsOff ? PAYMENTS_OFF_HEADING : status === 'missing' ? 'No payment to check' : 'Payment not confirmed'}

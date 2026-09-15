@@ -1,6 +1,8 @@
 import React from 'react';
 import { CONFIG, WIZARD_STEPS } from '../constants';
 import { navigateTo } from '../lib/nav';
+import BrandMark from './BrandMark';
+import Icon from './Icon';
 
 interface HeaderProps {
   step: number;
@@ -32,12 +34,12 @@ const Header: React.FC<HeaderProps> = ({ step, totalSteps, onBack, onHome }) => 
             className="min-w-11 min-h-11 flex items-center justify-center bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 active:scale-95 transition-all border border-slate-100 flex-shrink-0"
             aria-label={step > 1 ? 'Go back to the previous step' : 'Back to home'}
           >
-            <i className="ph-bold ph-caret-left text-lg" aria-hidden="true"></i>
+            <Icon name="caret-left" className="text-lg" />
           </button>
         )}
 
         <a href="/" onClick={goHome} className="flex items-center gap-2 min-h-11 min-w-0 flex-1">
-          <span className="bg-[#146eb4] text-white w-7 h-7 flex items-center justify-center rounded-lg text-sm flex-shrink-0" aria-hidden="true">M</span>
+          <BrandMark className="h-8 w-8" />
           <span className="font-black tracking-tight text-slate-900 truncate">{CONFIG.COMPANY_NAME}</span>
         </a>
 

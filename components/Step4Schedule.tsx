@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { MoveDetails } from '../types';
+import Icon from './Icon';
 
 interface Step4Props {
   details: MoveDetails;
@@ -136,7 +137,7 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
           }`}
         >
           <div className={`w-14 h-14 flex items-center justify-center text-2xl rounded-2xl ${details.date ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-400'}`}>
-            <i className="ph-fill ph-calendar" aria-hidden="true"></i>
+            <Icon name="calendar" />
           </div>
           <div className="flex-1">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-0.5">Move date</span>
@@ -150,13 +151,13 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
           <div className="bg-white border-2 border-slate-100 rounded-[2rem] overflow-hidden">
             <div className="bg-[#146eb4] p-4 flex justify-between items-center text-white">
               <button type="button" onClick={() => changeMonth(-1)} className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/20" aria-label="Previous month">
-                <i className="ph-bold ph-caret-left" aria-hidden="true"></i>
+                <Icon name="caret-left" />
               </button>
               <h3 className="font-black text-sm tracking-tight">
                 {viewDate.toLocaleString('en-AU', { month: 'long', year: 'numeric' })}
               </h3>
               <button type="button" onClick={() => changeMonth(1)} className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/20" aria-label="Next month">
-                <i className="ph-bold ph-caret-right" aria-hidden="true"></i>
+                <Icon name="caret-right" />
               </button>
             </div>
             <div className="p-4">
@@ -203,7 +204,7 @@ const Step4Schedule: React.FC<Step4Props> = ({ details, onUpdateDetails, showVal
           }`}
         >
           <div className={`w-14 h-14 flex items-center justify-center text-2xl rounded-2xl ${details.time ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-400'}`}>
-            <i className="ph-fill ph-clock" aria-hidden="true"></i>
+            <Icon name="clock" />
           </div>
           <div className="flex-1">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-0.5">Arrival window starts</span>

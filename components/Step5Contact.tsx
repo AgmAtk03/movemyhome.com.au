@@ -3,6 +3,7 @@ import { MoveDetails, QuoteSnapshot } from '../types';
 import { ContactErrors } from '../lib/validation';
 import QuoteRecap from './QuoteRecap';
 import BookingExtras from './BookingExtras';
+import Icon from './Icon';
 
 interface Step5Props {
   details: MoveDetails;
@@ -40,7 +41,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           </div>
           <div className="relative">
             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
-              <i className="ph-bold ph-user text-xl"></i>
+              <Icon name="user" className="text-xl" />
             </span>
             <input
               id="customer-name"
@@ -64,7 +65,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           </div>
           <div className="relative">
             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
-              <i className="ph-bold ph-envelope-simple text-xl"></i>
+              <Icon name="envelope-simple" className="text-xl" />
             </span>
             <input
               id="customer-email"
@@ -89,7 +90,7 @@ const Step5Contact: React.FC<Step5Props> = ({ details, onUpdateDetails, snapshot
           </div>
           <div className="relative">
             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
-              <i className="ph-bold ph-phone text-xl"></i>
+              <Icon name="phone" className="text-xl" />
             </span>
             <input
               id="customer-phone"

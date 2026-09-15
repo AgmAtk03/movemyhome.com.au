@@ -4,6 +4,7 @@ import { formatMoney } from '../lib/quote';
 import { PAYMENTS_OFF_HEADING } from '../lib/customerCopy';
 import BookingExtras from './BookingExtras';
 import ConfiguredContact from './ConfiguredContact';
+import Icon from './Icon';
 
 interface SuccessProps {
   name: string;
@@ -33,7 +34,7 @@ const SuccessScreen: React.FC<SuccessProps> = ({
   return (
     <div className="min-h-[100dvh] flex flex-col items-center p-6 text-center bg-white max-w-lg mx-auto pt-12 pb-10">
       <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-5">
-        <i className="ph-fill ph-pause-circle text-amber-700 text-5xl" aria-hidden="true"></i>
+        <Icon name="pause-circle" className="text-amber-700 text-5xl" />
       </div>
 
       <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">{PAYMENTS_OFF_HEADING}</h2>

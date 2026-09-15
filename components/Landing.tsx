@@ -1,6 +1,7 @@
 import React from 'react';
 import { CONFIG, SERVICE_AREAS } from '../constants';
 import BannerSlider from './BannerSlider';
+import Icon, { type IconName } from './Icon';
 import MemberSignup from './MemberSignup';
 import SiteHeader from './SiteHeader';
 import { navigateTo } from '../lib/nav';
@@ -8,6 +9,12 @@ import { navigateTo } from '../lib/nav';
 interface LandingProps {
   onStart: () => void;
 }
+
+const VALUE_PROPS: { icon: IconName; t: string; d: string }[] = [
+  { icon: 'map-pin', t: 'Sydney & NSW', d: 'From the Inner West to the beaches and regional NSW — we’ll tell you if a job is too far.' },
+  { icon: 'calendar-check', t: '10% holds the day', d: 'Pay a tenth now so the slot is yours. Nothing more until we actually move you.' },
+  { icon: 'wallet', t: 'The rest on the day', d: 'The remaining 90% is due when we arrive. No surprise card charge for the full quote.' },
+];
 
 const Landing: React.FC<LandingProps> = ({ onStart }) => {
   const startQuote = (event?: React.MouseEvent) => {
@@ -20,36 +27,31 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
     <div className="min-h-[100dvh] bg-slate-50 text-slate-900">
       <SiteHeader current="home" />
 
-      <BannerSlider />
-
-      <div className="relative z-30 max-w-6xl mx-auto px-4 -mt-10 sm:-mt-14">
-        <div className="bg-white rounded-[1.75rem] shadow-xl border border-slate-100 p-6 sm:p-8">
-          <p className="text-[#146eb4] font-bold tracking-wide text-sm">{CONFIG.COMPANY_NAME}</p>
-          <h1 className="mt-1 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-tight max-w-2xl">
+      <BannerSlider>
+        <div className="absolute inset-0 z-[15] flex flex-col items-center justify-center px-4 pb-10 pt-6 text-center pointer-events-none">
+          <p className="text-[#ff9900] font-bold tracking-wide text-sm drop-shadow">{CONFIG.COMPANY_NAME}</p>
+          <h1 className="mt-1 text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight max-w-xl drop-shadow-md">
             Sydney moving, made simple.
           </h1>
-          <p className="mt-3 text-slate-600 text-base sm:text-lg font-medium max-w-xl leading-relaxed">
-            Local movers for homes, rooms, and a few bulky bits across Sydney and NSW. Get a clear quote in a couple of minutes.
-          </p>
-          <a href="/quote" onClick={startQuote} className="btn-primary mt-5 inline-flex w-full sm:w-auto px-8 text-lg">
+          <a
+            href="/quote"
+            onClick={startQuote}
+            className="btn-primary pointer-events-auto mt-5 w-full max-w-sm text-xl min-h-[52px] px-8 shadow-[0_12px_28px_rgba(255,153,0,0.45)]"
+          >
             Get an Instant Quote
           </a>
-          <p className="text-sm text-slate-500 font-medium mt-3">Takes about two minutes · 10% holds the day</p>
+          <p className="mt-3 text-sm font-medium text-white/90 drop-shadow">Takes about two minutes · 10% holds the day</p>
         </div>
-      </div>
+      </BannerSlider>
 
       <main className="max-w-6xl mx-auto px-4 py-10 sm:py-14 space-y-12">
         <section aria-labelledby="value-heading">
           <h2 id="value-heading" className="text-2xl font-black tracking-tight">Why people book with us</h2>
           <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { icon: 'ph-map-pin', t: 'Sydney & NSW', d: 'From the Inner West to the beaches and regional NSW — we’ll tell you if a job is too far.' },
-              { icon: 'ph-calendar-check', t: '10% holds the day', d: 'Pay a tenth now so the slot is yours. Nothing more until we actually move you.' },
-              { icon: 'ph-wallet', t: 'The rest on the day', d: 'The remaining 90% is due when we arrive. No surprise card charge for the full quote.' },
-            ].map((item) => (
+            {VALUE_PROPS.map((item) => (
               <article key={item.t} className="bg-white border border-slate-200 rounded-[1.75rem] p-5">
-                <span className="w-11 h-11 rounded-2xl bg-[#e7f2fa] text-[#146eb4] flex items-center justify-center" aria-hidden="true">
-                  <i className={`ph-fill ${item.icon} text-xl`}></i>
+                <span className="w-11 h-11 rounded-2xl bg-[#e7f2fa] text-[#146eb4] flex items-center justify-center text-xl" aria-hidden="true">
+                  <Icon name={item.icon} />
                 </span>
                 <h3 className="mt-4 font-black text-lg text-slate-900">{item.t}</h3>
                 <p className="mt-2 text-sm text-slate-600 leading-relaxed">{item.d}</p>
@@ -95,10 +97,7 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
         </div>
         <div className="border-t border-white/15">
           <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between text-xs text-white/70">
-            <p>
-              Banner photos: Luisa.geo, <a className="underline" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
-              {' '}· additional scenes from Pexels. Canva Myhome originals can be swapped in.
-            </p>
+            <p>My Home Removals · Sydney and NSW</p>
             <a href="/privacy" className="min-h-11 inline-flex items-center underline decoration-white/40">Privacy</a>
           </div>
         </div>

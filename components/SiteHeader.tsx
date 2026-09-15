@@ -1,6 +1,7 @@
 import React from 'react';
 import { CONFIG } from '../constants';
 import { navigateTo } from '../lib/nav';
+import BrandMark from './BrandMark';
 
 interface SiteHeaderProps {
   current?: 'home' | 'quote' | 'privacy';
@@ -27,9 +28,7 @@ const SiteHeader: React.FC<SiteHeaderProps> = ({ current = 'home' }) => {
           className="flex items-center gap-2 min-h-11 min-w-0"
           aria-current={current === 'home' ? 'page' : undefined}
         >
-          <span className="w-9 h-9 rounded-xl bg-[#146eb4] text-white font-black flex items-center justify-center flex-shrink-0" aria-hidden="true">
-            M
-          </span>
+          <BrandMark className="h-10 w-10" />
           <span className="font-black text-slate-900 tracking-tight truncate">
             {CONFIG.COMPANY_NAME}
           </span>

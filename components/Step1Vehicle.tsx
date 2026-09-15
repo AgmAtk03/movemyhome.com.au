@@ -2,6 +2,7 @@ import React from 'react';
 import { VehicleType, ServiceType } from '../types';
 import { VEHICLE_OPTIONS, RATES } from '../constants';
 import { formatMoney } from '../lib/quote';
+import Icon from './Icon';
 
 interface Step1Props {
   selected: VehicleType | null;
@@ -90,7 +91,7 @@ const Step1Vehicle: React.FC<Step1Props> = ({
                 aria-pressed={crewSize === 1}
                 className={`min-h-[5.5rem] p-4 rounded-3xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${crewSize === 1 ? 'border-[#146eb4] bg-[#e7f2fa] text-[#0f5a94]' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
               >
-                <i className={`ph-fill ph-user text-2xl ${crewSize === 1 ? 'text-[#146eb4]' : 'text-slate-300'}`} aria-hidden="true"></i>
+                <Icon name="user" className={`text-2xl ${crewSize === 1 ? 'text-[#146eb4]' : 'text-slate-300'}`} />
                 <span className="font-bold text-sm">Just one of us</span>
               </button>
               <button
@@ -100,8 +101,8 @@ const Step1Vehicle: React.FC<Step1Props> = ({
                 className={`min-h-[5.5rem] p-4 rounded-3xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${crewSize === 2 ? 'border-[#146eb4] bg-[#e7f2fa] text-[#0f5a94]' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
               >
                 <div className="flex gap-1" aria-hidden="true">
-                  <i className={`ph-fill ph-user text-2xl ${crewSize === 2 ? 'text-[#146eb4]' : 'text-slate-300'}`}></i>
-                  <i className={`ph-fill ph-user text-2xl ${crewSize === 2 ? 'text-[#146eb4]' : 'text-slate-300'}`}></i>
+                  <Icon name="user" className={`text-2xl ${crewSize === 2 ? 'text-[#146eb4]' : 'text-slate-300'}`} />
+                  <Icon name="user" className={`text-2xl ${crewSize === 2 ? 'text-[#146eb4]' : 'text-slate-300'}`} />
                 </div>
                 <span className="font-bold text-sm">A pair of us</span>
               </button>
@@ -131,7 +132,7 @@ const Step1Vehicle: React.FC<Step1Props> = ({
                   className="w-14 h-14 bg-white border-2 border-[#c5dff0] rounded-2xl text-[#146eb4] flex items-center justify-center text-2xl active:scale-95"
                   aria-label="Reduce hours by half an hour"
                 >
-                  <i className="ph-bold ph-minus" aria-hidden="true"></i>
+                  <Icon name="minus" />
                 </button>
 
                 <p className="flex-1 p-4 bg-white border-2 border-[#c5dff0] rounded-2xl text-3xl font-black text-[#0f5a94] flex items-center justify-center gap-2" aria-live="polite">
@@ -145,7 +146,7 @@ const Step1Vehicle: React.FC<Step1Props> = ({
                   className="w-14 h-14 bg-[#146eb4] text-white rounded-2xl flex items-center justify-center text-2xl active:scale-95"
                   aria-label="Add half an hour"
                 >
-                  <i className="ph-bold ph-plus" aria-hidden="true"></i>
+                  <Icon name="plus" />
                 </button>
               </div>
             )}

@@ -2,6 +2,7 @@ import React from 'react';
 import { ServiceType } from '../types';
 import { RATES } from '../constants';
 import { formatMoney } from '../lib/quote';
+import Icon from './Icon';
 
 interface Step1ServiceTypeProps {
   selected: ServiceType | null;
@@ -34,7 +35,7 @@ const Step1ServiceType: React.FC<Step1ServiceTypeProps> = ({ selected, onSelect 
           <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
             selected === 'home_move' ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-700'
           }`}>
-            <i className="ph-fill ph-house-line" aria-hidden="true"></i>
+            <Icon name="house-line" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -59,7 +60,7 @@ const Step1ServiceType: React.FC<Step1ServiceTypeProps> = ({ selected, onSelect 
           <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
             selected === 'room_move' ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-700'
           }`}>
-            <i className="ph-fill ph-door-open" aria-hidden="true"></i>
+            <Icon name="door-open" />
           </div>
           <div className="flex-1">
             <h3 className="font-black text-lg text-slate-900 tracking-tight">A room or studio</h3>
@@ -81,7 +82,7 @@ const Step1ServiceType: React.FC<Step1ServiceTypeProps> = ({ selected, onSelect 
           <div className={`w-14 h-14 flex items-center justify-center text-3xl rounded-2xl ${
             selected === 'item_delivery' ? 'bg-[#146eb4] text-white' : 'bg-slate-50 text-slate-700'
           }`}>
-            <i className="ph-fill ph-package" aria-hidden="true"></i>
+            <Icon name="package" />
           </div>
           <div className="flex-1">
             <h3 className="font-black text-lg text-slate-900 tracking-tight">A few items</h3>

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Inventory, MoveDetails, VehicleType } from '../types';
 import { RATES } from '../constants';
 import { formatMoney, hasAnyInventory } from '../lib/quote';
+import Icon from './Icon';
 
 interface Step3Props {
   inventory: Inventory;
@@ -53,7 +54,7 @@ const Step3Inventory: React.FC<Step3Props> = ({ inventory, details, vehicle, isM
     <div className="space-y-6 animate-premium-in pb-10">
       {needsTruckAutoUpgrade && vehicle === 'truck' && !isManualTruckSelection && !isDismissed && (
         <div className="bg-indigo-700 text-white p-4 rounded-3xl flex items-start gap-3" role="status">
-          <i className="ph-fill ph-truck text-white text-xl mt-0.5" aria-hidden="true"></i>
+          <Icon name="truck" className="text-white text-xl mt-0.5" />
           <div className="flex-1">
             <p className="font-bold text-sm">
               {hasMultipleHeavyItems ? 'That’s a heavy load' : 'That’s a full house-worth'}
@@ -99,7 +100,7 @@ const Step3Inventory: React.FC<Step3Props> = ({ inventory, details, vehicle, isM
                 className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700"
                 aria-label={`Remove one ${item.name}`}
               >
-                <i className="ph ph-minus" aria-hidden="true"></i>
+                <Icon name="minus" />
               </button>
               <span className="w-10 text-center font-black text-[#146eb4] text-lg" aria-live="polite">{inventory[item.key]}</span>
               <button
@@ -108,7 +109,7 @@ const Step3Inventory: React.FC<Step3Props> = ({ inventory, details, vehicle, isM
                 className="w-11 h-11 rounded-xl bg-[#146eb4] text-white flex items-center justify-center"
                 aria-label={`Add one ${item.name}`}
               >
-                <i className="ph ph-plus" aria-hidden="true"></i>
+                <Icon name="plus" />
               </button>
             </div>
           </div>

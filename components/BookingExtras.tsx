@@ -2,6 +2,7 @@ import React from 'react';
 import { isPhoneConfigured, isWhatsAppConfigured } from '../constants';
 import { isSafeWhatsAppUrl } from '../lib/sanitize';
 import ConfiguredContact from './ConfiguredContact';
+import Icon from './Icon';
 
 interface BookingExtrasProps {
   whatsappUrl: string | null;
@@ -32,7 +33,7 @@ const BookingExtras: React.FC<BookingExtrasProps> = ({
           rel="noopener noreferrer"
           className="flex min-h-14 items-center justify-center gap-2 w-full rounded-2xl bg-[#25D366] text-white font-black text-base shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-transform"
         >
-          <i className="ph-fill ph-whatsapp-logo text-xl" aria-hidden="true"></i>
+          <Icon name="whatsapp-logo" className="text-xl" />
           Message us on WhatsApp
         </a>
       ) : (
