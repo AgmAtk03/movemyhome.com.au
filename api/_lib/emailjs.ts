@@ -136,26 +136,52 @@ export async function sendMemberSignupEmails(input: {
   const email = sanitizePlainText(input.email, 120);
   const code = sanitizePlainText(input.discountCode, 32);
   const office = sanitizePlainText(company.email, 120);
+  const offer = `5% off first move. Code ${code}.`;
+  const studentDetails = [
+    'MEMBER 5% OFF',
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Code: ${code}`,
+    'Enter this code on the book step for 5% off your first move.',
+  ].join('\n');
+  const officeDetails = [
+    'NEW MEMBER 5% SIGNUP',
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Code: ${code}`,
+    'Follow up for their first move.',
+  ].join('\n');
 
-  const base = {
+  const shared = {
     customer_name: name,
+    from_name: name,
     user_email: email,
     discount_code: code,
     offer_label: '5% off your first move',
     company_name: sanitizePlainText(company.name || BRAND_NAME, 80),
     company_email: office,
     company_phone: sanitizePlainText(company.phone, 24),
+    total_quote: offer,
+    inventory: `Code ${code}`,
+    vehicle: 'Member offer',
+    move_date: 'First move',
+    deposit_amount: '5% off',
+    balance_amount: '',
   };
 
   let customerSent = false;
   let businessSent = false;
 
   try {
-    await sendTemplate(cfg.memberTemplateId, {
-      ...base,
+    await sendTemplate(cfg.clientTemplateId, {
+      ...shared,
       to_email: email,
-      email_kind: 'member_customer',
+      email_kind: 'member',
       reply_to: office,
+      service_type: 'Member 5% off',
+      special_instructions: `Your 5% off code is ${code}. Enter it when you book your first move.`,
+      job_details: studentDetails,
+      job_details_html: htmlSafeMultiline(studentDetails, 2500),
     });
     customerSent = true;
   } catch {
@@ -168,11 +194,15 @@ export async function sendMemberSignupEmails(input: {
   }
 
   try {
-    await sendTemplate(cfg.memberTemplateId, {
-      ...base,
+    await sendTemplate(cfg.businessTemplateId, {
+      ...shared,
       to_email: office,
-      email_kind: 'member_business',
+      email_kind: 'business',
       reply_to: email,
+      service_type: 'Member signup',
+      special_instructions: `${name} <${email}> code ${code}`,
+      job_details: officeDetails,
+      job_details_html: htmlSafeMultiline(officeDetails, 2500),
     });
     businessSent = true;
   } catch {

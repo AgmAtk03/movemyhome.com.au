@@ -72,7 +72,6 @@ export function emailJsConfig() {
     serviceId: read('EMAILJS_SERVICE_ID') || read('VITE_EMAILJS_SERVICE_ID'),
     clientTemplateId: read('EMAILJS_CLIENT_TEMPLATE_ID') || read('VITE_EMAILJS_CLIENT_TEMPLATE_ID'),
     businessTemplateId: read('EMAILJS_BUSINESS_TEMPLATE_ID') || read('VITE_EMAILJS_BUSINESS_TEMPLATE_ID'),
-    memberTemplateId: read('EMAILJS_MEMBER_TEMPLATE_ID') || read('VITE_EMAILJS_MEMBER_TEMPLATE_ID'),
     publicKey: read('EMAILJS_PUBLIC_KEY') || read('VITE_EMAILJS_PUBLIC_KEY'),
     privateKey: read('EMAILJS_PRIVATE_KEY'),
   };
@@ -92,12 +91,7 @@ export function isEmailJsServerConfigured(): boolean {
   return true;
 }
 
+/** Member 5% mail reuses the two paid templates (EmailJS Hobby allows only two). */
 export function isMemberEmailConfigured(): boolean {
-  const cfg = emailJsConfig();
-  const template = cfg.memberTemplateId;
-  if (!template || template.includes('YOUR') || template.includes('MEMBER_ID')) return false;
-  if (!cfg.serviceId || cfg.serviceId.includes('YOUR_ID')) return false;
-  if (!cfg.publicKey || cfg.publicKey.includes('YOUR_PUBLIC_KEY')) return false;
-  if (isSecretLike(cfg.publicKey)) return false;
-  return true;
+  return isEmailJsServerConfigured();
 }
