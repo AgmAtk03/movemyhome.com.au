@@ -1,8 +1,14 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { LocationEntry, AccessType, VehicleType } from '../types';
 import { ACCESS_LABELS, RATES } from '../constants';
-import { isGoogleMapsConfigured, isGoogleMapsReady, loadGoogleMaps } from '../mapsLoader';
+import {
+  isGoogleMapsConfigured,
+  isGoogleMapsUsable,
+  loadGoogleMaps,
+  subscribeMapsFailure,
+} from '../mapsLoader';
 import { formatMoney } from '../lib/quote';
+import AddressField from './AddressField';
 
 declare const google: any;
 
@@ -23,8 +29,6 @@ const Step2Route: React.FC<Step2Props> = ({
   pickups, dropoffs, vehicle, isCBD, isInterstate, distanceKm, travelTimeHrs,
   onUpdatePickups, onUpdateDropoffs, onUpdateRouteInfo,
 }) => {
-  const acRefs = useRef<Record<string, any>>({});
-  const inputEls = useRef<Record<string, HTMLInputElement | null>>({});
   const pickupsRef = useRef(pickups);
   const dropoffsRef = useRef(dropoffs);
   const onUpdatePickupsRef = useRef(onUpdatePickups);
@@ -38,9 +42,11 @@ const Step2Route: React.FC<Step2Props> = ({
   const [routeError, setRouteError] = useState<string | null>(null);
   const [mapsStatus, setMapsStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>(() => {
     if (!isGoogleMapsConfigured()) return 'missing';
-    return isGoogleMapsReady() ? 'ready' : 'loading';
+    return isGoogleMapsUsable() ? 'ready' : 'loading';
   });
   const mapsMissing = mapsStatus === 'missing' || mapsStatus === 'error';
+
+  useEffect(() => subscribeMapsFailure(() => setMapsStatus('error')), []);
 
   useEffect(() => {
     if (!isGoogleMapsConfigured()) {
@@ -50,7 +56,7 @@ const Step2Route: React.FC<Step2Props> = ({
     let cancelled = false;
     loadGoogleMaps()
       .then(() => {
-        if (!cancelled) setMapsStatus('ready');
+        if (!cancelled) setMapsStatus(isGoogleMapsUsable() ? 'ready' : 'error');
       })
       .catch(() => {
         if (!cancelled) setMapsStatus('error');
@@ -131,38 +137,13 @@ const Step2Route: React.FC<Step2Props> = ({
     return () => clearTimeout(timer);
   }, [pickups, dropoffs, calculateRoute, mapsStatus]);
 
-  const initAC = (id: string, el: HTMLInputElement | null) => {
-    if (!el || acRefs.current[id] || mapsStatus !== 'ready' || typeof google === 'undefined') return;
-    try {
-      const ac = new google.maps.places.Autocomplete(el, {
-        componentRestrictions: { country: 'au' },
-        fields: ['formatted_address', 'address_components', 'geometry'],
-        types: ['address'],
-      });
-      ac.addListener('place_changed', () => {
-        const place = ac.getPlace();
-        const addr = place.formatted_address || el.value;
-        if (pickupsRef.current.find((p) => p.id === id)) {
-          onUpdatePickupsRef.current(pickupsRef.current.map((p) => p.id === id ? { ...p, address: addr } : p));
-        } else {
-          onUpdateDropoffsRef.current(dropoffsRef.current.map((d) => d.id === id ? { ...d, address: addr } : d));
-        }
-      });
-      acRefs.current[id] = ac;
-    } catch (e) {
-      console.warn('Autocomplete failed', e);
+  const setStopAddress = (id: string, type: 'pickup' | 'dropoff', address: string) => {
+    if (type === 'pickup') {
+      onUpdatePickupsRef.current(pickupsRef.current.map((item) => item.id === id ? { ...item, address } : item));
+    } else {
+      onUpdateDropoffsRef.current(dropoffsRef.current.map((item) => item.id === id ? { ...item, address } : item));
     }
   };
-
-  const bindInput = (id: string, el: HTMLInputElement | null) => {
-    inputEls.current[id] = el;
-    initAC(id, el);
-  };
-
-  useEffect(() => {
-    if (mapsStatus !== 'ready') return;
-    Object.entries(inputEls.current).forEach(([id, el]) => initAC(id, el));
-  }, [mapsStatus, pickups, dropoffs]);
 
   const addLocation = (type: 'pickup' | 'dropoff') => {
     const newLoc: LocationEntry = { id: `${type}-${Date.now()}`, address: '', access: 'ground', hasLoadingDock: false };
@@ -173,7 +154,6 @@ const Step2Route: React.FC<Step2Props> = ({
   const removeLocation = (id: string, type: 'pickup' | 'dropoff') => {
     if (type === 'pickup' && pickups.length > 1) onUpdatePickups(pickups.filter((p) => p.id !== id));
     if (type === 'dropoff' && dropoffs.length > 1) onUpdateDropoffs(dropoffs.filter((d) => d.id !== id));
-    delete acRefs.current[id];
   };
 
   const updateAccess = (id: string, access: AccessType, type: 'pickup' | 'dropoff') => {
@@ -206,22 +186,14 @@ const Step2Route: React.FC<Step2Props> = ({
             </button>
           </div>
         )}
-        <div className="space-y-1.5">
-          <label htmlFor={loc.id} className="text-sm font-bold text-slate-700">{label}</label>
-          <input
-            id={loc.id}
-            ref={(el) => bindInput(loc.id, el)}
-            type="text"
-            autoComplete="street-address"
-            placeholder={type === 'pickup' ? 'Street, suburb, NSW…' : 'Where should we take it?'}
-            className="w-full min-h-12 p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500"
-            defaultValue={loc.address}
-            onChange={(e) => {
-              if (type === 'pickup') onUpdatePickups(pickups.map((item) => item.id === loc.id ? { ...item, address: e.target.value } : item));
-              else onUpdateDropoffs(dropoffs.map((item) => item.id === loc.id ? { ...item, address: e.target.value } : item));
-            }}
-          />
-        </div>
+        <AddressField
+          id={loc.id}
+          label={label}
+          value={loc.address}
+          mapsReady={mapsStatus === 'ready'}
+          placeholder={type === 'pickup' ? 'Street, suburb, NSW…' : 'Where should we take it?'}
+          onChange={(address) => setStopAddress(loc.id, type, address)}
+        />
 
         <div className="space-y-1.5">
           <label htmlFor={accessId} className="text-sm font-bold text-slate-700">How do we get in?</label>

@@ -10,7 +10,7 @@
     <meta name="description" content="My Home Removals — Sydney and NSW movers. Instant quotes for home, room, and item moves. We wrap, strap, and look after your things.">
     <meta name="robots" content="index,follow">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com https://unpkg.com data:; img-src 'self' data: blob: https://maps.gstatic.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; connect-src 'self' ws: wss: http://localhost:* https://localhost:* https://api.emailjs.com https://api.stripe.com https://maps.googleapis.com https://maps.gstatic.com https://places.googleapis.com https://*.googleapis.com https://unpkg.com; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; form-action 'self' https://checkout.stripe.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com https://unpkg.com https://maps.gstatic.com https://*.gstatic.com; font-src https://fonts.gstatic.com https://unpkg.com data:; img-src 'self' data: blob: https://maps.gstatic.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; connect-src 'self' ws: wss: http://localhost:* https://localhost:* https://api.emailjs.com https://api.stripe.com https://maps.googleapis.com https://maps.gstatic.com https://places.googleapis.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://unpkg.com; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://www.google.com https://maps.google.com https://*.google.com; worker-src blob:; form-action 'self' https://checkout.stripe.com;">
     <meta name="theme-color" content="#146eb4">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
@@ -178,6 +178,25 @@
             background-repeat: no-repeat;
             background-position: right 1rem center;
             background-size: 1.25rem;
+        }
+        .pac-container {
+            z-index: 10000;
+            font-family: Inter, sans-serif;
+        }
+        /* Google paints these when the key/API is denied; they must not cover or disable the form. */
+        .gm-err-container,
+        .gm-err-autocomplete {
+            display: none !important;
+            pointer-events: none !important;
+        }
+        input.address-field:disabled,
+        input.address-field[readonly] {
+            opacity: 1;
+            background-color: #fff;
+            color: #0f172a;
+            pointer-events: auto;
+            cursor: text;
+            -webkit-text-fill-color: #0f172a;
         }
     </style>
 </head>
