@@ -32,6 +32,7 @@ test('API ESM graph uses .js specifiers on relative imports', () => {
     join(ROOT, 'lib/validation.ts'),
     join(ROOT, 'lib/customerCopy.ts'),
     join(ROOT, 'shared/memberCode.ts'),
+    join(ROOT, 'shared/memberCodeFormat.ts'),
   ];
 
   const missing: string[] = [];

@@ -1,27 +1,25 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { MEMBER_CODE_PREFIX } from './rates.js';
+import {
+  MEMBER_CODE_ALPHABET,
+  MEMBER_CODE_TOKEN_LENGTH,
+  isMemberCodeFormat,
+  normalizeEmail,
+  normalizeMemberCode,
+} from './memberCodeFormat.js';
 
-/** Crockford-like alphabet — no 0/O/1/I/L so codes are easy to read aloud. */
-const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const TOKEN_LENGTH = 8;
-
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-export function normalizeMemberCode(code: string): string {
-  return code.trim().toUpperCase().replace(/\s+/g, '');
-}
-
-export function isMemberCodeFormat(code: string): boolean {
-  const value = normalizeMemberCode(code);
-  return new RegExp(`^${MEMBER_CODE_PREFIX}-[${ALPHABET}]{${TOKEN_LENGTH}}$`).test(value);
-}
+export {
+  MEMBER_CODE_ALPHABET,
+  MEMBER_CODE_TOKEN_LENGTH,
+  isMemberCodeFormat,
+  normalizeEmail,
+  normalizeMemberCode,
+};
 
 function tokenFromBytes(bytes: Uint8Array): string {
   let token = '';
-  for (let i = 0; token.length < TOKEN_LENGTH; i += 1) {
-    token += ALPHABET[bytes[i % bytes.length] % ALPHABET.length];
+  for (let i = 0; token.length < MEMBER_CODE_TOKEN_LENGTH; i += 1) {
+    token += MEMBER_CODE_ALPHABET[bytes[i % bytes.length] % MEMBER_CODE_ALPHABET.length];
   }
   return token;
 }
@@ -35,5 +33,5 @@ export function memberCodeForEmail(email: string, secret: string): string {
 }
 
 export function randomMemberCode(): string {
-  return `${MEMBER_CODE_PREFIX}-${tokenFromBytes(randomBytes(TOKEN_LENGTH + 4))}`;
+  return `${MEMBER_CODE_PREFIX}-${tokenFromBytes(randomBytes(MEMBER_CODE_TOKEN_LENGTH + 4))}`;
 }

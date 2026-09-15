@@ -6,7 +6,8 @@ test('member codes are STUDENT5- plus 8 unambiguous characters', () => {
   const code = randomMemberCode();
   assert.equal(isMemberCodeFormat(code), true);
   assert.match(code, /^STUDENT5-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/);
-  assert.equal(isMemberCodeFormat('STUDENT5-OOOOOOOO'), false);
+  assert.equal(isMemberCodeFormat('STUDENT5-TESTCODE'), false);
+  assert.equal(isMemberCodeFormat('STUDENT5-ABCDEFGH'), true);
   assert.equal(isMemberCodeFormat('SAVE10-ABCDEFGH'), false);
   assert.equal(normalizeMemberCode(' student5-abcdefgh '), 'STUDENT5-ABCDEFGH');
 });

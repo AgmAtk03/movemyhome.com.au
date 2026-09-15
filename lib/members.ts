@@ -1,7 +1,8 @@
 import { isValidEmail, isValidPersonName } from './validation';
 import { sanitizePlainText } from './sanitize';
 import { fetchApi } from './api';
-import { MEMBER_EMAILS_OFF, memberSignupMessage } from './customerCopy';
+import { MEMBER_CODE_FORMAT, MEMBER_EMAILS_OFF, memberSignupMessage } from './customerCopy';
+import { isMemberCodeFormat, normalizeMemberCode } from '../shared/memberCodeFormat';
 
 export const MEMBERS_STORAGE_KEY = 'mhr_members';
 
@@ -136,7 +137,13 @@ export interface MemberCodeCheck {
 
 export async function checkMemberDiscount(input: { email: string; code: string }): Promise<MemberCodeCheck> {
   const email = sanitizePlainText(input.email, 120);
-  const code = sanitizePlainText(input.code, 24);
+  const code = normalizeMemberCode(input.code);
+  if (!code) {
+    return { ok: false, code, rate: 0, message: MEMBER_CODE_FORMAT };
+  }
+  if (!isMemberCodeFormat(code)) {
+    return { ok: false, code, rate: 0, message: MEMBER_CODE_FORMAT };
+  }
   try {
     const response = await fetchApi('/api/validate-member-code', {
       method: 'POST',

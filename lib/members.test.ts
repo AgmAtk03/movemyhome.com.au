@@ -70,3 +70,10 @@ test('member signup stays honest when the API is missing', async () => {
     globalThis.localStorage = origStorage;
   }
 });
+
+test('member discount check rejects codes that are not STUDENT5-XXXXXXXX', async () => {
+  const { checkMemberDiscount } = await import('./members');
+  const result = await checkMemberDiscount({ email: 'sam@student.edu.au', code: 'STUDENT5-TESTCODE' });
+  assert.equal(result.ok, false);
+  assert.match(result.message, /STUDENT5-XXXX/);
+});
