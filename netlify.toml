@@ -7,8 +7,10 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# Proxy API to Vercel before the SPA catch-all. The browser POSTs to
+# Proxy API to Vercel BEFORE the SPA catch-all. The browser POSTs to
 # same-origin /api/*; Netlify forwards those to the serverless host.
+# Keep this block first. Also keep public/_redirects in the same order:
+# Vite copies that file into dist, and Netlify evaluates it before this file.
 [[redirects]]
   from = "/api/*"
   to = "https://aama-removals.vercel.app/api/:splat"

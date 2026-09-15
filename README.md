@@ -13,7 +13,7 @@ The running total is an **estimate**. **Pay 10% deposit** creates a Stripe Check
 | Customer UI (Vite SPA) | Netlify | Canonical: `https://movemyhome.com.au` (`www` 301s here) |
 | Serverless `/api/*` | Vercel | `https://aama-removals.vercel.app` |
 
-`netlify.toml` proxies `/api/*` to `https://aama-removals.vercel.app/api/:splat` **before** the SPA catch-all. The browser must keep posting to **relative** `/api/create-checkout-session` (same origin) so that rewrite applies. Do not hardcode the Vercel host in frontend fetch URLs.
+`netlify.toml` **and** `public/_redirects` proxy `/api/*` to `https://aama-removals.vercel.app/api/:splat` **before** the SPA `/* → /index.html` catch-all. Vite copies `_redirects` into `dist`, and Netlify checks that file first — if `/api/*` is missing there, POST `/api/create-checkout-session` returns Netlify HTML 404 and the quote UI falls back to “Payments aren’t switched on yet”. The browser must keep posting to **relative** `/api/create-checkout-session` (same origin) so that rewrite applies. Do not hardcode the Vercel host in frontend fetch URLs.
 
 On the Vercel project set:
 
